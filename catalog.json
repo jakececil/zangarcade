@@ -1,48 +1,6 @@
 {
   "games": [
     {
-      "id": "jumbo-mini-golf",
-      "title": "Jumbo Mini Golf",
-      "version": "V2",
-      "platform": "GBA",
-      "rom": "./roms/JUMBO-MINI-GOLF-V2.gba",
-      "status": "verified",
-      "cover": "./art/covers/jumbo-mini-golf.webp",
-      "cartLabel": "./art/labels/jumbo-mini-golf.webp",
-      "backdrop": "./art/backdrops/jumbo-mini-golf.webp",
-      "titleMark": null,
-      "shellVariant": "survey",
-      "machineTheme": "fairway",
-      "blurb": "Line up the shot, set your power, and putt around miniature obstacles on an 18-hole contract.",
-      "shellColors": {
-        "top": "#a3af77",
-        "plastic": "#66764a",
-        "edge": "#263525"
-      },
-      "backdropFocus": 8
-    },
-    {
-      "id": "the-weather-engine",
-      "title": "The Weather Engine",
-      "version": "v0.1",
-      "platform": "GBA",
-      "rom": "./roms/TheWeatherEngine-v0.1.gba",
-      "status": "verified",
-      "cover": "./art/covers/the-weather-engine.webp",
-      "cartLabel": "./art/labels/the-weather-engine.webp",
-      "backdrop": "./art/backdrops/the-weather-engine.webp",
-      "titleMark": null,
-      "shellVariant": "ribbed",
-      "machineTheme": "neutral",
-      "blurb": "Work the valves, call rain, and turn water and fire into steam.",
-      "shellColors": {
-        "top": "#639da2",
-        "plastic": "#285f63",
-        "edge": "#173c40"
-      },
-      "backdropFocus": 9
-    },
-    {
       "id": "blamball",
       "title": "Blamball",
       "version": "V2",
@@ -57,8 +15,8 @@
       "machineTheme": "neutral",
       "blurb": "Trap the ball, hover, and shoot for the rim in Moth Club Hoops.",
       "shellColors": {
-        "top": "#ee8298",
-        "plastic": "#a33763",
+        "top": "#ff89bb",
+        "plastic": "#cd3f7e",
         "edge": "#521a35"
       },
       "backdropFocus": 91
@@ -78,9 +36,9 @@
       "machineTheme": "neutral",
       "blurb": "Raise and lower threads to shape the weave and discover arcana.",
       "shellColors": {
-        "top": "#a489df",
-        "plastic": "#60438f",
-        "edge": "#211a45"
+        "top": "#b192f9",
+        "plastic": "#6f47ba",
+        "edge": "#24183f"
       },
       "backdropFocus": 10
     },
@@ -99,9 +57,9 @@
       "machineTheme": "neutral",
       "blurb": "Enter a musical terrarium and play its living sound organ.",
       "shellColors": {
-        "top": "#edac89",
-        "plastic": "#a35f57",
-        "edge": "#523934"
+        "top": "#ffbb8a",
+        "plastic": "#ae604c",
+        "edge": "#552e30"
       },
       "backdropFocus": 8
     },
@@ -120,9 +78,9 @@
       "machineTheme": "neutral",
       "blurb": "Descend five dungeon floors and find the keepers who open the way.",
       "shellColors": {
-        "top": "#9f6960",
-        "plastic": "#6a3c4c",
-        "edge": "#3a202b"
+        "top": "#d18e70",
+        "plastic": "#9e4359",
+        "edge": "#43172b"
       },
       "backdropFocus": 8
     },
@@ -141,11 +99,32 @@
       "machineTheme": "neutral",
       "blurb": "Dispatch after a missing specimen and hold focus to tighten your fire.",
       "shellColors": {
-        "top": "#8b9cc6",
-        "plastic": "#3c5d89",
-        "edge": "#122d43"
+        "top": "#a3b2ff",
+        "plastic": "#4b66bc",
+        "edge": "#1e294f"
       },
       "backdropFocus": 91
+    },
+    {
+      "id": "jumbo-mini-golf",
+      "title": "Jumbo Mini Golf",
+      "version": "V2",
+      "platform": "GBA",
+      "rom": "./roms/JUMBO-MINI-GOLF-V2.gba",
+      "status": "verified",
+      "cover": "./art/covers/jumbo-mini-golf.webp",
+      "cartLabel": "./art/labels/jumbo-mini-golf.webp",
+      "backdrop": "./art/backdrops/jumbo-mini-golf.webp",
+      "titleMark": null,
+      "shellVariant": "survey",
+      "machineTheme": "fairway",
+      "blurb": "Line up the shot, set your power, and putt around miniature obstacles on an 18-hole contract.",
+      "shellColors": {
+        "top": "#d0df78",
+        "plastic": "#6e963f",
+        "edge": "#263b24"
+      },
+      "backdropFocus": 8
     },
     {
       "id": "kingfisher",
@@ -162,9 +141,9 @@
       "machineTheme": "neutral",
       "blurb": "Feed, catch, and pair fish in a curated aquarium or keep a survival tank alive.",
       "shellColors": {
-        "top": "#7ed8bd",
-        "plastic": "#328982",
-        "edge": "#164843"
+        "top": "#84f5d6",
+        "plastic": "#34a995",
+        "edge": "#124c56"
       },
       "backdropFocus": 91
     },
@@ -183,9 +162,9 @@
       "machineTheme": "neutral",
       "blurb": "Rotate and drop trash blocks into full rows to fire the compactor.",
       "shellColors": {
-        "top": "#efbb52",
-        "plastic": "#a2681b",
-        "edge": "#473019"
+        "top": "#ffd866",
+        "plastic": "#b97819",
+        "edge": "#4b301b"
       },
       "backdropFocus": 8
     },
@@ -204,9 +183,9 @@
       "machineTheme": "neutral",
       "blurb": "Sweep the lighthouse beam over sea creatures and send ripples through the water.",
       "shellColors": {
-        "top": "#c8726b",
-        "plastic": "#7e3429",
-        "edge": "#361c29"
+        "top": "#ff8b77",
+        "plastic": "#b94538",
+        "edge": "#481d24"
       },
       "backdropFocus": 4
     },
@@ -225,9 +204,9 @@
       "machineTheme": "neutral",
       "blurb": "Grow a small business by selling goods, filling neighbor orders, and repairing city workshops.",
       "shellColors": {
-        "top": "#edddcb",
-        "plastic": "#ad92c4",
-        "edge": "#654f78"
+        "top": "#f5e4cb",
+        "plastic": "#c396db",
+        "edge": "#684d82"
       },
       "backdropFocus": 12
     },
@@ -246,9 +225,9 @@
       "machineTheme": "neutral",
       "blurb": "Carry a parasol through sunbaked ruins. Cross patches of shade to cool off and protect the canopy.",
       "shellColors": {
-        "top": "#dcb47e",
-        "plastic": "#a87551",
-        "edge": "#533a2a"
+        "top": "#f2c589",
+        "plastic": "#b47d4b",
+        "edge": "#553728"
       },
       "backdropFocus": 7
     },
@@ -267,9 +246,9 @@
       "machineTheme": "neutral",
       "blurb": "Rearrange stones and earth in a living creek and carry stranded fish to deeper pools.",
       "shellColors": {
-        "top": "#a3bfae",
-        "plastic": "#5e7d70",
-        "edge": "#2c4643"
+        "top": "#b9deb5",
+        "plastic": "#608f7e",
+        "edge": "#244838"
       },
       "backdropFocus": 27
     },
@@ -288,9 +267,9 @@
       "machineTheme": "neutral",
       "blurb": "Stop the candy drums to match an order, then finish the sweet with dye and decoration.",
       "shellColors": {
-        "top": "#ed91c0",
-        "plastic": "#a55b7e",
-        "edge": "#48243e"
+        "top": "#f9a8dc",
+        "plastic": "#c45b9e",
+        "edge": "#4c1850"
       },
       "backdropFocus": 11
     },
@@ -309,11 +288,32 @@
       "machineTheme": "neutral",
       "blurb": "Choose a junk-built speedboat and race river rivals through tight bends and overgrown channels.",
       "shellColors": {
-        "top": "#d1d476",
-        "plastic": "#8b963f",
-        "edge": "#3d4826"
+        "top": "#e0ea66",
+        "plastic": "#91a33a",
+        "edge": "#364322"
       },
       "backdropFocus": 12
+    },
+    {
+      "id": "the-weather-engine",
+      "title": "The Weather Engine",
+      "version": "v0.1",
+      "platform": "GBA",
+      "rom": "./roms/TheWeatherEngine-v0.1.gba",
+      "status": "verified",
+      "cover": "./art/covers/the-weather-engine.webp",
+      "cartLabel": "./art/labels/the-weather-engine.webp",
+      "backdrop": "./art/backdrops/the-weather-engine.webp",
+      "titleMark": null,
+      "shellVariant": "ribbed",
+      "machineTheme": "neutral",
+      "blurb": "Work the valves, call rain, and turn water and fire into steam.",
+      "shellColors": {
+        "top": "#72d5d0",
+        "plastic": "#2b898d",
+        "edge": "#173647"
+      },
+      "backdropFocus": 9
     },
     {
       "id": "trashland-pinball",
@@ -330,9 +330,9 @@
       "machineTheme": "neutral",
       "blurb": "Pull back the plunger and work the flippers to send the ball through a scrap table of ramps and trapdoors.",
       "shellColors": {
-        "top": "#60a5b6",
-        "plastic": "#2a4968",
-        "edge": "#16283f"
+        "top": "#75ccf5",
+        "plastic": "#366394",
+        "edge": "#1b2c4f"
       },
       "backdropFocus": 89
     },
@@ -351,9 +351,9 @@
       "machineTheme": "neutral",
       "blurb": "Bounce and dash Sprango past the spikes, or build a bad idea of your own in the level editor.",
       "shellColors": {
-        "top": "#ef89dc",
-        "plastic": "#b13eb2",
-        "edge": "#502656"
+        "top": "#ed88fa",
+        "plastic": "#ad39cf",
+        "edge": "#431f5c"
       },
       "backdropFocus": 10
     },
@@ -372,9 +372,9 @@
       "machineTheme": "rootcellar",
       "blurb": "Pilot a moth through the undergrowth. Save your bombs and laser for the tight spots.",
       "shellColors": {
-        "top": "#c68b55",
-        "plastic": "#8d4c2b",
-        "edge": "#3a251d"
+        "top": "#f3ad5c",
+        "plastic": "#b95e37",
+        "edge": "#412115"
       },
       "backdropFocus": 88
     },
@@ -393,9 +393,9 @@
       "machineTheme": "neutral",
       "blurb": "Call friends and rivals on the rotary phone and pack pieces into their pocket-sized boards.",
       "shellColors": {
-        "top": "#a5a4ae",
-        "plastic": "#5b5a63",
-        "edge": "#26262e"
+        "top": "#b7bcbc",
+        "plastic": "#606971",
+        "edge": "#202623"
       },
       "backdropFocus": 11
     }

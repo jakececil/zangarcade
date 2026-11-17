@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#151a14">
-  <meta name="description" content="Play ZANG Arcade’s original game prototypes for free in your browser.">
+  <meta name="description" content="Play ZANG Arcade’s original game prototypes in your browser.">
   <title>ZANG Arcade</title>
-  <link rel="icon" type="image/png" href="./art/zang.png">
+  <link rel="icon" type="image/png" href="./art/brand/zang-favicon.png">
   <script>
     try {
-      if (sessionStorage.getItem('zang-arcade-clearance') === '4') {
+      if (sessionStorage.getItem('zang-arcade-entrance-v2') === 'entered') {
         document.documentElement.dataset.clearance = 'open';
       }
     } catch {}
@@ -20,20 +20,21 @@
   <script src="./shelf.js" defer></script>
 </head>
 <body>
-  <div class="clearance" id="clearance" role="dialog" aria-modal="true" aria-labelledby="clearance-title" aria-describedby="clearance-instruction">
+  <div class="clearance" id="clearance" role="dialog" aria-modal="true" aria-labelledby="clearance-title">
+    <div class="clearance-tiles" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
     <div class="clearance-panel">
       <header class="clearance-header">
-        <span class="brand"><span class="brand-mark" aria-hidden="true">Z</span> ZANG ARCADE</span>
+        <span class="brand" data-image-fallback role="img" aria-label="ZANG Arcade">
+          <span class="brand-mark" aria-hidden="true">Z</span><img src="./art/brand/zang-mark.webp" alt="" width="40" height="40">
+        </span>
         <span class="terminal-status">Access pending</span>
       </header>
       <div class="clearance-body">
-        <div>
-          <p class="eyebrow">Visitor clearance</p>
-          <h1 id="clearance-title">Clearance<br>required.</h1>
-          <p id="clearance-instruction">Press or tap <strong>4</strong> to enter the arcade.</p>
-        </div>
-        <button class="clearance-key" id="clearance-key" type="button" aria-label="4, enter arcade">
-          <span aria-hidden="true">4</span><span class="key-arrow" aria-hidden="true">↵</span>
+        <h1 id="clearance-title">Clearance<br>required.</h1>
+        <button class="entrance-button" id="enter-arcade" type="button">
+          Enter arcade <span aria-hidden="true">→</span>
         </button>
       </div>
       <noscript><p class="clearance-noscript">Enable JavaScript to enter the arcade and play the games.</p></noscript>
@@ -42,36 +43,40 @@
 
   <div id="arcade" inert>
     <header class="site-header wrap">
-      <a class="brand" href="./index.html"><span class="brand-mark" aria-hidden="true">Z</span> ZANG ARCADE</a>
-      <a class="shelf-link" href="#inventory">Browse the shelf <span aria-hidden="true">↓</span></a>
+      <a class="brand" data-image-fallback href="./index.html" aria-label="ZANG Arcade home">
+        <span class="brand-mark" aria-hidden="true">Z</span><img src="./art/brand/zang-mark.webp" alt="" width="40" height="40">
+      </a>
+      <a class="shelf-link" href="#inventory">Game shelf <span aria-hidden="true">↓</span></a>
     </header>
 
     <main class="wrap">
       <section class="masthead" aria-labelledby="arcade-title">
-        <div class="masthead-copy">
-          <h1 id="arcade-title" tabindex="-1">ZANG <span>ARCADE</span></h1>
-          <p>Original game prototypes. Pick a box and play for free in your browser.</p>
-        </div>
-        <div class="cartridge-gallery" id="cartridge-gallery" aria-hidden="true" hidden>
-          <div class="gallery-grid"></div>
-          <div class="gallery-shadow"></div>
-          <div class="gallery-scene">
-            <div class="gallery-float">
-              <div class="gallery-cartridge" id="gallery-cartridge"></div>
+        <h1 id="arcade-title" class="wordmark" data-image-fallback tabindex="-1">
+          <span class="visually-hidden">ZANG Arcade</span>
+          <span class="wordmark-text" aria-hidden="true">ZANG <span>ARCADE</span></span>
+          <img class="wordmark-art" src="./art/brand/zang-arcade.webp" alt="">
+        </h1>
+        <div class="carousel-machine" id="carousel-machine" hidden>
+          <div class="machine-body">
+            <img class="machine-art" id="machine-art" src="./art/brand/cartridge-display.webp" alt="">
+            <div class="cartridge-gallery" id="cartridge-gallery" aria-hidden="true">
+              <div class="gallery-grid"></div>
+              <div class="gallery-shadow"></div>
+              <div class="gallery-scene">
+                <div class="gallery-float">
+                  <div class="gallery-cartridge" id="gallery-cartridge"></div>
+                </div>
+              </div>
             </div>
+            <span class="carousel-meta" id="carousel-meta"></span>
+            <button class="carousel-motion" id="carousel-motion" type="button" aria-pressed="false" aria-label="Pause cartridge motion" title="Pause cartridge motion">Ⅱ</button>
           </div>
-        </div>
-        <div class="carousel-controls" id="carousel-controls" hidden>
-          <label for="carousel-select">Cartridge</label>
-          <div class="carousel-nav">
+          <div class="carousel-controls" id="carousel-controls">
+            <label class="visually-hidden" for="carousel-select">Cartridge</label>
             <button class="carousel-arrow" id="carousel-prev" type="button" aria-label="Previous cartridge">←</button>
             <select id="carousel-select"></select>
             <button class="carousel-arrow" id="carousel-next" type="button" aria-label="Next cartridge">→</button>
-          </div>
-          <div class="carousel-actions">
             <a class="carousel-play" id="carousel-play">Play <span aria-hidden="true">↗</span></a>
-            <span class="carousel-meta" id="carousel-meta"></span>
-            <button class="carousel-motion" id="carousel-motion" type="button" aria-pressed="false" aria-label="Pause cartridge motion" title="Pause cartridge motion">Ⅱ</button>
             <span class="visually-hidden" id="carousel-announcement" aria-live="polite"></span>
           </div>
         </div>
@@ -88,7 +93,9 @@
     </main>
 
     <footer class="site-footer wrap">
-      <span class="brand"><span class="brand-mark" aria-hidden="true">Z</span> ZANG ARCADE</span>
+      <span class="brand" data-image-fallback role="img" aria-label="ZANG Arcade">
+        <span class="brand-mark" aria-hidden="true">Z</span><img src="./art/brand/zang-mark.webp" alt="" width="40" height="40">
+      </span>
       <a href="#arcade-title">Back to top <span aria-hidden="true">↑</span></a>
     </footer>
   </div>

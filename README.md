@@ -12,7 +12,7 @@ py -3 -m http.server 8765 --bind 127.0.0.1
 
 On macOS or Linux, use `python3 -m http.server 8765 --bind 127.0.0.1`. Visit `http://127.0.0.1:8765/` while the terminal is open. The browser needs HTTP to fetch the catalog, runtime and cartridges. The player works in a modern browser with WebAssembly enabled. No Node.js, package install, build, or BIOS is required.
 
-At the clearance screen, press or tap **4**. Choose a game in the floating cartridge carousel or pick a box on the shelf. Hold the pointer over a box to open the case and read how the game plays. The **Preview** button also opens the case by touch or keyboard. Click **Play** to load the cartridge and **Eject** to return it to the box. Use **Skip to game**, reduced motion, or a direct link such as `play.html?game=jumbo-mini-golf` to reach the player without the insertion sequence. Choose **Start Game** to run the cartridge and enable browser audio.
+Choose **Enter** on the opening screen. Pick a game from the cartridge display or the shelf. Hold the pointer over a box to open the case and read how the game plays. The **Preview** button also opens the case by touch or keyboard. Click **Play** to load the cartridge and **Eject** to return it to the box. Use **Skip to game**, reduced motion, or a direct link such as `play.html?game=jumbo-mini-golf` to reach the player without the insertion sequence. Choose **Start Game** to run the cartridge and enable browser audio.
 
 ## Publish with GitHub Desktop and Pages
 

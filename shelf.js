@@ -2,13 +2,14 @@
 
 const arcade = document.getElementById('arcade');
 const arcadeTitle = document.getElementById('arcade-title');
-const clearanceKey = document.getElementById('clearance-key');
-const clearanceStorageKey = 'zang-arcade-clearance';
+const enterArcadeButton = document.getElementById('enter-arcade');
+const clearanceStorageKey = 'zang-arcade-entrance-v2';
 const siteDirectory = new URL('./', document.baseURI);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const gallery = document.getElementById('cartridge-gallery');
 const galleryCartridge = document.getElementById('gallery-cartridge');
-const carouselControls = document.getElementById('carousel-controls');
+const carouselMachine = document.getElementById('carousel-machine');
+const machineArt = document.getElementById('machine-art');
 const carouselSelect = document.getElementById('carousel-select');
 const carouselPrevious = document.getElementById('carousel-prev');
 const carouselNext = document.getElementById('carousel-next');
@@ -55,7 +56,7 @@ function openArcade(moveFocus) {
 function grantClearance() {
   openArcade(true);
   try {
-    sessionStorage.setItem(clearanceStorageKey, '4');
+    sessionStorage.setItem(clearanceStorageKey, 'entered');
   } catch {
     // A visitor can still open the gate when the browser blocks session storage.
   }
@@ -73,6 +74,13 @@ function localAsset(value) {
   } catch {
     return '';
   }
+}
+
+function watchImage(image, update) {
+  const settle = () => update(image.naturalWidth > 0);
+  image.addEventListener('load', settle);
+  image.addEventListener('error', settle);
+  if (image.complete) settle();
 }
 
 function setArtwork(element, property, asset) {
@@ -461,15 +469,11 @@ document.addEventListener('pointerdown', (event) => {
 if (document.documentElement.dataset.clearance === 'open') {
   openArcade(false);
 } else {
-  clearanceKey.focus({ preventScroll: true });
+  enterArcadeButton.focus({ preventScroll: true });
 }
 
-clearanceKey.addEventListener('click', grantClearance);
+enterArcadeButton.addEventListener('click', grantClearance);
 document.addEventListener('keydown', (event) => {
-  if (event.key === '4' && document.documentElement.dataset.clearance === 'closed') {
-    event.preventDefault();
-    grantClearance();
-  }
   if (event.key === 'Escape' && !activeRitual && (previewEntry || pendingPreview)) {
     event.preventDefault();
     clearPreviewTimer();
@@ -477,12 +481,22 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+for (const element of document.querySelectorAll('[data-image-fallback]')) {
+  watchImage(element.querySelector('img'), (loaded) => element.classList.toggle('has-image', loaded));
+}
+
+watchImage(machineArt, (loaded) => {
+  carouselMachine.classList.toggle('has-machine-image', loaded);
+  if (loaded) carouselMachine.style.setProperty('--frame-aspect', machineArt.naturalWidth + ' / ' + machineArt.naturalHeight);
+});
+
 async function loadShelf() {
   try {
     const response = await fetch('./catalog.json');
     if (!response.ok) throw new Error('Catalog returned HTTP ' + response.status);
     const catalog = await response.json();
-    const games = catalog.games.filter((game) => game.status === 'verified');
+    const games = catalog.games.filter((game) => game.status === 'verified')
+      .sort((first, second) => first.title.localeCompare(second.title, 'en'));
     if (games.length === 0) {
       inventoryStatus.textContent = 'The shelf is awaiting its first verified game.';
       return;
@@ -495,9 +509,8 @@ async function loadShelf() {
     carouselSelect.replaceChildren(...games.map((game, index) => new Option(game.title, index)));
     carouselPrevious.disabled = count < 2;
     carouselNext.disabled = count < 2;
-    selectCartridge(Math.max(0, games.findIndex((game) => game.id === 'jumbo-mini-golf')));
-    gallery.hidden = false;
-    carouselControls.hidden = false;
+    selectCartridge(0);
+    carouselMachine.hidden = false;
 
     const request = new URL(window.location.href);
     if (request.searchParams.has('eject')) {

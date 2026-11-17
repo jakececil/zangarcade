@@ -56,11 +56,12 @@
 .cartridge-faceplate {
   clip-path: var(--cartridge-shape);
   background:
+    url('./art/materials/shell-wear.webp') center / 100% 100% no-repeat,
     url('./art/materials/abs-grain.webp') center / 122% auto repeat,
-    linear-gradient(142deg, #ffffff48, #ffffff05 38%, #0002 73%, #0008),
+    linear-gradient(142deg, #fffdf478, #fff7e315 36%, #0001 65%, #0807068c),
     linear-gradient(164deg, var(--shell-top), var(--shell-plastic) 40%, var(--shell-edge));
-  background-blend-mode: soft-light, normal, normal;
-  box-shadow: inset 0 .25rem #ffffff38, inset .23rem 0 #ffffff32, inset -.28rem -.25rem #0d100db2;
+  background-blend-mode: overlay, soft-light, normal, normal;
+  box-shadow: inset 0 .3rem #fffaf04f, inset .25rem 0 #fffaf03c, inset -.3rem -.28rem #0d100dc2;
 }
 
 .cartridge-grip {

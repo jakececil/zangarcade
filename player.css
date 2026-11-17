@@ -52,15 +52,12 @@ a:focus-visible, button:focus-visible, #game .ejs_start_button:focus-visible {
   text-decoration: none;
 }
 
-.wordmark span {
-  display: grid;
-  place-items: center;
-  width: 1.9rem;
-  height: 1.9rem;
-  background: var(--lime);
-  color: var(--ink);
-  font: 900 1.25rem var(--display);
-  transform: skew(-7deg);
+.wordmark-mark {
+  display: block;
+  flex: 0 0 auto;
+  width: 2.4rem;
+  height: 2.4rem;
+  object-fit: contain;
 }
 
 .shelf-link, .metadata, .console-bar, .controls-caption, .action {
