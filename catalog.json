@@ -12,7 +12,14 @@
       "backdrop": "./art/backdrops/jumbo-mini-golf.webp",
       "titleMark": null,
       "shellVariant": "survey",
-      "machineTheme": "fairway"
+      "machineTheme": "fairway",
+      "blurb": "Line up the shot, set your power, and putt around miniature obstacles on an 18-hole contract.",
+      "shellColors": {
+        "top": "#a3af77",
+        "plastic": "#66764a",
+        "edge": "#263525"
+      },
+      "backdropFocus": 8
     },
     {
       "id": "the-weather-engine",
@@ -22,11 +29,18 @@
       "rom": "./roms/TheWeatherEngine-v0.1.gba",
       "status": "verified",
       "cover": "./art/covers/the-weather-engine.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/the-weather-engine.webp",
+      "backdrop": "./art/backdrops/the-weather-engine.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "ribbed",
+      "machineTheme": "neutral",
+      "blurb": "Work the valves, call rain, and turn water and fire into steam.",
+      "shellColors": {
+        "top": "#639da2",
+        "plastic": "#285f63",
+        "edge": "#173c40"
+      },
+      "backdropFocus": 9
     },
     {
       "id": "blamball",
@@ -36,11 +50,18 @@
       "rom": "./roms/ZANG-Blamball-V2.gba",
       "status": "verified",
       "cover": "./art/covers/blamball.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/blamball.webp",
+      "backdrop": "./art/backdrops/blamball.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "notched",
+      "machineTheme": "neutral",
+      "blurb": "Trap the ball, hover, and shoot for the rim in Moth Club Hoops.",
+      "shellColors": {
+        "top": "#ee8298",
+        "plastic": "#a33763",
+        "edge": "#521a35"
+      },
+      "backdropFocus": 91
     },
     {
       "id": "cats-cradle",
@@ -50,11 +71,18 @@
       "rom": "./roms/Cats-Cradle-V6.gba",
       "status": "verified",
       "cover": "./art/covers/cats-cradle.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/cats-cradle.webp",
+      "backdrop": "./art/backdrops/cats-cradle.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "resin",
+      "machineTheme": "neutral",
+      "blurb": "Raise and lower threads to shape the weave and discover arcana.",
+      "shellColors": {
+        "top": "#a489df",
+        "plastic": "#60438f",
+        "edge": "#211a45"
+      },
+      "backdropFocus": 10
     },
     {
       "id": "garden-song",
@@ -64,11 +92,18 @@
       "rom": "./roms/Garden-song-v0.1.gba",
       "status": "verified",
       "cover": "./art/covers/garden-song.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/garden-song.webp",
+      "backdrop": "./art/backdrops/garden-song.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "chamfer",
+      "machineTheme": "neutral",
+      "blurb": "Enter a musical terrarium and play its living sound organ.",
+      "shellColors": {
+        "top": "#edac89",
+        "plastic": "#a35f57",
+        "edge": "#523934"
+      },
+      "backdropFocus": 8
     },
     {
       "id": "gut-punch-lower-management",
@@ -78,11 +113,18 @@
       "rom": "./roms/Gut_Punch_Lower_Management_v2.gba",
       "status": "verified",
       "cover": "./art/covers/gut-punch-lower-management.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/gut-punch-lower-management.webp",
+      "backdrop": "./art/backdrops/gut-punch-lower-management.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "notched",
+      "machineTheme": "neutral",
+      "blurb": "Descend five dungeon floors and find the keepers who open the way.",
+      "shellColors": {
+        "top": "#9f6960",
+        "plastic": "#6a3c4c",
+        "edge": "#3a202b"
+      },
+      "backdropFocus": 8
     },
     {
       "id": "gut-punch-specimen-run",
@@ -92,11 +134,18 @@
       "rom": "./roms/Gut-Punch-Specimen-Run-v0.7.gba",
       "status": "verified",
       "cover": "./art/covers/gut-punch-specimen-run.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/gut-punch-specimen-run.webp",
+      "backdrop": "./art/backdrops/gut-punch-specimen-run.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "ribbed",
+      "machineTheme": "neutral",
+      "blurb": "Dispatch after a missing specimen and hold focus to tighten your fire.",
+      "shellColors": {
+        "top": "#8b9cc6",
+        "plastic": "#3c5d89",
+        "edge": "#122d43"
+      },
+      "backdropFocus": 91
     },
     {
       "id": "kingfisher",
@@ -106,11 +155,18 @@
       "rom": "./roms/Kingfisher-V10.gba",
       "status": "verified",
       "cover": "./art/covers/kingfisher.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/kingfisher.webp",
+      "backdrop": "./art/backdrops/kingfisher.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "chamfer",
+      "machineTheme": "neutral",
+      "blurb": "Feed, catch, and pair fish in a curated aquarium or keep a survival tank alive.",
+      "shellColors": {
+        "top": "#7ed8bd",
+        "plastic": "#328982",
+        "edge": "#164843"
+      },
+      "backdropFocus": 91
     },
     {
       "id": "landfill",
@@ -120,11 +176,18 @@
       "rom": "./roms/LANDFILL-V2.gba",
       "status": "verified",
       "cover": "./art/covers/landfill.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/landfill.webp",
+      "backdrop": "./art/backdrops/landfill.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "notched",
+      "machineTheme": "neutral",
+      "blurb": "Rotate and drop trash blocks into full rows to fire the compactor.",
+      "shellColors": {
+        "top": "#efbb52",
+        "plastic": "#a2681b",
+        "edge": "#473019"
+      },
+      "backdropFocus": 8
     },
     {
       "id": "lighthouse-keeper",
@@ -134,11 +197,18 @@
       "rom": "./roms/Lighthouse-Keeper-V1.gba",
       "status": "verified",
       "cover": "./art/covers/lighthouse-keeper.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/lighthouse-keeper.webp",
+      "backdrop": "./art/backdrops/lighthouse-keeper.webp",
       "titleMark": null,
       "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "machineTheme": "neutral",
+      "blurb": "Sweep the lighthouse beam over sea creatures and send ripples through the water.",
+      "shellColors": {
+        "top": "#c8726b",
+        "plastic": "#7e3429",
+        "edge": "#361c29"
+      },
+      "backdropFocus": 4
     },
     {
       "id": "little-company",
@@ -148,11 +218,18 @@
       "rom": "./roms/ZANG-LittleCompany-v0.3.gba",
       "status": "verified",
       "cover": "./art/covers/little-company.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/little-company.webp",
+      "backdrop": "./art/backdrops/little-company.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "resin",
+      "machineTheme": "neutral",
+      "blurb": "Grow a small business by selling goods, filling neighbor orders, and repairing city workshops.",
+      "shellColors": {
+        "top": "#edddcb",
+        "plastic": "#ad92c4",
+        "edge": "#654f78"
+      },
+      "backdropFocus": 12
     },
     {
       "id": "parasol",
@@ -162,11 +239,18 @@
       "rom": "./roms/Parasol-V1.gba",
       "status": "verified",
       "cover": "./art/covers/parasol.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/parasol.webp",
+      "backdrop": "./art/backdrops/parasol.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "survey",
+      "machineTheme": "neutral",
+      "blurb": "Carry a parasol through sunbaked ruins. Cross patches of shade to cool off and protect the canopy.",
+      "shellColors": {
+        "top": "#dcb47e",
+        "plastic": "#a87551",
+        "edge": "#533a2a"
+      },
+      "backdropFocus": 7
     },
     {
       "id": "riverbed",
@@ -176,11 +260,18 @@
       "rom": "./roms/RIVERBED-V8.gba",
       "status": "verified",
       "cover": "./art/covers/riverbed.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/riverbed.webp",
+      "backdrop": "./art/backdrops/riverbed.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "chamfer",
+      "machineTheme": "neutral",
+      "blurb": "Rearrange stones and earth in a living creek and carry stranded fish to deeper pools.",
+      "shellColors": {
+        "top": "#a3bfae",
+        "plastic": "#5e7d70",
+        "edge": "#2c4643"
+      },
+      "backdropFocus": 27
     },
     {
       "id": "sugar-drum",
@@ -190,11 +281,18 @@
       "rom": "./roms/ZANG-Sugar-Drum-V1.gba",
       "status": "verified",
       "cover": "./art/covers/sugar-drum.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/sugar-drum.webp",
+      "backdrop": "./art/backdrops/sugar-drum.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "resin",
+      "machineTheme": "neutral",
+      "blurb": "Stop the candy drums to match an order, then finish the sweet with dye and decoration.",
+      "shellColors": {
+        "top": "#ed91c0",
+        "plastic": "#a55b7e",
+        "edge": "#48243e"
+      },
+      "backdropFocus": 11
     },
     {
       "id": "swamp-rocket",
@@ -204,11 +302,18 @@
       "rom": "./roms/Swamp-Rocket-V7.gba",
       "status": "verified",
       "cover": "./art/covers/swamp-rocket.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/swamp-rocket.webp",
+      "backdrop": "./art/backdrops/swamp-rocket.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "ribbed",
+      "machineTheme": "neutral",
+      "blurb": "Choose a junk-built speedboat and race river rivals through tight bends and overgrown channels.",
+      "shellColors": {
+        "top": "#d1d476",
+        "plastic": "#8b963f",
+        "edge": "#3d4826"
+      },
+      "backdropFocus": 12
     },
     {
       "id": "trashland-pinball",
@@ -218,11 +323,18 @@
       "rom": "./roms/TRASHLAND-PINBALL-V2.1.gba",
       "status": "verified",
       "cover": "./art/covers/trashland-pinball.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/trashland-pinball.webp",
+      "backdrop": "./art/backdrops/trashland-pinball.webp",
       "titleMark": null,
       "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "machineTheme": "neutral",
+      "blurb": "Pull back the plunger and work the flippers to send the ball through a scrap table of ramps and trapdoors.",
+      "shellColors": {
+        "top": "#60a5b6",
+        "plastic": "#2a4968",
+        "edge": "#16283f"
+      },
+      "backdropFocus": 89
     },
     {
       "id": "triple-giblet",
@@ -232,11 +344,18 @@
       "rom": "./roms/TripleGiblet-V1.gba",
       "status": "verified",
       "cover": "./art/covers/triple-giblet.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/triple-giblet.webp",
+      "backdrop": "./art/backdrops/triple-giblet.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "notched",
+      "machineTheme": "neutral",
+      "blurb": "Bounce and dash Sprango past the spikes, or build a bad idea of your own in the level editor.",
+      "shellColors": {
+        "top": "#ef89dc",
+        "plastic": "#b13eb2",
+        "edge": "#502656"
+      },
+      "backdropFocus": 10
     },
     {
       "id": "undergrowth-advance",
@@ -250,7 +369,14 @@
       "backdrop": "./art/backdrops/undergrowth-advance.webp",
       "titleMark": null,
       "shellVariant": "resin",
-      "machineTheme": "rootcellar"
+      "machineTheme": "rootcellar",
+      "blurb": "Pilot a moth through the undergrowth. Save your bombs and laser for the tight spots.",
+      "shellColors": {
+        "top": "#c68b55",
+        "plastic": "#8d4c2b",
+        "edge": "#3a251d"
+      },
+      "backdropFocus": 88
     },
     {
       "id": "zonk",
@@ -260,11 +386,18 @@
       "rom": "./roms/ZONK-V6.3.1.gba",
       "status": "verified",
       "cover": "./art/covers/zonk.webp",
-      "cartLabel": null,
-      "backdrop": null,
+      "cartLabel": "./art/labels/zonk.webp",
+      "backdrop": "./art/backdrops/zonk.webp",
       "titleMark": null,
-      "shellVariant": "standard",
-      "machineTheme": "neutral"
+      "shellVariant": "chamfer",
+      "machineTheme": "neutral",
+      "blurb": "Call friends and rivals on the rotary phone and pack pieces into their pocket-sized boards.",
+      "shellColors": {
+        "top": "#a5a4ae",
+        "plastic": "#5b5a63",
+        "edge": "#26262e"
+      },
+      "backdropFocus": 11
     }
   ]
 }

@@ -299,7 +299,7 @@ body.is-themed {
   background-color: var(--machine-edge);
 }
 
-body.is-themed .world {
+body:is(.is-themed, .has-world) .world {
   display: block;
   position: fixed;
   z-index: 0;
@@ -318,12 +318,12 @@ body.is-themed .world {
   background: linear-gradient(180deg, #090a0a55, #090a0a1f 34%, #090a0a42 65%, #090a0ac4), radial-gradient(ellipse at 50% 51%, transparent 45%, #0a0b0b4d);
 }
 
-body.is-themed :is(.topbar, main) { position: relative; z-index: 1; }
-body.is-themed .topbar { background: #10100de6; border-bottom-color: var(--machine-highlight); }
+body:is(.is-themed, .has-world) :is(.topbar, main) { position: relative; z-index: 1; }
+body:is(.is-themed, .has-world) .topbar { background: #10100de6; border-bottom-color: var(--machine-highlight); }
 body.is-themed .shell { width: min(100% - 4rem, 1060px); }
-body.is-themed .metadata span { background: var(--machine-panel); border-color: var(--machine-metal); }
-body.is-themed .shelf-link { color: var(--cream); }
-body.is-themed h1 { color: #fff9e4; text-shadow: 0 3px 0 var(--machine-edge), 0 4px 22px #000e; }
+body:is(.is-themed, .has-world) .metadata span { background: var(--machine-panel); border-color: var(--machine-metal); }
+body:is(.is-themed, .has-world) .shelf-link { color: var(--cream); }
+body:is(.is-themed, .has-world) h1 { color: #fff9e4; text-shadow: 0 3px 0 var(--machine-edge), 0 4px 22px #000e; }
 body[data-shell-variant="survey"] h1 { font-style: oblique 7deg; }
 body[data-shell-variant="resin"] h1 { letter-spacing: -0.028em; color: #fff0dc; }
 
@@ -391,7 +391,7 @@ body.is-themed #game .ejs_start_button:hover { background: color-mix(in srgb, va
 }
 
 body.is-themed .controls { margin-top: 1.3rem; border-radius: 8px; box-shadow: 0 8px 25px #0006; }
-body.is-themed .footer { color: var(--cream); text-shadow: 0 1px 4px #000, 0 0 10px #000; }
+body:is(.is-themed, .has-world) .footer { color: var(--cream); text-shadow: 0 1px 4px #000, 0 0 10px #000; }
 
 .slot-bridge {
   position: fixed;
@@ -442,8 +442,8 @@ body.is-themed .footer { color: var(--cream); text-shadow: 0 1px 4px #000, 0 0 1
   body.is-themed .console-bar { padding-block: 0.55rem; }
   body.is-themed .console-identification { font-size: 0.68rem; }
   body.is-themed .console-hardware { min-height: 1.5rem; }
-  body.is-themed .player-slot { --slot-width: min(76vw, 16.75rem); }
-  body.is-themed .world img { object-position: var(--machine-mobile-backdrop, center); }
+  .player-slot { --slot-width: min(76vw, 16.75rem); }
+  .world img { object-position: var(--machine-mobile-backdrop, center); }
   .controls { grid-template-columns: minmax(0, 1fr); }
 }
 

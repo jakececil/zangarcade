@@ -86,6 +86,7 @@ function revealArtwork(image, path, reveal = () => { image.hidden = false; }) {
 
 function scheduleBackdrop(path) {
   if (!path) return;
+  document.body.classList.add("has-world");
   const assignImage = () => revealArtwork(worldBackdrop, path, () => {
     document.body.classList.add("has-backdrop");
   });
@@ -115,6 +116,9 @@ function configureMachine(game) {
   const variant = machineToken(game.shellVariant, "standard");
   document.body.dataset.machineTheme = theme;
   document.body.dataset.shellVariant = variant;
+  if (Number.isInteger(game.backdropFocus) && game.backdropFocus >= 0 && game.backdropFocus <= 100) {
+    document.body.style.setProperty("--machine-mobile-backdrop", `${game.backdropFocus}% center`);
+  }
   const colors = getComputedStyle(document.body);
   const browserColor = colors.getPropertyValue("--machine-browser-color").trim() || "#111217";
   const emulatorColor = colors.getPropertyValue("--machine-emulator-color").trim() || "#516328";
@@ -125,16 +129,17 @@ function configureMachine(game) {
     gameTitle.classList.add("visually-hidden");
   });
 
-  if (theme === "neutral") return emulatorColor;
+  const label = artworkPath(game.cartLabel);
+  if (theme === "neutral" && !label) return emulatorColor;
 
-  document.body.classList.add("is-themed");
+  if (theme !== "neutral") {
+    document.body.classList.add("is-themed");
+    document.querySelector(".console-hardware").hidden = false;
+  }
   const eject = document.getElementById("eject");
   eject.href = `./?eject=${encodeURIComponent(game.id)}`;
   eject.hidden = false;
   document.getElementById("console-cart").hidden = false;
-  document.querySelector(".console-hardware").hidden = false;
-
-  const label = artworkPath(game.cartLabel);
   revealArtwork(document.getElementById("console-cart-label"), label);
   playSlotArrival(theme, label);
   return emulatorColor;
@@ -280,7 +285,7 @@ function startPlayer(game, romUrl, emulatorColor) {
       clearTimeout(bootTimer);
       standby.hidden = true;
       setState("ready", "Ready to start");
-      if (document.body.classList.contains("is-themed")) scheduleBackdrop(artworkPath(game.backdrop));
+      scheduleBackdrop(artworkPath(game.backdrop));
 
       const button = player.querySelector(".ejs_start_button");
       button.setAttribute("role", "button");

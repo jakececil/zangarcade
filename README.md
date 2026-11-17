@@ -12,7 +12,7 @@ py -3 -m http.server 8765 --bind 127.0.0.1
 
 On macOS or Linux, use `python3 -m http.server 8765 --bind 127.0.0.1`. Visit `http://127.0.0.1:8765/` while the terminal is open. The browser needs HTTP to fetch the catalog, runtime and cartridges. The player works in a modern browser with WebAssembly enabled. No Node.js, package install, build, or BIOS is required.
 
-At the clearance screen, press or tap **4**. Pick the Jumbo Mini Golf or Undergrowth Advance box to open it and load the cartridge. **Eject** on either player page returns to the box so you can load it again. **Skip to game**, reduced motion, and direct links land on the player without the insertion sequence. Use a link such as `play.html?game=jumbo-mini-golf`. Choose **Start Game** to run the cartridge and enable browser audio.
+At the clearance screen, press or tap **4**. Choose a game in the floating cartridge carousel or pick a box on the shelf. Hold the pointer over a box to open the case and read how the game plays. The **Preview** button also opens the case by touch or keyboard. Click **Play** to load the cartridge and **Eject** to return it to the box. Use **Skip to game**, reduced motion, or a direct link such as `play.html?game=jumbo-mini-golf` to reach the player without the insertion sequence. Choose **Start Game** to run the cartridge and enable browser audio.
 
 ## Publish with GitHub Desktop and Pages
 
@@ -39,11 +39,14 @@ Put web exports under `art/` and keep full-size masters outside the published di
 | `cover` | Box front and shelf tile, e.g. `./art/covers/jumbo-mini-golf.webp`. Keep the original title and clear the platform strip. |
 | `cartLabel` | Flat cartridge texture, e.g. `./art/labels/jumbo-mini-golf.webp`. A 3:2 landscape image works well. |
 | `backdrop` | Wide text-free play scene, e.g. `./art/backdrops/jumbo-mini-golf.webp`. It loads after the player is ready. |
+| `backdropFocus` | Optional horizontal crop position for phones, from `0` at the left edge to `100` at the right. |
 | `titleMark` | Optional transparent game wordmark. The player uses styled title text when this is empty. |
-| `shellVariant` | Cartridge silhouette and material. Start with `standard`, `survey` or `resin`. |
-| `machineTheme` | Bezel and slot palette. Start with `neutral`, `fairway` or `rootcellar`. A theme other than `neutral` enables the loading sequence. |
+| `blurb` | One or two sentences about actual gameplay, printed inside the case preview. |
+| `shellVariant` | Cartridge silhouette. Choose `standard`, `survey`, `resin`, `notched`, `chamfer` or `ribbed`. |
+| `shellColors` | The cartridge’s `top`, `plastic` and `edge` colors as six-digit CSS hex values. |
+| `machineTheme` | Optional bezel and slot palette. The shared player uses `neutral` by default. `fairway` and `rootcellar` are the original two themed machines. |
 
-Use a supplied theme with new images by editing just the catalog. Add a new palette in `slot.css` with a matching `data-machine-theme` selector. The shelf and player read the same theme tokens. The connector and insertion target are shared across shells. Keep the contact edge aligned if you introduce a new silhouette.
+Use a supplied theme with new images by editing the catalog. A `cartLabel` enables the loading sequence and gives the carousel its own label texture. Add a new machine palette in `slot.css` with a matching `data-machine-theme` selector. The shelf and player read the same theme tokens. `cartridge.css` defines the cartridge silhouettes and applies the shared ABS grain. Keep the contact edge aligned if you introduce a new silhouette.
 
 Preview the box, front label, and player on desktop and at phone width. Commit the optimized images and the catalog edit together, then push. The originals from the input ZIP and the new art masters are kept outside the published folder.
 
@@ -51,9 +54,10 @@ Preview the box, front label, and player on desktop and at phone width. Commit t
 
 | Path | Purpose |
 | --- | --- |
-| `index.html`, `shelf.css`, `shelf.js` | Clearance screen, box shelf and cartridge loading sequence |
+| `index.html`, `shelf.css`, `shelf.js` | Clearance screen, cartridge carousel, box previews and loading sequence |
 | `play.html`, `player.css`, `player.js` | Shared browser player |
 | `slot.css` | Shared hardware proportions and theme tokens |
+| `cartridge.css` | Shared cartridge material, geometry and label placement |
 | `catalog.json` | Shelf order, direct-link IDs, title, version, ROM paths and art |
 | `roms/` | Verified original GBA cartridges |
 | `emulator/` | Pinned EmulatorJS 4.2.3, mGBA and upstream notices |

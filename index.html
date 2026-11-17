@@ -15,6 +15,7 @@
     } catch {}
   </script>
   <link rel="stylesheet" href="./slot.css">
+  <link rel="stylesheet" href="./cartridge.css">
   <link rel="stylesheet" href="./shelf.css">
   <script src="./shelf.js" defer></script>
 </head>
@@ -51,9 +52,28 @@
           <h1 id="arcade-title" tabindex="-1">ZANG <span>ARCADE</span></h1>
           <p>Original game prototypes. Pick a box and play for free in your browser.</p>
         </div>
-        <div class="counter" id="counter" hidden>
-          <h2>On the counter</h2>
-          <ul class="featured-list" id="featured-list"></ul>
+        <div class="cartridge-gallery" id="cartridge-gallery" aria-hidden="true" hidden>
+          <div class="gallery-grid"></div>
+          <div class="gallery-shadow"></div>
+          <div class="gallery-scene">
+            <div class="gallery-float">
+              <div class="gallery-cartridge" id="gallery-cartridge"></div>
+            </div>
+          </div>
+        </div>
+        <div class="carousel-controls" id="carousel-controls" hidden>
+          <label for="carousel-select">Cartridge</label>
+          <div class="carousel-nav">
+            <button class="carousel-arrow" id="carousel-prev" type="button" aria-label="Previous cartridge">←</button>
+            <select id="carousel-select"></select>
+            <button class="carousel-arrow" id="carousel-next" type="button" aria-label="Next cartridge">→</button>
+          </div>
+          <div class="carousel-actions">
+            <a class="carousel-play" id="carousel-play">Play <span aria-hidden="true">↗</span></a>
+            <span class="carousel-meta" id="carousel-meta"></span>
+            <button class="carousel-motion" id="carousel-motion" type="button" aria-pressed="false" aria-label="Pause cartridge motion" title="Pause cartridge motion">Ⅱ</button>
+            <span class="visually-hidden" id="carousel-announcement" aria-live="polite"></span>
+          </div>
         </div>
       </section>
 
@@ -74,15 +94,23 @@
   </div>
 
   <template id="game-card-template">
-    <li>
+    <li class="game-item">
       <a class="game-card">
-        <span class="retail-box" aria-hidden="true">
-          <span class="retail-face">
-            <span class="box-fallback">
-              <span class="box-imprint">ZANG ARCADE</span>
-              <strong></strong>
+        <span class="retail-box">
+          <span class="case-tray" aria-hidden="true"></span>
+          <span class="case-content">
+            <span class="case-pocket" aria-hidden="true"><span class="case-cartridge"></span></span>
+            <span class="box-blurb" hidden></span>
+          </span>
+          <span class="case-lid" aria-hidden="true">
+            <span class="retail-face">
+              <span class="box-fallback">
+                <span class="box-imprint">ZANG ARCADE</span>
+                <strong></strong>
+              </span>
+              <img class="box-cover" alt="" hidden>
             </span>
-            <img class="box-cover" alt="" hidden>
+            <span class="case-inside"></span>
           </span>
         </span>
         <span class="game-info">
@@ -91,7 +119,28 @@
           <span class="game-action" aria-hidden="true">Play <span>→</span></span>
         </span>
       </a>
+      <button class="case-preview-button" type="button" aria-expanded="false">Preview</button>
     </li>
+  </template>
+
+  <template id="cartridge-template">
+    <span class="cartridge-model" aria-hidden="true">
+      <span class="cartridge-slab"></span>
+      <span class="cartridge-slab"></span>
+      <span class="cartridge-slab"></span>
+      <span class="cartridge-slab"></span>
+      <span class="cartridge-slab"></span>
+      <span class="cartridge-front">
+        <span class="cartridge-faceplate"></span>
+        <span class="cartridge-grip"></span>
+        <span class="cartridge-hardware"></span>
+        <span class="cartridge-label">
+          <span class="cartridge-label-title"></span>
+          <img class="cartridge-mark" alt="" hidden>
+        </span>
+        <span class="cartridge-connector"></span>
+      </span>
+    </span>
   </template>
 
   <dialog class="ritual" id="ritual" aria-labelledby="ritual-title">
@@ -124,14 +173,7 @@
           </div>
         </div>
       </div>
-      <div class="ritual-cart" id="ritual-cart">
-        <span class="ritual-cart-body"></span>
-        <span class="ritual-cart-label">
-          <span id="ritual-cart-title"></span>
-          <img id="ritual-cart-mark" alt="" hidden>
-        </span>
-        <span class="ritual-cart-contact"></span>
-      </div>
+      <div class="ritual-cart" id="ritual-cart"></div>
     </div>
     <p class="ritual-status" id="ritual-status" role="status"></p>
   </dialog>

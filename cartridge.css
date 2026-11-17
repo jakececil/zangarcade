@@ -1,0 +1,131 @@
+.cartridge-model {
+  --shell-top: #9ca278;
+  --shell-plastic: #586343;
+  --shell-edge: #263123;
+  --cartridge-shape: polygon(7% 0, 93% 0, 100% 9%, 100% 88%, 90% 100%, 10% 100%, 0 88%, 0 9%);
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.24;
+  transform-style: preserve-3d;
+}
+
+.cartridge-model[data-shell-variant='survey'] {
+  --cartridge-shape: polygon(10% 0, 90% 0, 95% 8%, 95% 17%, 100% 21%, 100% 88%, 90% 100%, 10% 100%, 0 88%, 0 21%, 5% 17%, 5% 8%);
+}
+
+.cartridge-model[data-shell-variant='resin'] {
+  --shell-top: #ba8151;
+  --shell-plastic: #8d4c2b;
+  --shell-edge: #3a251d;
+  --cartridge-shape: polygon(15% 0, 85% 0, 94% 6%, 98% 13%, 98% 25%, 100% 31%, 100% 91%, 90% 100%, 10% 100%, 0 91%, 0 31%, 2% 25%, 2% 13%, 6% 6%);
+}
+
+.cartridge-model[data-shell-variant='notched'] {
+  --cartridge-shape: polygon(8% 0, 92% 0, 100% 10%, 100% 29%, 94% 31%, 94% 45%, 100% 48%, 100% 88%, 90% 100%, 10% 100%, 0 88%, 0 48%, 6% 45%, 6% 31%, 0 29%, 0 10%);
+}
+
+.cartridge-model[data-shell-variant='chamfer'] {
+  --cartridge-shape: polygon(16% 0, 84% 0, 100% 22%, 100% 88%, 90% 100%, 10% 100%, 0 88%, 0 22%);
+}
+
+.cartridge-model[data-shell-variant='ribbed'] {
+  --cartridge-shape: polygon(7% 0, 24% 0, 27% 6%, 73% 6%, 76% 0, 93% 0, 100% 10%, 100% 88%, 90% 100%, 10% 100%, 0 88%, 0 10%);
+}
+
+.cartridge-slab, .cartridge-front, .cartridge-faceplate {
+  position: absolute;
+  inset: 0;
+}
+
+.cartridge-slab {
+  clip-path: var(--cartridge-shape);
+  background:
+    linear-gradient(118deg, #ffffff35, transparent 27%, #0004 73%, #0008 100%),
+    var(--shell-edge);
+  transform: translateZ(calc(var(--cartridge-depth, .48rem) * var(--layer, 0)));
+}
+
+.cartridge-slab:nth-child(2) { --layer: .2; }
+.cartridge-slab:nth-child(3) { --layer: .4; }
+.cartridge-slab:nth-child(4) { --layer: .6; }
+.cartridge-slab:nth-child(5) { --layer: .8; }
+
+.cartridge-front { transform: translateZ(var(--cartridge-depth, .48rem)); }
+
+.cartridge-faceplate {
+  clip-path: var(--cartridge-shape);
+  background:
+    url('./art/materials/abs-grain.webp') center / 122% auto repeat,
+    linear-gradient(142deg, #ffffff48, #ffffff05 38%, #0002 73%, #0008),
+    linear-gradient(164deg, var(--shell-top), var(--shell-plastic) 40%, var(--shell-edge));
+  background-blend-mode: soft-light, normal, normal;
+  box-shadow: inset 0 .25rem #ffffff38, inset .23rem 0 #ffffff32, inset -.28rem -.25rem #0d100db2;
+}
+
+.cartridge-grip {
+  position: absolute;
+  inset: 8.5% 20% auto;
+  height: 5.2%;
+  border: 1px solid #090d0780;
+  border-radius: .17rem;
+  background: repeating-linear-gradient(90deg, #0508058f 0 1px, #faf8d049 1px 2px, transparent 2px 5px), var(--shell-plastic);
+  box-shadow: 0 .04rem #e4f0cc37, inset 0 .12rem #0003;
+}
+
+.cartridge-model[data-shell-variant='ribbed'] .cartridge-grip {
+  inset-inline: 17%;
+  background-size: .38rem 100%;
+}
+
+.cartridge-hardware {
+  position: absolute;
+  inset: auto 5.5% 13%;
+  height: 6%;
+  background:
+    radial-gradient(circle, #d5d0af 0 7%, #181d14 11% 24%, #d5d0af85 26% 30%, #0c100b 33% 46%, transparent 52%) left center / 9% 100% no-repeat,
+    radial-gradient(circle, #d5d0af 0 7%, #181d14 11% 24%, #d5d0af85 26% 30%, #0c100b 33% 46%, transparent 52%) right center / 9% 100% no-repeat;
+}
+
+.cartridge-label {
+  position: absolute;
+  inset: 18% 13% 21%;
+  display: flex;
+  align-items: end;
+  overflow: hidden;
+  border: 1px solid #090c06;
+  border-radius: 4% / 5%;
+  background:
+    linear-gradient(165deg, #ffffff18, transparent 38%, #0408032b),
+    var(--cart-art, url('./art/arcade.png')) center / cover,
+    #a4ac88;
+  box-shadow: 0 0 0 .11rem #0a0e0999, 0 .15rem #d5ddba56, inset 0 0 0 1px #f8f8d433;
+}
+
+.cartridge-label-title {
+  display: block;
+  width: 100%;
+  max-height: 57%;
+  overflow: hidden;
+  padding: .3em .49em .29em;
+  background: linear-gradient(0deg, #0b0f08f4, #0b0f08a6 80%, #0b0f0805);
+  color: #fff5da;
+  font: 850 var(--label-size, .64rem)/1.06 var(--mono, Consolas, monospace);
+  letter-spacing: -.027em;
+  overflow-wrap: anywhere;
+  text-shadow: 0 1px 2px #000c;
+}
+
+.cartridge-mark { width: 100%; height: 42%; object-fit: contain; }
+
+.cartridge-connector {
+  position: absolute;
+  inset: auto 22% 4%;
+  height: 10%;
+  border: 1px solid #0b0d08;
+  border-radius: .14rem;
+  background:
+    repeating-linear-gradient(90deg, #2c2418 0 3%, #b9a261 3% 5%, #e0c878 5% 6%) center bottom / 92% 58% no-repeat,
+    linear-gradient(#252215, #090e07);
+  box-shadow: 0 .06rem #e3e4c143, inset 0 .12rem #0009;
+}
