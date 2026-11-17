@@ -6,7 +6,13 @@
       "version": "V2",
       "platform": "GBA",
       "rom": "./roms/JUMBO-MINI-GOLF-V2.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/jumbo-mini-golf.webp",
+      "cartLabel": "./art/labels/jumbo-mini-golf.webp",
+      "backdrop": "./art/backdrops/jumbo-mini-golf.webp",
+      "titleMark": null,
+      "shellVariant": "survey",
+      "machineTheme": "fairway"
     },
     {
       "id": "the-weather-engine",
@@ -14,7 +20,13 @@
       "version": "v0.1",
       "platform": "GBA",
       "rom": "./roms/TheWeatherEngine-v0.1.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/the-weather-engine.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "blamball",
@@ -22,7 +34,13 @@
       "version": "V2",
       "platform": "GBA",
       "rom": "./roms/ZANG-Blamball-V2.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/blamball.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "cats-cradle",
@@ -30,7 +48,13 @@
       "version": "V6",
       "platform": "GBA",
       "rom": "./roms/Cats-Cradle-V6.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/cats-cradle.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "garden-song",
@@ -38,7 +62,13 @@
       "version": "v0.1",
       "platform": "GBA",
       "rom": "./roms/Garden-song-v0.1.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/garden-song.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "gut-punch-lower-management",
@@ -46,7 +76,13 @@
       "version": "v2",
       "platform": "GBA",
       "rom": "./roms/Gut_Punch_Lower_Management_v2.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/gut-punch-lower-management.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "gut-punch-specimen-run",
@@ -54,7 +90,13 @@
       "version": "v0.7",
       "platform": "GBA",
       "rom": "./roms/Gut-Punch-Specimen-Run-v0.7.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/gut-punch-specimen-run.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "kingfisher",
@@ -62,7 +104,13 @@
       "version": "V10",
       "platform": "GBA",
       "rom": "./roms/Kingfisher-V10.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/kingfisher.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "landfill",
@@ -70,7 +118,13 @@
       "version": "V2",
       "platform": "GBA",
       "rom": "./roms/LANDFILL-V2.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/landfill.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "lighthouse-keeper",
@@ -78,7 +132,13 @@
       "version": "V1",
       "platform": "GBA",
       "rom": "./roms/Lighthouse-Keeper-V1.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/lighthouse-keeper.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "little-company",
@@ -86,7 +146,13 @@
       "version": "v0.3",
       "platform": "GBA",
       "rom": "./roms/ZANG-LittleCompany-v0.3.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/little-company.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "parasol",
@@ -94,7 +160,13 @@
       "version": "V1",
       "platform": "GBA",
       "rom": "./roms/Parasol-V1.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/parasol.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "riverbed",
@@ -102,7 +174,13 @@
       "version": "V8",
       "platform": "GBA",
       "rom": "./roms/RIVERBED-V8.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/riverbed.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "sugar-drum",
@@ -110,7 +188,13 @@
       "version": "V1",
       "platform": "GBA",
       "rom": "./roms/ZANG-Sugar-Drum-V1.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/sugar-drum.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "swamp-rocket",
@@ -118,7 +202,13 @@
       "version": "V7",
       "platform": "GBA",
       "rom": "./roms/Swamp-Rocket-V7.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/swamp-rocket.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "trashland-pinball",
@@ -126,7 +216,13 @@
       "version": "V2.1",
       "platform": "GBA",
       "rom": "./roms/TRASHLAND-PINBALL-V2.1.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/trashland-pinball.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "triple-giblet",
@@ -134,7 +230,13 @@
       "version": "V1",
       "platform": "GBA",
       "rom": "./roms/TripleGiblet-V1.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/triple-giblet.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     },
     {
       "id": "undergrowth-advance",
@@ -142,7 +244,13 @@
       "version": "v0.3.1",
       "platform": "GBA",
       "rom": "./roms/Undergrowth-Advance-v0.3.1.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/undergrowth-advance.webp",
+      "cartLabel": "./art/labels/undergrowth-advance.webp",
+      "backdrop": "./art/backdrops/undergrowth-advance.webp",
+      "titleMark": null,
+      "shellVariant": "resin",
+      "machineTheme": "rootcellar"
     },
     {
       "id": "zonk",
@@ -150,7 +258,13 @@
       "version": "V6.3.1",
       "platform": "GBA",
       "rom": "./roms/ZONK-V6.3.1.gba",
-      "status": "verified"
+      "status": "verified",
+      "cover": "./art/covers/zonk.webp",
+      "cartLabel": null,
+      "backdrop": null,
+      "titleMark": null,
+      "shellVariant": "standard",
+      "machineTheme": "neutral"
     }
   ]
 }

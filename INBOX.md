@@ -26,7 +26,7 @@ The first test used the supplied **Jumbo Mini Golf V2**. The requested V1 cartri
 | Undergrowth Advance | GBA | v0.3.1 | `Undergrowth-Advance-v0.3.1.gba` | Playable |
 | ZONK | GBA | V6.3.1 | `ZONK-V6.3.1.gba` | Playable |
 | Amber Term | PlayStation, per filename | v0.2-1 | `Amber-Term-PS1-v0.2-1.chd` | Held. PlayStation player not configured. |
-| Loose Ends | Platform unconfirmed, Mode 2 CD | v5 | `Loose-Ends-v5.chd` | Held. Confirm platform and core before release. |
+| Loose Ends | PlayStation, per supplied cover | v5 | `Loose-Ends-v5.chd` | Held. PlayStation player not configured. |
 
 Titles and versions follow the supplied filenames. The site retains the original ROM bytes and in-game credits.
 

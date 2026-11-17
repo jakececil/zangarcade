@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111217">
+  <meta name="theme-color" content="#151a14">
   <meta name="description" content="Play ZANG Arcade’s original game prototypes for free in your browser.">
   <title>ZANG Arcade</title>
   <link rel="icon" type="image/png" href="./art/zang.png">
@@ -14,6 +14,7 @@
       }
     } catch {}
   </script>
+  <link rel="stylesheet" href="./slot.css">
   <link rel="stylesheet" href="./shelf.css">
   <script src="./shelf.js" defer></script>
 </head>
@@ -41,58 +42,19 @@
   <div id="arcade" inert>
     <header class="site-header wrap">
       <a class="brand" href="./index.html"><span class="brand-mark" aria-hidden="true">Z</span> ZANG ARCADE</a>
-      <a class="shelf-link" href="#inventory">Game shelf <span aria-hidden="true">↓</span></a>
+      <a class="shelf-link" href="#inventory">Browse the shelf <span aria-hidden="true">↓</span></a>
     </header>
 
     <main class="wrap">
-      <section class="hero" aria-labelledby="arcade-title">
-        <div class="hero-copy">
+      <section class="masthead" aria-labelledby="arcade-title">
+        <div class="masthead-copy">
           <h1 id="arcade-title" tabindex="-1">ZANG <span>ARCADE</span></h1>
-          <p>Original game prototypes, free to play in your browser.</p>
-          <a class="play-feature" id="feature-play" href="#inventory">Browse games <span aria-hidden="true">↘</span></a>
+          <p>Original game prototypes. Pick a box and play for free in your browser.</p>
         </div>
-
-        <figure class="showcase" id="showcase" data-palette="gold" aria-label="Cartridge preview">
-          <div class="showcase-stage" aria-hidden="true">
-            <div class="showcase-orbit"></div>
-            <div class="cartridge-shadow"></div>
-            <div class="cartridge-fallback">
-              <div class="cartridge-label">
-                <div class="cartridge-art"></div>
-                <strong class="cartridge-title">ZANG Arcade</strong>
-                <span class="cartridge-version">Prototype collection</span>
-              </div>
-              <span class="cartridge-grip"></span>
-            </div>
-            <div class="cartridge-scene">
-              <div class="cartridge-float">
-                <div class="cartridge-spin">
-                  <div class="cartridge-face cartridge-front">
-                    <div class="cartridge-label">
-                      <div class="cartridge-art"></div>
-                      <strong class="cartridge-title">ZANG Arcade</strong>
-                      <span class="cartridge-version">Prototype collection</span>
-                    </div>
-                    <span class="cartridge-grip"></span>
-                  </div>
-                  <div class="cartridge-face cartridge-back"><span>Z</span></div>
-                  <div class="cartridge-face cartridge-side cartridge-left"></div>
-                  <div class="cartridge-face cartridge-side cartridge-right"></div>
-                  <div class="cartridge-face cartridge-edge cartridge-top"></div>
-                  <div class="cartridge-face cartridge-edge cartridge-bottom"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <figcaption class="showcase-controls">
-            <span class="preview-title" id="preview-title" aria-live="polite">Cartridge preview</span>
-            <div class="preview-buttons">
-              <button id="preview-motion" class="motion-button" type="button" aria-label="Pause cartridge rotation">Ⅱ</button>
-              <button id="preview-back" type="button" aria-label="Previous cartridge" disabled>←</button>
-              <button id="preview-next" type="button" aria-label="Next cartridge" disabled>→</button>
-            </div>
-          </figcaption>
-        </figure>
+        <div class="counter" id="counter" hidden>
+          <h2>On the counter</h2>
+          <ul class="featured-list" id="featured-list"></ul>
+        </div>
       </section>
 
       <section class="inventory" id="inventory" aria-labelledby="inventory-title">
@@ -110,5 +72,68 @@
       <a href="#arcade-title">Back to top <span aria-hidden="true">↑</span></a>
     </footer>
   </div>
+
+  <template id="game-card-template">
+    <li>
+      <a class="game-card">
+        <span class="retail-box" aria-hidden="true">
+          <span class="retail-face">
+            <span class="box-fallback">
+              <span class="box-imprint">ZANG ARCADE</span>
+              <strong></strong>
+            </span>
+            <img class="box-cover" alt="" hidden>
+          </span>
+        </span>
+        <span class="game-info">
+          <strong class="game-title"></strong>
+          <span class="game-meta"></span>
+          <span class="game-action" aria-hidden="true">Play <span>→</span></span>
+        </span>
+      </a>
+    </li>
+  </template>
+
+  <dialog class="ritual" id="ritual" aria-labelledby="ritual-title">
+    <header class="ritual-header">
+      <div>
+        <span class="ritual-overline" id="ritual-overline">Load cartridge</span>
+        <h2 id="ritual-title"></h2>
+      </div>
+      <a class="ritual-skip" id="ritual-skip" href="#inventory">Skip to game <span aria-hidden="true">→</span></a>
+    </header>
+    <div class="ritual-stage" id="ritual-stage" aria-hidden="true">
+      <div class="ritual-box" id="ritual-box">
+        <div class="ritual-box-inner">
+          <div class="ritual-tray"></div>
+          <div class="ritual-lid" id="ritual-lid">
+            <div class="ritual-lid-front"><span id="ritual-box-title"></span></div>
+            <div class="ritual-lid-back"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ritual-dock">
+        <div class="ritual-device-motion" id="ritual-device-motion">
+          <div class="slot-machine" id="ritual-machine">
+            <div class="slot-machine-top">
+              <span class="slot-badge">ZANG</span>
+              <div class="slot-mouth" id="ritual-slot"><span class="slot-loaded-cart"></span></div>
+              <span class="slot-led"></span>
+            </div>
+            <div class="slot-machine-front"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ritual-cart" id="ritual-cart">
+        <span class="ritual-cart-body"></span>
+        <span class="ritual-cart-label">
+          <span id="ritual-cart-title"></span>
+          <img id="ritual-cart-mark" alt="" hidden>
+        </span>
+        <span class="ritual-cart-contact"></span>
+      </div>
+    </div>
+    <p class="ritual-status" id="ritual-status" role="status"></p>
+  </dialog>
 </body>
 </html>

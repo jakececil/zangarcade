@@ -4,6 +4,9 @@ const player = document.getElementById("game");
 const viewport = document.getElementById("viewport");
 const standby = document.getElementById("standby");
 const gameTitle = document.getElementById("title");
+const titleMark = document.getElementById("title-mark");
+const worldBackdrop = document.getElementById("world-backdrop");
+const slotBridge = document.getElementById("slot-bridge");
 const consoleState = document.getElementById("console-state");
 const fullscreen = document.getElementById("fullscreen");
 const closeExpanded = document.getElementById("close-expanded");
@@ -20,6 +23,8 @@ const shareLayout = document.getElementById("share-layout");
 const clearLayout = document.getElementById("clear-layout");
 const layoutStatus = document.getElementById("layout-status");
 const pageFolder = new URL("./", location.href);
+const artFolder = new URL("./art/", pageFolder);
+const playParams = new URLSearchParams(location.search);
 const layoutKey = `zang-arcade:${pageFolder.pathname}:gba-controls-v1`;
 const commonKeys = {
   2: 16, // Select
@@ -59,6 +64,80 @@ function stableGameId(id) {
     hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
   }
   return (hash >>> 0) || 1;
+}
+
+function artworkPath(path) {
+  if (typeof path !== "string") return null;
+  try {
+    const resolved = new URL(path, pageFolder);
+    return resolved.origin === artFolder.origin && resolved.pathname.startsWith(artFolder.pathname)
+      ? resolved.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function revealArtwork(image, path, reveal = () => { image.hidden = false; }) {
+  if (!path) return;
+  image.addEventListener("load", reveal, { once: true });
+  image.src = path;
+}
+
+function scheduleBackdrop(path) {
+  if (!path) return;
+  const assignImage = () => revealArtwork(worldBackdrop, path, () => {
+    document.body.classList.add("has-backdrop");
+  });
+  if (typeof requestIdleCallback === "function") requestIdleCallback(assignImage, { timeout: 600 });
+  else setTimeout(assignImage, 0);
+}
+
+function playSlotArrival(theme, cartridgeLabel) {
+  if (playParams.get("from") !== "slot" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const dock = document.getElementById("incoming-machine");
+  dock.dataset.machineTheme = theme;
+  dock.dataset.loaded = "true";
+  revealArtwork(document.getElementById("incoming-label"), cartridgeLabel);
+  slotBridge.hidden = false;
+  slotBridge.addEventListener("animationend", event => {
+    if (event.target === slotBridge) slotBridge.hidden = true;
+  });
+  setTimeout(() => { slotBridge.hidden = true; }, 700);
+}
+
+function machineToken(value, fallback) {
+  return typeof value === "string" && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value) ? value : fallback;
+}
+
+function configureMachine(game) {
+  const theme = machineToken(game.machineTheme, "neutral");
+  const variant = machineToken(game.shellVariant, "standard");
+  document.body.dataset.machineTheme = theme;
+  document.body.dataset.shellVariant = variant;
+  const colors = getComputedStyle(document.body);
+  const browserColor = colors.getPropertyValue("--machine-browser-color").trim() || "#111217";
+  const emulatorColor = colors.getPropertyValue("--machine-emulator-color").trim() || "#516328";
+  document.querySelector('meta[name="theme-color"]').content = browserColor;
+
+  revealArtwork(titleMark, artworkPath(game.titleMark), () => {
+    titleMark.hidden = false;
+    gameTitle.classList.add("visually-hidden");
+  });
+
+  if (theme === "neutral") return emulatorColor;
+
+  document.body.classList.add("is-themed");
+  const eject = document.getElementById("eject");
+  eject.href = `./?eject=${encodeURIComponent(game.id)}`;
+  eject.hidden = false;
+  document.getElementById("console-cart").hidden = false;
+  document.querySelector(".console-hardware").hidden = false;
+
+  const label = artworkPath(game.cartLabel);
+  revealArtwork(document.getElementById("console-cart-label"), label);
+  playSlotArrival(theme, label);
+  return emulatorColor;
 }
 
 function setKeyboardBindings(controllers, preset) {
@@ -170,7 +249,7 @@ function configureToolbarKeyboard() {
   }
 }
 
-function startPlayer(game, romUrl) {
+function startPlayer(game, romUrl, emulatorColor) {
   if (document.body.dataset.playState !== "loading") return;
   const gameId = Number.isSafeInteger(game.emulatorId) && game.emulatorId > 0
     ? game.emulatorId
@@ -189,7 +268,7 @@ function startPlayer(game, romUrl) {
     // This release treats false as the switch to skip browser-locale detection.
     EJS_disableAutoLang: false,
     EJS_startOnLoaded: false,
-    EJS_color: "#516328",
+    EJS_color: emulatorColor,
     EJS_backgroundColor: "#080a0d",
     EJS_CacheLimit: 0,
     EJS_hideSettings: ["ejs_threads"],
@@ -201,6 +280,7 @@ function startPlayer(game, romUrl) {
       clearTimeout(bootTimer);
       standby.hidden = true;
       setState("ready", "Ready to start");
+      if (document.body.classList.contains("is-themed")) scheduleBackdrop(artworkPath(game.backdrop));
 
       const button = player.querySelector(".ejs_start_button");
       button.setAttribute("role", "button");
@@ -247,7 +327,7 @@ function startPlayer(game, romUrl) {
 }
 
 async function loadCartridge() {
-  const id = new URLSearchParams(location.search).get("game");
+  const id = playParams.get("game");
   if (!id) return showFailure("Choose a cartridge from the shelf to start playing.");
   if (location.protocol === "file:") return showFailure("Open the arcade through its local HTTP preview or GitHub Pages to play.");
 
@@ -280,7 +360,7 @@ async function loadCartridge() {
   document.getElementById("metadata").hidden = false;
   document.getElementById("core-name").hidden = false;
   controls.hidden = false;
-  startPlayer(game, rom);
+  startPlayer(game, rom, configureMachine(game));
 }
 
 function setExpanded(expanded) {

@@ -12,12 +12,12 @@ py -3 -m http.server 8765 --bind 127.0.0.1
 
 On macOS or Linux, use `python3 -m http.server 8765 --bind 127.0.0.1`. Visit `http://127.0.0.1:8765/` while the terminal is open. The browser needs HTTP to fetch the catalog, runtime and cartridges. The player works in a modern browser with WebAssembly enabled. No Node.js, package install, build, or BIOS is required.
 
-At the clearance screen, press or tap **4**. To open a game directly, use `play.html?game=jumbo-mini-golf` or `play.html?game=the-weather-engine` under the same site URL. Choose **Start Game** to run the cartridge and enable browser audio.
+At the clearance screen, press or tap **4**. Pick the Jumbo Mini Golf or Undergrowth Advance box to open it and load the cartridge. **Eject** on either player page returns to the box so you can load it again. **Skip to game**, reduced motion, and direct links land on the player without the insertion sequence. Use a link such as `play.html?game=jumbo-mini-golf`. Choose **Start Game** to run the cartridge and enable browser audio.
 
 ## Publish with GitHub Desktop and Pages
 
 1. Extract the full ZIP for a first install. If your clone already has the first build, extract the smaller update ZIP. In GitHub Desktop, select the `zangarcade` repository and use **Repository → Show in Explorer**. Copy the extracted files into the folder that contains `index.html` and `.nojekyll`, or into the root of the clone for a first install.
-2. In GitHub Desktop, check **Changes**, enter a commit summary such as `Update arcade controls and cartridge display`, and click **Commit to main**. If the toolbar shows **Publish repository**, use it and make the repository public for Pages on GitHub Free. If it shows **Push origin**, use that to upload the commit to the existing remote.
+2. In GitHub Desktop, check **Changes**, enter a commit summary such as `Update arcade artwork`, and click **Commit to main**. If the toolbar shows **Publish repository**, use it and make the repository public for Pages on GitHub Free. If it shows **Push origin**, use that to upload the commit to the existing remote.
 3. On the repository on GitHub, open **Settings → Pages**. Under **Build and deployment**, set **Source** to **Deploy from a branch**, **Branch** to **main**, and **Folder** to **/(root)**. Click **Save**. The bundled `.nojekyll` tells Pages to serve the static files as supplied.
 4. After the Pages job in **Actions** finishes, open **Settings → Pages → Visit site**. For `jakececil/zangarcade` the expected URL is `https://jakececil.github.io/zangarcade/`. Test the shelf, then open `play.html?game=jumbo-mini-golf` under that URL in a fresh tab and start the game. Share the `github.io` site URL.
 
@@ -30,28 +30,38 @@ At the clearance screen, press or tap **4**. To open a game directly, use `play.
 - **Touch and fullscreen.** Start the game by tapping on a touch browser. Use the on-screen controls or switch them on or off with **Touch controls** below the game. **Fullscreen** uses browser fullscreen where available and expands the play area to fill the viewport otherwise.
 - **Saves.** In-game save behavior depends on the prototype. **Save State** and **Load State** store and restore a snapshot on the same browser profile and site origin. **Export Save File** can back up compatible in-game saves. Preview and GitHub Pages have separate browser storage.
 
-## Replace a game label
+## Replace game art
 
-1. Drag an image, for example `jumbo-mini-golf.webp`, into the clone’s `art` folder. PNG or WebP works.
-2. In `catalog.json`, find the entry with `"id": "jumbo-mini-golf"` and add `"art": "./art/jumbo-mini-golf.webp",` immediately above its `status` line. Match the filename’s capitalization.
-3. Refresh the local shelf to check both the tile and the rotating cartridge. Commit the image and the catalog edit together, then push the change.
+Put web exports under `art/` and keep full-size masters outside the published directory. Edit the game’s entry in `catalog.json` and match the capitalization of the on-disk filenames.
 
-The current template centers, crops, and tints the image to fit both surfaces. Keep any important detail near the center. The game title and version are added by the site. For a fully textured cartridge, give the front, back, and any printed edges their own image files and map them to the cartridge geometry. A new cartridge shape will need matching geometry.
+| Catalog field | What it controls |
+| --- | --- |
+| `cover` | Box front and shelf tile, e.g. `./art/covers/jumbo-mini-golf.webp`. Keep the original title and clear the platform strip. |
+| `cartLabel` | Flat cartridge texture, e.g. `./art/labels/jumbo-mini-golf.webp`. A 3:2 landscape image works well. |
+| `backdrop` | Wide text-free play scene, e.g. `./art/backdrops/jumbo-mini-golf.webp`. It loads after the player is ready. |
+| `titleMark` | Optional transparent game wordmark. The player uses styled title text when this is empty. |
+| `shellVariant` | Cartridge silhouette and material. Start with `standard`, `survey` or `resin`. |
+| `machineTheme` | Bezel and slot palette. Start with `neutral`, `fairway` or `rootcellar`. A theme other than `neutral` enables the loading sequence. |
+
+Use a supplied theme with new images by editing just the catalog. Add a new palette in `slot.css` with a matching `data-machine-theme` selector. The shelf and player read the same theme tokens. The connector and insertion target are shared across shells. Keep the contact edge aligned if you introduce a new silhouette.
+
+Preview the box, front label, and player on desktop and at phone width. Commit the optimized images and the catalog edit together, then push. The originals from the input ZIP and the new art masters are kept outside the published folder.
 
 ## Add a cartridge
 
 | Path | Purpose |
 | --- | --- |
-| `index.html`, `shelf.css`, `shelf.js` | Clearance screen, shelf and rotating display cartridge |
+| `index.html`, `shelf.css`, `shelf.js` | Clearance screen, box shelf and cartridge loading sequence |
 | `play.html`, `player.css`, `player.js` | Shared browser player |
-| `catalog.json` | Shelf order, direct-link IDs, title, version and ROM paths |
+| `slot.css` | Shared hardware proportions and theme tokens |
+| `catalog.json` | Shelf order, direct-link IDs, title, version, ROM paths and art |
 | `roms/` | Verified original GBA cartridges |
 | `emulator/` | Pinned EmulatorJS 4.2.3, mGBA and upstream notices |
-| `art/` | Generic label artwork and optional game labels |
+| `art/` | Web-ready covers, labels and play scenes |
 | `INBOX.md` | Inventory and release checks |
 
 1. Check that the new file is an original cartridge intended for public distribution. Check versions and compare hashes when multiple copies are present. Leave BIOS, commercial ROMs, personal saves and unverified disc images out of the site folder.
-2. Copy the `.gba` into `roms/` and add its entry to `catalog.json`. Use a lowercase slug for its stable `id`, a display `title`, `version`, `platform: "GBA"`, and a relative `rom` path. An optional relative `art` path supplies label art. Keep an existing `id` when updating its ROM. Back up saves before swapping builds since snapshots may depend on the exact ROM and emulator version.
+2. Copy the `.gba` into `roms/` and add its entry to `catalog.json`. Use a lowercase slug for its stable `id`, a display `title`, `version`, `platform: "GBA"`, and a relative `rom` path. Set the art and theme fields above as assets become available. Keep an existing `id` when updating its ROM. Back up saves before swapping builds since snapshots may depend on the exact ROM and emulator version.
 3. On a local draft, set the catalog entry's `status` to `verified` for the smoke test. Open the direct link under HTTP, start the cartridge, wait for a rendered game screen, and check a game-specific input. Check sound and saves where the prototype supports them. If it fails, remove the draft entry and its ROM from the release and record the issue in `INBOX.md`.
 4. Commit and push the catalog, cartridge and any label together. Verify the direct link again on Pages. The same folder works at `/` and `/zang-arcade/`.
 

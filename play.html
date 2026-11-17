@@ -8,10 +8,27 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; connect-src 'self' blob:; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob: data:">
   <title>Player | ZANG Arcade</title>
   <link rel="icon" type="image/png" href="./art/zang.png">
+  <link rel="stylesheet" href="./slot.css">
   <link rel="stylesheet" href="./player.css">
   <script src="./player.js" defer></script>
 </head>
 <body data-play-state="loading">
+  <div class="world" aria-hidden="true">
+    <img id="world-backdrop" alt="" loading="lazy" decoding="async" fetchpriority="low">
+  </div>
+  <div class="slot-bridge" id="slot-bridge" aria-hidden="true" hidden>
+    <div class="player-slot">
+      <div class="slot-machine" id="incoming-machine">
+        <div class="slot-machine-top">
+          <span class="slot-badge">ZANG</span>
+          <div class="slot-mouth"></div>
+          <span class="slot-led"></span>
+        </div>
+        <div class="slot-machine-front"></div>
+      </div>
+      <div class="bridge-cart"><img id="incoming-label" alt="" decoding="async" hidden></div>
+    </div>
+  </div>
   <header class="topbar">
     <div class="shell topbar-inner">
       <a class="wordmark" href="./"><span aria-hidden="true">Z</span> ZANG ARCADE</a>
@@ -27,14 +44,21 @@
           <span id="version"></span>
         </div>
         <h1 id="title">Cartridge player</h1>
+        <img class="title-mark" id="title-mark" alt="" decoding="async" fetchpriority="low" hidden>
       </div>
-      <button class="action" type="button" id="fullscreen" hidden><span aria-hidden="true">⛶</span> Fullscreen</button>
+      <div class="heading-actions">
+        <a class="action eject" id="eject" href="./" hidden><span aria-hidden="true">⏏</span> Eject</a>
+        <button class="action" type="button" id="fullscreen" hidden><span aria-hidden="true">⛶</span> Fullscreen</button>
+      </div>
     </div>
 
     <section class="console" aria-label="Game player">
       <div class="console-bar">
         <span class="console-state" id="console-state" role="status">Preparing player</span>
-        <span class="core-name" id="core-name" hidden>EmulatorJS / mGBA</span>
+        <div class="console-identification">
+          <span class="core-name" id="core-name" hidden>EmulatorJS / mGBA</span>
+          <span class="console-cart" id="console-cart" hidden><img id="console-cart-label" alt="" decoding="async" hidden> Cartridge seated</span>
+        </div>
       </div>
       <div class="viewport" id="viewport">
         <div id="game" role="group" aria-label="Emulator screen"></div>
@@ -48,6 +72,11 @@
           </div>
         </section>
         <button class="action close-expanded" type="button" id="close-expanded" hidden>Exit expanded view</button>
+      </div>
+      <div class="console-hardware" aria-hidden="true" hidden>
+        <span class="hardware-fastener"></span>
+        <span class="hardware-vents"></span>
+        <span class="hardware-fastener"></span>
       </div>
     </section>
 
