@@ -1,0 +1,156 @@
+{
+  "games": [
+    {
+      "id": "jumbo-mini-golf",
+      "title": "Jumbo Mini Golf",
+      "version": "V2",
+      "platform": "GBA",
+      "rom": "./roms/JUMBO-MINI-GOLF-V2.gba",
+      "status": "verified"
+    },
+    {
+      "id": "the-weather-engine",
+      "title": "The Weather Engine",
+      "version": "v0.1",
+      "platform": "GBA",
+      "rom": "./roms/TheWeatherEngine-v0.1.gba",
+      "status": "verified"
+    },
+    {
+      "id": "blamball",
+      "title": "Blamball",
+      "version": "V2",
+      "platform": "GBA",
+      "rom": "./roms/ZANG-Blamball-V2.gba",
+      "status": "verified"
+    },
+    {
+      "id": "cats-cradle",
+      "title": "Cat’s Cradle",
+      "version": "V6",
+      "platform": "GBA",
+      "rom": "./roms/Cats-Cradle-V6.gba",
+      "status": "verified"
+    },
+    {
+      "id": "garden-song",
+      "title": "Garden Song",
+      "version": "v0.1",
+      "platform": "GBA",
+      "rom": "./roms/Garden-song-v0.1.gba",
+      "status": "verified"
+    },
+    {
+      "id": "gut-punch-lower-management",
+      "title": "Gut Punch: Lower Management",
+      "version": "v2",
+      "platform": "GBA",
+      "rom": "./roms/Gut_Punch_Lower_Management_v2.gba",
+      "status": "verified"
+    },
+    {
+      "id": "gut-punch-specimen-run",
+      "title": "Gut Punch: Specimen Run",
+      "version": "v0.7",
+      "platform": "GBA",
+      "rom": "./roms/Gut-Punch-Specimen-Run-v0.7.gba",
+      "status": "verified"
+    },
+    {
+      "id": "kingfisher",
+      "title": "Kingfisher",
+      "version": "V10",
+      "platform": "GBA",
+      "rom": "./roms/Kingfisher-V10.gba",
+      "status": "verified"
+    },
+    {
+      "id": "landfill",
+      "title": "Landfill",
+      "version": "V2",
+      "platform": "GBA",
+      "rom": "./roms/LANDFILL-V2.gba",
+      "status": "verified"
+    },
+    {
+      "id": "lighthouse-keeper",
+      "title": "Lighthouse Keeper",
+      "version": "V1",
+      "platform": "GBA",
+      "rom": "./roms/Lighthouse-Keeper-V1.gba",
+      "status": "verified"
+    },
+    {
+      "id": "little-company",
+      "title": "Little Company",
+      "version": "v0.3",
+      "platform": "GBA",
+      "rom": "./roms/ZANG-LittleCompany-v0.3.gba",
+      "status": "verified"
+    },
+    {
+      "id": "parasol",
+      "title": "Parasol",
+      "version": "V1",
+      "platform": "GBA",
+      "rom": "./roms/Parasol-V1.gba",
+      "status": "verified"
+    },
+    {
+      "id": "riverbed",
+      "title": "Riverbed",
+      "version": "V8",
+      "platform": "GBA",
+      "rom": "./roms/RIVERBED-V8.gba",
+      "status": "verified"
+    },
+    {
+      "id": "sugar-drum",
+      "title": "Sugar Drum",
+      "version": "V1",
+      "platform": "GBA",
+      "rom": "./roms/ZANG-Sugar-Drum-V1.gba",
+      "status": "verified"
+    },
+    {
+      "id": "swamp-rocket",
+      "title": "Swamp Rocket",
+      "version": "V7",
+      "platform": "GBA",
+      "rom": "./roms/Swamp-Rocket-V7.gba",
+      "status": "verified"
+    },
+    {
+      "id": "trashland-pinball",
+      "title": "Trashland Pinball",
+      "version": "V2.1",
+      "platform": "GBA",
+      "rom": "./roms/TRASHLAND-PINBALL-V2.1.gba",
+      "status": "verified"
+    },
+    {
+      "id": "triple-giblet",
+      "title": "Triple Giblet",
+      "version": "V1",
+      "platform": "GBA",
+      "rom": "./roms/TripleGiblet-V1.gba",
+      "status": "verified"
+    },
+    {
+      "id": "undergrowth-advance",
+      "title": "Undergrowth Advance",
+      "version": "v0.3.1",
+      "platform": "GBA",
+      "rom": "./roms/Undergrowth-Advance-v0.3.1.gba",
+      "status": "verified"
+    },
+    {
+      "id": "zonk",
+      "title": "ZONK",
+      "version": "V6.3.1",
+      "platform": "GBA",
+      "rom": "./roms/ZONK-V6.3.1.gba",
+      "status": "verified"
+    }
+  ]
+}

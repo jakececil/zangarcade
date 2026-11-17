@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en" data-clearance="closed">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111217">
+  <meta name="description" content="Play ZANG Arcade’s original game prototypes for free in your browser.">
+  <title>ZANG Arcade</title>
+  <link rel="icon" type="image/png" href="./art/zang.png">
+  <script>
+    try {
+      if (sessionStorage.getItem('zang-arcade-clearance') === '4') {
+        document.documentElement.dataset.clearance = 'open';
+      }
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="./shelf.css">
+  <script src="./shelf.js" defer></script>
+</head>
+<body>
+  <div class="clearance" id="clearance" role="dialog" aria-modal="true" aria-labelledby="clearance-title" aria-describedby="clearance-instruction">
+    <div class="clearance-panel">
+      <header class="clearance-header">
+        <span class="brand"><span class="brand-mark" aria-hidden="true">Z</span> ZANG ARCADE</span>
+        <span class="terminal-status">Access pending</span>
+      </header>
+      <div class="clearance-body">
+        <div>
+          <p class="eyebrow">Visitor clearance</p>
+          <h1 id="clearance-title">Clearance<br>required.</h1>
+          <p id="clearance-instruction">Press or tap <strong>4</strong> to enter the arcade.</p>
+        </div>
+        <button class="clearance-key" id="clearance-key" type="button" aria-label="4, enter arcade">
+          <span aria-hidden="true">4</span><span class="key-arrow" aria-hidden="true">↵</span>
+        </button>
+      </div>
+      <noscript><p class="clearance-noscript">Enable JavaScript to enter the arcade and play the games.</p></noscript>
+    </div>
+  </div>
+
+  <div id="arcade" inert>
+    <header class="site-header wrap">
+      <a class="brand" href="./index.html"><span class="brand-mark" aria-hidden="true">Z</span> ZANG ARCADE</a>
+      <a class="shelf-link" href="#inventory">Game shelf <span aria-hidden="true">↓</span></a>
+    </header>
+
+    <main class="wrap">
+      <section class="hero" aria-labelledby="arcade-title">
+        <div class="hero-copy">
+          <h1 id="arcade-title" tabindex="-1">ZANG <span>ARCADE</span></h1>
+          <p>Original game prototypes, free to play in your browser.</p>
+          <a class="play-feature" id="feature-play" href="#inventory">Browse games <span aria-hidden="true">↘</span></a>
+        </div>
+
+        <figure class="showcase" id="showcase" data-palette="gold" aria-label="Cartridge preview">
+          <div class="showcase-stage" aria-hidden="true">
+            <div class="showcase-orbit"></div>
+            <div class="cartridge-shadow"></div>
+            <div class="cartridge-fallback">
+              <div class="cartridge-label">
+                <div class="cartridge-art"></div>
+                <strong class="cartridge-title">ZANG Arcade</strong>
+                <span class="cartridge-version">Prototype collection</span>
+              </div>
+              <span class="cartridge-grip"></span>
+            </div>
+            <div class="cartridge-scene">
+              <div class="cartridge-float">
+                <div class="cartridge-spin">
+                  <div class="cartridge-face cartridge-front">
+                    <div class="cartridge-label">
+                      <div class="cartridge-art"></div>
+                      <strong class="cartridge-title">ZANG Arcade</strong>
+                      <span class="cartridge-version">Prototype collection</span>
+                    </div>
+                    <span class="cartridge-grip"></span>
+                  </div>
+                  <div class="cartridge-face cartridge-back"><span>Z</span></div>
+                  <div class="cartridge-face cartridge-side cartridge-left"></div>
+                  <div class="cartridge-face cartridge-side cartridge-right"></div>
+                  <div class="cartridge-face cartridge-edge cartridge-top"></div>
+                  <div class="cartridge-face cartridge-edge cartridge-bottom"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <figcaption class="showcase-controls">
+            <span class="preview-title" id="preview-title" aria-live="polite">Cartridge preview</span>
+            <div class="preview-buttons">
+              <button id="preview-motion" class="motion-button" type="button" aria-label="Pause cartridge rotation">Ⅱ</button>
+              <button id="preview-back" type="button" aria-label="Previous cartridge" disabled>←</button>
+              <button id="preview-next" type="button" aria-label="Next cartridge" disabled>→</button>
+            </div>
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="inventory" id="inventory" aria-labelledby="inventory-title">
+        <header class="inventory-header">
+          <h2 id="inventory-title">Game shelf</h2>
+          <p id="inventory-status" role="status">Loading games…</p>
+        </header>
+        <ul class="game-grid" id="game-grid"></ul>
+        <noscript><p>Enable JavaScript to load the game shelf.</p></noscript>
+      </section>
+    </main>
+
+    <footer class="site-footer wrap">
+      <span class="brand"><span class="brand-mark" aria-hidden="true">Z</span> ZANG ARCADE</span>
+      <a href="#arcade-title">Back to top <span aria-hidden="true">↑</span></a>
+    </footer>
+  </div>
+</body>
+</html>

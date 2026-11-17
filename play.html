@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111217">
+  <meta name="description" content="Play an original ZANG Arcade cartridge in your browser.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; connect-src 'self' blob:; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob: data:">
+  <title>Player | ZANG Arcade</title>
+  <link rel="icon" type="image/png" href="./art/zang.png">
+  <link rel="stylesheet" href="./player.css">
+  <script src="./player.js" defer></script>
+</head>
+<body data-play-state="loading">
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a class="wordmark" href="./"><span aria-hidden="true">Z</span> ZANG ARCADE</a>
+      <a class="shelf-link" href="./"><span aria-hidden="true">←</span> Back to the shelf</a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <div class="game-heading">
+      <div>
+        <div class="metadata" id="metadata" hidden>
+          <span id="platform"></span>
+          <span id="version"></span>
+        </div>
+        <h1 id="title">Cartridge player</h1>
+      </div>
+      <button class="action" type="button" id="fullscreen" hidden><span aria-hidden="true">⛶</span> Fullscreen</button>
+    </div>
+
+    <section class="console" aria-label="Game player">
+      <div class="console-bar">
+        <span class="console-state" id="console-state" role="status">Preparing player</span>
+        <span class="core-name" id="core-name" hidden>EmulatorJS / mGBA</span>
+      </div>
+      <div class="viewport" id="viewport">
+        <div id="game" role="group" aria-label="Emulator screen"></div>
+        <div class="standby" id="standby" aria-hidden="true"></div>
+        <section class="failure" id="failure" aria-labelledby="failure-heading" hidden>
+          <h2 id="failure-heading">Cartridge unavailable</h2>
+          <p id="failure-detail" role="alert"></p>
+          <div class="button-row">
+            <button class="action" type="button" id="retry" hidden>Reload player</button>
+            <a class="action" href="./">Back to the shelf</a>
+          </div>
+        </section>
+        <button class="action close-expanded" type="button" id="close-expanded" hidden>Exit expanded view</button>
+      </div>
+    </section>
+
+    <section class="controls" id="controls" aria-labelledby="controls-heading" hidden>
+      <div>
+        <h2 id="controls-heading">Controls</h2>
+        <p class="controls-caption">Player 1 keyboard</p>
+        <dl class="key-guide">
+          <div><dt>Move</dt><dd><kbd data-input="4">↑</kbd><kbd data-input="6">←</kbd><kbd data-input="5">↓</kbd><kbd data-input="7">→</kbd></dd></div>
+          <div><dt>A / B</dt><dd><kbd data-input="8">A</kbd><kbd data-input="0">D</kbd></dd></div>
+          <div><dt>L / R</dt><dd><kbd data-input="10">Q</kbd><kbd data-input="11">E</kbd></dd></div>
+          <div><dt>Select / Start</dt><dd><kbd data-input="2">Shift</kbd><kbd data-input="3">Enter</kbd></dd></div>
+          <div><dt>Hold to fast-forward</dt><dd><kbd data-input="27">4</kbd></dd></div>
+          <div><dt>Hold for slow motion</dt><dd><kbd data-input="29">5</kbd></dd></div>
+          <div><dt>Hold to rewind</dt><dd><kbd data-input="28">6</kbd></dd></div>
+        </dl>
+      </div>
+      <div class="controls-actions">
+        <p>Click the game to focus the keyboard. Press a button on a connected controller to activate it. Tap Start Game to play with touch controls on a phone.</p>
+        <div class="button-row keyboard-presets">
+          <label for="keyboard-profile">Keyboard preset</label>
+          <select class="action" id="keyboard-profile" disabled>
+            <option value="" disabled>Select a preset</option>
+            <option value="arrows" selected>Arrow keys</option>
+            <option value="wasd">WASD</option>
+          </select>
+          <button class="action" type="button" id="apply-keyboard-profile" disabled>Apply preset</button>
+        </div>
+        <div class="button-row">
+          <button class="action" type="button" id="remap" disabled>Remap controls</button>
+          <button class="action" type="button" id="touch-controls" aria-pressed="false" hidden>Touch controls</button>
+          <button class="action" type="button" id="share-layout" disabled>Use layout for all GBA games</button>
+          <button class="action" type="button" id="clear-layout" hidden>Stop sharing layout</button>
+        </div>
+        <p class="help" id="layout-status" role="status">Start the game to change keyboard and controller bindings.</p>
+      </div>
+    </section>
+
+    <footer class="footer" id="save-help" hidden>
+      Use <strong>Save State</strong> and <strong>Load State</strong> in the emulator toolbar to resume in this browser. In-game saves stay in this browser where the game supports them.
+    </footer>
+    <noscript><p>Enable JavaScript and reload this page to play.</p></noscript>
+  </main>
+</body>
+</html>
