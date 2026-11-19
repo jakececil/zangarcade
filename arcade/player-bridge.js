@@ -10,6 +10,7 @@ export function createPlayerBridge(player) {
   let lowering = false;
   let reading = false;
   let previousSave = "";
+  const touchPresses = new Map();
 
   function post(event, data = {}) {
     if (window.parent === window) return;
@@ -51,9 +52,30 @@ export function createPlayerBridge(player) {
   }
 
   function releaseInputs() {
+    for (const press of touchPresses.values()) clearTimeout(press.release);
+    touchPresses.clear();
     if (!emulator?.started) return;
     // Include native keyboard input which may lose its keyup when focus leaves the iframe.
     for (const input of INPUTS) emulator.gameManager.simulateInput(0, input, 0);
+  }
+
+  function touchInput(input, value) {
+    const previous = touchPresses.get(input);
+    if (value === 1) {
+      clearTimeout(previous?.release);
+      touchPresses.set(input, { started: performance.now() });
+      emulator.gameManager.simulateInput(0, input, 1);
+      return;
+    }
+    if (!previous || previous.release) return;
+    const release = () => {
+      touchPresses.delete(input);
+      emulator.gameManager.simulateInput(0, input, 0);
+    };
+    // A brief tap can arrive entirely between two emulated GBA frames.
+    const remaining = 65 - (performance.now() - previous.started);
+    if (remaining > 0) previous.release = setTimeout(release, remaining);
+    else release();
   }
 
   function pausePlayback() {
@@ -111,7 +133,7 @@ export function createPlayerBridge(player) {
       playing = true;
       player.focus({ preventScroll: true });
     } else if (command.action === "input" && playing && !lowering && INPUTS.has(command.input) && [0, 1].includes(command.value)) {
-      emulator.gameManager.simulateInput(0, command.input, command.value);
+      touchInput(command.input, command.value);
     }
   });
 
