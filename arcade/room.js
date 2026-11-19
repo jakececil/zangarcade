@@ -8,8 +8,12 @@ const SCREEN_CENTER = new THREE.Vector3(0, .08, .131);
 const CART_HOME = new THREE.Vector3(-1.53, 1.12, -.2);
 const POCKET = new THREE.Vector3(0, -1.42, -.92);
 const SLOT = new THREE.Vector3(0, .682, -.008);
+// The molded shell sits proud of the slot, with its contact tongue recessed.
+const AMBER_CART_SEAT = new THREE.Vector3(0, .804, -.008);
 const HOME_DOOR = new THREE.Vector3(0, 1.4, ENTRY_Z + 1.68);
 const GRATE_HOME = new THREE.Vector3(1.92, .015, -2.18);
+const UNDERSHELL = 'undergrowth-advance';
+const INSPECTION_BACKGROUND = new THREE.Color('#252922');
 
 export async function createRoom({ canvas, games, onInteract = () => {}, onTarget = () => {}, onScreenRect = () => {}, onMouseLook = () => {} }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'low-power' });
@@ -43,6 +47,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   let carriedGame;
   let exitDoor;
   let docked = false;
+  let inspecting = false;
+  let undergrowthAsset;
   let transitioning = false;
   let inputEnabled = true;
   let disposed = false;
@@ -224,23 +230,61 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function cartridgeModel(parent) {
     const model = new THREE.Group();
     parent.add(model);
+    const fallback = new THREE.Group();
+    model.add(fallback);
     const shell = material('#55909b', { map: wear, bumpMap: grain, bumpScale: .007, roughness: .42 });
     const board = new THREE.Group();
-    model.add(board);
+    fallback.add(board);
     box(.258, .217, .015, material('#27574c', { roughness: .74 }), board);
     box(.072, .083, .027, black, board, -.056, .033, .014);
     for (let pin = 0; pin < 9; pin++) box(.008, .051, .008, brass, board, -.081 + pin * .020, -.075, .015);
-    box(.318, .249, .05, shell, model);
-    box(.296, .02, .053, shell, model, 0, .109, 0);
-    box(.025, .13, .017, shell, model, -.151, .019, .025);
+    box(.318, .249, .05, shell, fallback);
+    box(.296, .02, .053, shell, fallback, 0, .109, 0);
+    box(.025, .13, .017, shell, fallback, -.151, .019, .025);
     const label = paper();
-    plane(.215, .132, label, model, .012, -.015, .027);
-    for (const x of [-.123, .123]) box(.015, .015, .008, brass, model, x, .082, .027);
-    return { model, shell, board, label };
+    plane(.215, .132, label, fallback, .012, -.015, .027);
+    for (const x of [-.123, .123]) box(.015, .015, .008, brass, fallback, x, .082, .027);
+    return { model, fallback, shell, board, label, asset: null, gameId: null };
+  }
+
+  function useUndergrowthAsset(parts) {
+    undergrowthAsset ??= import('./vendor/GLTFLoader.js')
+      .then(({ GLTFLoader }) => new GLTFLoader().loadAsync(new URL('./art/undergrowth-advance.glb', import.meta.url).href))
+      .then(({ scene: model }) => {
+        model.traverse(object => {
+          if (!object.isMesh) return;
+          geometries.add(object.geometry);
+          materials.add(object.material);
+          for (const value of Object.values(object.material)) {
+            if (value?.isTexture) textures.set(value.uuid, value);
+          }
+        });
+        return model;
+      })
+      .catch(error => {
+        console.warn('Undergrowth cartridge model could not be loaded.', error);
+        undergrowthAsset = undefined;
+      });
+    undergrowthAsset.then(model => {
+      if (!model || disposed || parts.gameId !== UNDERSHELL || parts.asset) return;
+      parts.asset = model.clone(true);
+      parts.asset.traverse(object => { object.layers.mask = parts.model.layers.mask; });
+      parts.model.add(parts.asset);
+      parts.fallback.visible = false;
+      requestRender();
+    });
   }
 
   function skinCartridge(parts, game) {
-    const translucent = game.id === 'undergrowth-advance';
+    if (parts.gameId === game.id) return;
+    parts.gameId = game.id;
+    const translucent = game.id === UNDERSHELL;
+    if (parts.asset) {
+      parts.asset.removeFromParent();
+      parts.asset = null;
+    }
+    parts.fallback.visible = true;
+    if (translucent) useUndergrowthAsset(parts);
     parts.shell.color.set(translucent ? '#ffab54' : game.shellColors?.plastic || '#55909b');
     parts.shell.opacity = translucent ? .48 : 1;
     parts.shell.transparent = translucent;
@@ -397,7 +441,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   function updateTarget() {
-    if (!inputEnabled || docked || transitioning) return emitTarget(null);
+    if (!inputEnabled || docked || transitioning || inspecting) return emitTarget(null);
     camera.getWorldDirection(forward);
     const candidates = currentGame ? [
       { id: 'exit', point: new THREE.Vector3(0, 1.62, profile.depth / 2 - .12), label: 'Return to corridor' }
@@ -437,7 +481,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   function updateMovement(delta) {
-    if (!inputEnabled || docked || transitioning) return;
+    if (!inputEnabled || docked || transitioning || inspecting) return;
     let x = externalMove.x + Number(keys.has('KeyD') || keys.has('ArrowRight')) - Number(keys.has('KeyA') || keys.has('ArrowLeft'));
     let z = externalMove.z + Number(keys.has('KeyW') || keys.has('ArrowUp')) - Number(keys.has('KeyS') || keys.has('ArrowDown'));
     const length = Math.hypot(x, z);
@@ -483,7 +527,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function dockPose() {
     const viewport = canvas.getBoundingClientRect();
     const widthLimit = viewport.width < 620 ? Math.max(240, viewport.width * .66) : Math.min(760, viewport.width - 90);
-    const desiredWidth = Math.min(widthLimit, viewport.width - 24, viewport.height * .98);
+    const heightLimit = carriedGame?.id === UNDERSHELL ? .83 : .98;
+    const desiredWidth = Math.min(widthLimit, viewport.width - 24, viewport.height * heightLimit);
     const distance = SCREEN_WIDTH * viewport.height / (2 * desiredWidth * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
     return new THREE.Vector3(0, -SCREEN_CENTER.y, -distance - SCREEN_CENTER.z);
   }
@@ -506,18 +551,22 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       const nearest = Math.max(0, Math.min(hallLights.length - 1, Math.round((2 - camera.position.z) / 5.2)));
       hallLights.forEach((light, index) => { light.visible = Math.abs(index - nearest) <= 1; });
     }
-    renderer.clear();
-    renderer.render(scene, camera);
-    renderer.clearDepth();
     const background = scene.background;
-    scene.background = null;
+    renderer.clear();
+    if (inspecting) {
+      scene.background = INSPECTION_BACKGROUND;
+    } else {
+      renderer.render(scene, camera);
+      renderer.clearDepth();
+      scene.background = null;
+    }
     camera.layers.set(1);
     renderer.render(scene, camera);
     camera.layers.set(0);
     scene.background = background;
     renderedFrames++;
     if (docked) emitScreenRect();
-    if (!docked || tweens.size) requestRender();
+    if ((!docked && !inspecting) || tweens.size) requestRender();
   }
 
   function tween(duration, update) {
@@ -540,6 +589,10 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     });
   }
 
+  function cartridgeSeat() {
+    return carriedGame?.id === UNDERSHELL ? AMBER_CART_SEAT : SLOT;
+  }
+
   function setCartState(state) {
     const normalized = ({ desk: 'on-desk', carried: 'held' })[state] || state;
     if (!['on-desk', 'held', 'inserted'].includes(normalized)) return;
@@ -552,7 +605,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       cartridge.traverse(object => object.layers.set(1));
     } else if (normalized === 'inserted') {
       handheld.add(cartridge);
-      cartridge.position.set(0, .681, -.008);
+      cartridge.position.copy(cartridgeSeat());
       cartridge.rotation.set(0, 0, 0);
       cartridge.traverse(object => object.layers.set(1));
     } else {
@@ -566,6 +619,38 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     keys.clear();
     externalMove = { x: 0, z: 0 };
     run = false;
+  }
+
+  function inspectionPose() {
+    const width = Math.min(.76, camera.aspect * .72);
+    cartridge.position.set(0, 0, -.39 / (2 * width * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))));
+  }
+
+  function inspectCartridge(enabled) {
+    if (enabled === inspecting) return true;
+    if (enabled && (!carriedGame || carriedGame.id !== UNDERSHELL || docked || transitioning)) return false;
+    inspecting = enabled;
+    drag = undefined;
+    clearInput();
+    if (enabled) {
+      releaseMouseLook();
+      camera.add(cartridge);
+      cartridge.traverse(object => object.layers.set(1));
+      cartridge.visible = true;
+      cartridge.rotation.set(-.12, .31, -.045);
+      inspectionPose();
+      emitTarget(null);
+    } else {
+      setCartState(cartState);
+    }
+    requestRender();
+    return true;
+  }
+
+  function turnCartridge() {
+    if (!inspecting) return;
+    cartridge.rotation.y += Math.PI;
+    requestRender();
   }
 
   async function performDock() {
@@ -585,7 +670,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       const initialPosition = cartridge.position.clone();
       const initialRotation = cartridge.quaternion.clone();
       handheld.updateMatrixWorld(true);
-      const socket = camera.worldToLocal(handheld.localToWorld(SLOT.clone()));
+      const socket = camera.worldToLocal(handheld.localToWorld(cartridgeSeat().clone()));
       const orientation = new THREE.Quaternion();
       await tween(515, amount => {
         cartridge.position.lerpVectors(initialPosition, socket, amount);
@@ -668,6 +753,12 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   function look(x, y) {
     if (!inputEnabled || docked || transitioning) return;
+    if (inspecting) {
+      cartridge.rotation.y += x * .012;
+      cartridge.rotation.x = THREE.MathUtils.clamp(cartridge.rotation.x + y * .012, -1.2, 1.2);
+      requestRender();
+      return;
+    }
     yaw -= x * .003;
     pitch = THREE.MathUtils.clamp(pitch - y * .003, -1.05, .8);
     updateCamera();
@@ -681,6 +772,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     camera.aspect = rect.width / rect.height;
     camera.updateProjectionMatrix();
     if (docked) handheld.position.copy(dockPose());
+    if (inspecting) inspectionPose();
     requestRender();
   }
 
@@ -690,7 +782,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   function toggleMouseLook() {
-    if (!inputEnabled || docked || transitioning) return;
+    if (!inputEnabled || docked || transitioning || inspecting) return;
     if (document.pointerLockElement === canvas) return releaseMouseLook();
     if (!canvas.requestPointerLock) return onMouseLook(false, 'Mouse look is unavailable. Drag the room to look.');
     canvas.focus({ preventScroll: true });
@@ -708,7 +800,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   function keydown(event) {
-    if (!inputEnabled || docked || transitioning || /INPUT|TEXTAREA|SELECT|BUTTON/.test(event.target.tagName)) return;
+    if (!inputEnabled || docked || transitioning || inspecting || /INPUT|TEXTAREA|SELECT|BUTTON/.test(event.target.tagName)) return;
     if (movementKeys.has(event.code)) {
       event.preventDefault();
       keys.add(event.code);
@@ -772,6 +864,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     setCollection,
     setRun(enabled) { run = Boolean(enabled); },
     pullBox,
+    inspectCartridge,
+    turnCartridge,
     toggleMouseLook,
     setFishCount: museum.setFishCount,
     dock,

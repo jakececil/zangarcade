@@ -22,6 +22,9 @@ const inventoryDialog = document.getElementById('inventory-dialog');
 const inventoryList = document.getElementById('inventory-list');
 const inventoryPlay = document.getElementById('inventory-play');
 const raiseButton = document.getElementById('raise-handheld');
+const inspectButton = document.getElementById('inspect-cartridge');
+const inspectHud = document.getElementById('inspect-hud');
+const closeInspection = document.getElementById('close-inspection');
 const runButton = document.getElementById('run-toggle');
 const locationName = document.getElementById('location-name');
 const shelfLink = document.getElementById('game-shelf');
@@ -64,6 +67,7 @@ function setMode(next) {
   mode = next;
   document.body.dataset.mode = next;
   roomHud.hidden = next !== 'room';
+  inspectHud.hidden = next !== 'inspect';
   playHud.hidden = !['docking', 'play', 'saving'].includes(next);
   updateInteraction();
 }
@@ -113,6 +117,7 @@ function updateInteraction() {
   interactButton.disabled = mode !== 'room' || !target || inventoryDialog.open;
   interactButton.textContent = target?.label || (!exhibit ? 'Approach a doorway' : exhibit === HOME ? 'Approach the shelf' : discovered.has(exhibit.id) ? 'Explore the exhibit' : 'Approach the cartridge');
   raiseButton.disabled = !cartridge || mode !== 'room';
+  inspectButton.hidden = cartridge?.id !== 'undergrowth-advance';
   raiseButton.setAttribute('aria-label', cartridge ? `Raise handheld with ${cartridge.title}` : 'Raise handheld');
 }
 
@@ -371,6 +376,19 @@ directory.addEventListener('change', () => changeExhibit(directory.value === HOM
 mouseLook.addEventListener('click', () => room.toggleMouseLook());
 inventoryToggle.addEventListener('click', toggleInventory);
 raiseButton.addEventListener('click', raiseHandheld);
+inspectButton.addEventListener('click', () => {
+  if (mode !== 'room' || !room.inspectCartridge(true)) return;
+  setRun(false);
+  setMode('inspect');
+  closeInspection.focus({ preventScroll: true });
+});
+function exitInspection() {
+  room.inspectCartridge(false);
+  setMode('room');
+  inspectButton.focus({ preventScroll: true });
+}
+closeInspection.addEventListener('click', exitInspection);
+document.getElementById('turn-cartridge').addEventListener('click', () => room.turnCartridge());
 runButton.addEventListener('click', () => {
   setRun(!running);
   canvas.focus({ preventScroll: true });
@@ -393,6 +411,7 @@ shelfLink.addEventListener('click', event => {
   }
 });
 window.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && mode === 'inspect') { event.preventDefault(); exitInspection(); return; }
   if (event.key === 'Escape' && mode === 'play') { event.preventDefault(); lowerHandheld(); }
   if (event.repeat || mode !== 'room' || event.target === directory) return;
   if (event.code === 'KeyI') { event.preventDefault(); toggleInventory(); }

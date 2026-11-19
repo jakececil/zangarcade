@@ -60,6 +60,14 @@ p { line-height: 1.5; }
 .pad-guide { position: absolute; inset: 13px; border: 1px solid #adcfac3d; border-radius: 50%; }
 .pad-thumb { position: absolute; left: 36px; top: 36px; width: 40px; height: 40px; border-radius: 50%; background: #b5d8b575; border: 1px solid #d9f0c773; }
 
+.inspect-hud { position: fixed; z-index: 3; inset: auto 16px max(20px, env(safe-area-inset-bottom)); display: grid; justify-items: center; gap: 12px; text-align: center; pointer-events: none; }
+.inspect-hud h2, .inspect-hud p { margin: 0; }
+.inspect-hud p { color: #d0c5ac; font-size: 14px; }
+.inspect-actions { display: flex; gap: 8px; }
+.inspect-actions button { padding-inline: 14px; pointer-events: auto; }
+body[data-mode='inspect'] #room { cursor: grab; }
+body[data-mode='inspect'] #room:active { cursor: grabbing; }
+
 #handheld-screen { position: fixed; z-index: 2; margin: 0; padding: 0; border: 0; background: #07110e; color-scheme: dark; }
 .play-hud { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
 .play-bar { position: absolute; top: calc(max(14px, env(safe-area-inset-top)) + 62px); inset-inline: 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }

@@ -37,6 +37,7 @@
       <button id="mouse-look" class="desktop-help" type="button" aria-pressed="false" title="Toggle mouse look (M)">Mouse look</button>
       <button id="inventory-toggle" type="button">Inventory <kbd>I</kbd></button>
       <button id="raise-handheld" type="button" disabled>Handheld <kbd>H</kbd></button>
+      <button id="inspect-cartridge" type="button" hidden>Inspect cartridge</button>
       <button id="run-toggle" type="button" aria-pressed="false">Run</button>
       <div class="progress" aria-live="polite"><span id="progress-label"></span><span id="save-warning" hidden></span></div>
     </div>
@@ -56,6 +57,17 @@
     <p id="inventory-empty">Find your first cartridge on an exhibit pedestal.</p>
     <div class="inventory-bottom"><button id="inventory-home" type="button">Living room</button><button id="inventory-play" class="primary" type="button" disabled>Raise handheld</button></div>
   </dialog>
+
+  <section id="inspect-hud" class="inspect-hud" aria-labelledby="inspect-title" hidden>
+    <div>
+      <h2 id="inspect-title">Undergrowth Advance</h2>
+      <p>Drag to rotate.</p>
+    </div>
+    <div class="inspect-actions">
+      <button id="turn-cartridge" type="button">Turn over</button>
+      <button id="close-inspection" type="button">Back to room <kbd>Esc</kbd></button>
+    </div>
+  </section>
 
   <section id="play-hud" class="play-hud" aria-label="Handheld controls" hidden>
     <div class="play-bar">
