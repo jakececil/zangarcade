@@ -1,6 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import { ENTRY_Z, museumGeometry } from './museum-geometry.js';
 import { HOME, buildGuts, mazeWalls, roomProfile } from './guts.js';
+import { loadCartridgeAsset } from './cartridge-assets.js';
 
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
@@ -9,7 +10,7 @@ const CART_HOME = new THREE.Vector3(-1.53, 1.12, -.2);
 const POCKET = new THREE.Vector3(0, -1.42, -.92);
 const SLOT = new THREE.Vector3(0, .682, -.008);
 // The molded shell sits proud of the slot, with its contact tongue recessed.
-const AMBER_CART_SEAT = new THREE.Vector3(0, .804, -.008);
+const MODEL_CART_SEAT = new THREE.Vector3(0, .804, -.008);
 const HOME_DOOR = new THREE.Vector3(0, 1.4, ENTRY_Z + 1.68);
 const GRATE_HOME = new THREE.Vector3(1.92, .015, -2.18);
 const UNDERSHELL = 'undergrowth-advance';
@@ -48,7 +49,6 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   let exitDoor;
   let docked = false;
   let inspecting = false;
-  let undergrowthAsset;
   let transitioning = false;
   let inputEnabled = true;
   let disposed = false;
@@ -178,6 +178,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   const pedestal = new THREE.Group();
+  pedestal.visible = false;
   exhibit.add(pedestal);
   box(.78, .13, .65, darkMetal, pedestal, 0, .91, 0);
   box(.63, .045, .54, brass, pedestal, 0, .985, 0);
@@ -247,32 +248,15 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     return { model, fallback, shell, board, label, asset: null, gameId: null };
   }
 
-  function useUndergrowthAsset(parts) {
-    undergrowthAsset ??= import('./vendor/GLTFLoader.js')
-      .then(({ GLTFLoader }) => new GLTFLoader().loadAsync(new URL('./art/undergrowth-advance.glb', import.meta.url).href))
-      .then(({ scene: model }) => {
-        model.traverse(object => {
-          if (!object.isMesh) return;
-          geometries.add(object.geometry);
-          materials.add(object.material);
-          for (const value of Object.values(object.material)) {
-            if (value?.isTexture) textures.set(value.uuid, value);
-          }
-        });
-        return model;
-      })
-      .catch(error => {
-        console.warn('Undergrowth cartridge model could not be loaded.', error);
-        undergrowthAsset = undefined;
-      });
-    undergrowthAsset.then(model => {
-      if (!model || disposed || parts.gameId !== UNDERSHELL || parts.asset) return;
+  function useCartridgeAsset(parts, game) {
+    loadCartridgeAsset(game.cartridgeModel).then(model => {
+      if (disposed || parts.gameId !== game.id || parts.asset) return;
       parts.asset = model.clone(true);
       parts.asset.traverse(object => { object.layers.mask = parts.model.layers.mask; });
       parts.model.add(parts.asset);
       parts.fallback.visible = false;
       requestRender();
-    });
+    }).catch(error => console.warn('Cartridge model could not be loaded.', error));
   }
 
   function skinCartridge(parts, game) {
@@ -284,7 +268,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       parts.asset = null;
     }
     parts.fallback.visible = true;
-    if (translucent) useUndergrowthAsset(parts);
+    if (game.cartridgeModel) useCartridgeAsset(parts, game);
     parts.shell.color.set(translucent ? '#ffab54' : game.shellColors?.plastic || '#55909b');
     parts.shell.opacity = translucent ? .48 : 1;
     parts.shell.transparent = translucent;
@@ -297,12 +281,16 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   const displayCart = cartridgeModel(pedestal);
+  displayCart.model.visible = false;
   displayCart.model.position.set(0, 1.20, 0);
   displayCart.model.rotation.set(-.22, .21, -.08);
   displayCart.model.scale.setScalar(1.6);
   const carriedCart = cartridgeModel(camera);
   const cartridge = carriedCart.model;
   cartridge.visible = false;
+  const inspectionCart = cartridgeModel(camera);
+  const inspectedModel = inspectionCart.model;
+  inspectedModel.visible = false;
 
   // The grate is visibly horizontal and hinged at its far edge.
   const grateObjects = new THREE.Group();
@@ -379,7 +367,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     boxed = shelved;
     canStore = [...found].some(id => !boxed.has(id));
     guts.setShelf(boxed);
-    pedestal.visible = Boolean(currentGame && currentGame !== HOME && !found.has(currentGame.id));
+    displayCart.model.visible = Boolean(currentGame && currentGame !== HOME && !found.has(currentGame.id));
     updateTarget();
   }
 
@@ -395,7 +383,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     guts.home.visible = game === HOME;
     guts.maze.visible = game?.id === 'zonk';
     museum.installation.visible = Boolean(game && game !== HOME);
-    pedestal.visible = Boolean(game && game !== HOME && !found.has(game.id));
+    pedestal.visible = Boolean(game && game !== HOME);
+    displayCart.model.visible = pedestal.visible && !found.has(game.id);
     grateObjects.visible = game?.id === 'kingfisher';
     grateLight.visible = grateObjects.visible;
     if (game) {
@@ -455,7 +444,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     }
     if (currentGame?.id === 'zonk') candidates.push({ id: 'guide', point: new THREE.Vector3(-3.75, .94, 3.15), label: 'Talk to the maze keeper' });
     if (currentGame?.id === 'kingfisher') candidates.push({ id: 'grate', point: GRATE_HOME, label: grateOpen ? 'Inspect open grate' : 'Inspect locked grate' });
-    if (pedestal.visible) candidates.push({ id: 'cart', point: CART_HOME, label: `Pick up ${currentGame.title}` });
+    if (displayCart.model.visible) candidates.push({ id: 'cart', point: CART_HOME, label: `Pick up ${currentGame.title}` });
+    else if (pedestal.visible && currentGame.cartridgeModel) candidates.push({ id: 'inspect-cart', point: CART_HOME, label: `Inspect ${currentGame.title}` });
     let selected = null;
     let score = -Infinity;
     for (const item of candidates) {
@@ -527,7 +517,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function dockPose() {
     const viewport = canvas.getBoundingClientRect();
     const widthLimit = viewport.width < 620 ? Math.max(240, viewport.width * .66) : Math.min(760, viewport.width - 90);
-    const heightLimit = carriedGame?.id === UNDERSHELL ? .83 : .98;
+    const heightLimit = carriedGame?.cartridgeModel ? .83 : .98;
     const desiredWidth = Math.min(widthLimit, viewport.width - 24, viewport.height * heightLimit);
     const distance = SCREEN_WIDTH * viewport.height / (2 * desiredWidth * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
     return new THREE.Vector3(0, -SCREEN_CENTER.y, -distance - SCREEN_CENTER.z);
@@ -590,7 +580,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   function cartridgeSeat() {
-    return carriedGame?.id === UNDERSHELL ? AMBER_CART_SEAT : SLOT;
+    return carriedGame?.cartridgeModel ? MODEL_CART_SEAT : SLOT;
   }
 
   function setCartState(state) {
@@ -623,25 +613,25 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   function inspectionPose() {
     const width = Math.min(.76, camera.aspect * .72);
-    cartridge.position.set(0, 0, -.39 / (2 * width * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))));
+    inspectedModel.position.set(0, 0, -.43 / (2 * width * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))));
   }
 
-  function inspectCartridge(enabled) {
-    if (enabled === inspecting) return true;
-    if (enabled && (!carriedGame || carriedGame.id !== UNDERSHELL || docked || transitioning)) return false;
-    inspecting = enabled;
+  function inspectCartridge(game) {
+    if (game && (!game.cartridgeModel || docked || transitioning)) return false;
+    inspecting = Boolean(game);
     drag = undefined;
     clearInput();
-    if (enabled) {
+    if (game) {
       releaseMouseLook();
-      camera.add(cartridge);
-      cartridge.traverse(object => object.layers.set(1));
-      cartridge.visible = true;
-      cartridge.rotation.set(-.12, .31, -.045);
+      inspectedModel.traverse(object => object.layers.set(1));
+      skinCartridge(inspectionCart, game);
+      inspectedModel.visible = true;
+      inspectedModel.rotation.set(-.09, .19, 0);
       inspectionPose();
       emitTarget(null);
     } else {
-      setCartState(cartState);
+      inspectedModel.visible = false;
+      updateTarget();
     }
     requestRender();
     return true;
@@ -649,7 +639,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   function turnCartridge() {
     if (!inspecting) return;
-    cartridge.rotation.y += Math.PI;
+    inspectedModel.rotation.y += Math.PI;
     requestRender();
   }
 
@@ -754,8 +744,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function look(x, y) {
     if (!inputEnabled || docked || transitioning) return;
     if (inspecting) {
-      cartridge.rotation.y += x * .012;
-      cartridge.rotation.x = THREE.MathUtils.clamp(cartridge.rotation.x + y * .012, -1.2, 1.2);
+      inspectedModel.rotation.y += x * .012;
+      inspectedModel.rotation.x = THREE.MathUtils.clamp(inspectedModel.rotation.x + y * .012, -1.2, 1.2);
       requestRender();
       return;
     }

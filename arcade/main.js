@@ -24,6 +24,7 @@ const inventoryPlay = document.getElementById('inventory-play');
 const raiseButton = document.getElementById('raise-handheld');
 const inspectButton = document.getElementById('inspect-cartridge');
 const inspectHud = document.getElementById('inspect-hud');
+const inspectTitle = document.getElementById('inspect-title');
 const closeInspection = document.getElementById('close-inspection');
 const runButton = document.getElementById('run-toggle');
 const locationName = document.getElementById('location-name');
@@ -117,8 +118,15 @@ function updateInteraction() {
   interactButton.disabled = mode !== 'room' || !target || inventoryDialog.open;
   interactButton.textContent = target?.label || (!exhibit ? 'Approach a doorway' : exhibit === HOME ? 'Approach the shelf' : discovered.has(exhibit.id) ? 'Explore the exhibit' : 'Approach the cartridge');
   raiseButton.disabled = !cartridge || mode !== 'room';
-  inspectButton.hidden = cartridge?.id !== 'undergrowth-advance';
+  const inspectable = inspectionChoice();
+  inspectButton.hidden = !inspectable;
+  if (inspectable) inspectButton.setAttribute('aria-label', `Inspect ${inspectable.title} cartridge`);
   raiseButton.setAttribute('aria-label', cartridge ? `Raise handheld with ${cartridge.title}` : 'Raise handheld');
+}
+
+function inspectionChoice() {
+  if (cartridge?.cartridgeModel) return cartridge;
+  if (exhibit?.cartridgeModel && discovered.has(exhibit.id)) return exhibit;
 }
 
 function setRun(enabled) {
@@ -283,6 +291,7 @@ async function interact(id) {
   if (id.startsWith('door:')) changeExhibit(games.get(id.slice(5)));
   else if (id === 'home') changeExhibit(HOME);
   else if (id === 'exit') changeExhibit(undefined);
+  else if (id === 'inspect-cart') openInspection(exhibit);
   else if (id === 'cart' && exhibit && !discovered.has(exhibit.id)) {
     unlockAudio();
     discovered.add(exhibit.id);
@@ -376,16 +385,18 @@ directory.addEventListener('change', () => changeExhibit(directory.value === HOM
 mouseLook.addEventListener('click', () => room.toggleMouseLook());
 inventoryToggle.addEventListener('click', toggleInventory);
 raiseButton.addEventListener('click', raiseHandheld);
-inspectButton.addEventListener('click', () => {
-  if (mode !== 'room' || !room.inspectCartridge(true)) return;
+inspectButton.addEventListener('click', () => openInspection(inspectionChoice()));
+function openInspection(game) {
+  if (!game || mode !== 'room' || !room.inspectCartridge(game)) return;
   setRun(false);
+  inspectTitle.textContent = game.title;
   setMode('inspect');
   closeInspection.focus({ preventScroll: true });
-});
+}
 function exitInspection() {
-  room.inspectCartridge(false);
+  room.inspectCartridge();
   setMode('room');
-  inspectButton.focus({ preventScroll: true });
+  canvas.focus({ preventScroll: true });
 }
 closeInspection.addEventListener('click', exitInspection);
 document.getElementById('turn-cartridge').addEventListener('click', () => room.turnCartridge());

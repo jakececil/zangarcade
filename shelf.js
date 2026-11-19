@@ -8,6 +8,8 @@ const siteDirectory = new URL('./', document.baseURI);
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const gallery = document.getElementById('cartridge-gallery');
 const galleryCartridge = document.getElementById('gallery-cartridge');
+const galleryMesh = document.getElementById('gallery-mesh');
+const carouselTurn = document.getElementById('carousel-turn');
 const carouselMachine = document.getElementById('carousel-machine');
 const machineArt = document.getElementById('machine-art');
 const carouselSelect = document.getElementById('carousel-select');
@@ -45,6 +47,9 @@ let selectedIndex = 0;
 let previewEntry;
 let pendingPreview;
 let previewTimer;
+let meshView;
+let meshViewer;
+let meshSelection = 0;
 
 function openArcade(moveFocus) {
   document.documentElement.dataset.clearance = 'open';
@@ -158,12 +163,33 @@ function selectCartridge(index) {
   selectedIndex = (index + count) % count;
   const game = carouselGames[selectedIndex];
   galleryCartridge.replaceChildren(buildCartridge(game));
+  showGalleryModel(game);
   gallery.style.setProperty('--gallery-glow', shellColor(game, 'top') || '#b4be78');
   carouselSelect.value = String(selectedIndex);
   carouselPlay.href = playLink(game);
   carouselPlay.setAttribute('aria-label', 'Play ' + game.title);
   carouselMeta.textContent = (selectedIndex + 1) + ' / ' + count + ' · Prototype ' + game.version;
   carouselAnnouncement.textContent = game.title + ', cartridge ' + (selectedIndex + 1) + ' of ' + count;
+}
+
+async function showGalleryModel(game) {
+  const version = ++meshSelection;
+  meshView?.hide();
+  delete gallery.dataset.mesh;
+  carouselTurn.hidden = true;
+  if (!localAsset(game.cartridgeModel)) return;
+  try {
+    meshViewer ??= import('./shelf-cartridge-view.js').then(({ createShelfCartridgeView }) => {
+      meshView = createShelfCartridgeView(galleryMesh, { isPaused: () => gallery.dataset.paused === 'true', reducedMotion: reduceMotion });
+      return meshView;
+    });
+    const view = await meshViewer;
+    if (version !== meshSelection || !await view.show(game.cartridgeModel) || version !== meshSelection) return;
+    gallery.dataset.mesh = 'true';
+    carouselTurn.hidden = false;
+  } catch {
+    // The existing cartridge art stays in the display if WebGL or the model is unavailable.
+  }
 }
 
 function clearPreviewTimer() {
@@ -451,6 +477,7 @@ window.addEventListener('pagehide', () => { closeRitual(false); });
 carouselPrevious.addEventListener('click', () => selectCartridge(selectedIndex - 1));
 carouselNext.addEventListener('click', () => selectCartridge(selectedIndex + 1));
 carouselSelect.addEventListener('change', () => selectCartridge(Number(carouselSelect.value)));
+carouselTurn.addEventListener('click', () => meshView?.turn());
 connectPlay(carouselPlay, () => carouselGames[selectedIndex]);
 
 carouselMotion.addEventListener('click', () => {
@@ -458,7 +485,9 @@ carouselMotion.addEventListener('click', () => {
   gallery.dataset.paused = String(paused);
   carouselMotion.setAttribute('aria-pressed', String(paused));
   carouselMotion.title = paused ? 'Resume cartridge motion' : 'Pause cartridge motion';
+  carouselMotion.setAttribute('aria-label', carouselMotion.title);
   carouselMotion.textContent = paused ? '▶' : 'Ⅱ';
+  meshView?.invalidate();
 });
 
 document.addEventListener('pointerdown', (event) => {
@@ -509,10 +538,9 @@ async function loadShelf() {
     carouselSelect.replaceChildren(...games.map((game, index) => new Option(game.title, index)));
     carouselPrevious.disabled = count < 2;
     carouselNext.disabled = count < 2;
-    selectCartridge(0);
-    carouselMachine.hidden = false;
-
     const request = new URL(window.location.href);
+    selectCartridge(Math.max(0, games.findIndex(game => game.id === request.searchParams.get('cart'))));
+    carouselMachine.hidden = false;
     if (request.searchParams.has('eject')) {
       const ejectedIndex = games.findIndex((game) => game.id === request.searchParams.get('eject') && hasRitual(game));
       request.searchParams.delete('eject');

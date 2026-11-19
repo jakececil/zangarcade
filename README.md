@@ -38,6 +38,7 @@ Put web exports under `art/` and keep full-size masters outside the published di
 | --- | --- |
 | `cover` | Box front and shelf tile, e.g. `./art/covers/jumbo-mini-golf.webp`. Keep the original title and clear the platform strip. |
 | `cartLabel` | Flat cartridge texture, e.g. `./art/labels/jumbo-mini-golf.webp`. A 3:2 landscape image works well. |
+| `cartridgeModel` | Optional GLB used by the shelf carousel and museum. Use +Y up and +Z toward the front. Use the ZONK or Undergrowth model as the connector and slot reference. |
 | `backdrop` | Wide text-free play scene, e.g. `./art/backdrops/jumbo-mini-golf.webp`. It loads after the player is ready. |
 | `backdropFocus` | Optional horizontal crop position for phones, from `0` at the left edge to `100` at the right. |
 | `titleMark` | Optional transparent game wordmark. The player uses styled title text when this is empty. |
