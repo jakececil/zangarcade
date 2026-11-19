@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.js';
+import { ENTRY_Z, museumGeometry } from './museum-geometry.js';
 
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
@@ -8,7 +9,7 @@ const HANDHELD_REST_SCALE = .65;
 const CART_HOME = new THREE.Vector3(-1.53, 1.12, -.2);
 const GRATE_HOME = new THREE.Vector3(1.92, .015, -2.18);
 
-export async function createRoom({ canvas, onInteract = () => {}, onTarget = () => {}, onScreenRect = () => {} }) {
+export async function createRoom({ canvas, games, onInteract = () => {}, onTarget = () => {}, onScreenRect = () => {}, onMouseLook = () => {} }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -17,6 +18,8 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   renderer.autoClear = false;
 
   const scene = new THREE.Scene();
+  const exhibit = new THREE.Group();
+  scene.add(exhibit);
   scene.background = new THREE.Color('#131b1a');
   scene.fog = new THREE.Fog('#172322', 5, 13);
   const camera = new THREE.PerspectiveCamera(58, 1, .025, 24);
@@ -27,6 +30,9 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   let yaw = 0;
   let pitch = -.17;
   let cartState = 'on-desk';
+  let currentGame;
+  let carriedGame;
+  let exitDoor;
   let docked = false;
   let transitioning = false;
   let inputEnabled = true;
@@ -43,7 +49,7 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   const keys = new Set();
   const tweens = new Set();
   const materials = new Set();
-  const textures = new Set();
+  const textures = new Map();
   const geometries = new Set();
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const loader = new THREE.TextureLoader();
@@ -90,12 +96,15 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   }
 
   function texture(path, repeat = 1) {
-    const result = loader.load(new URL(path, import.meta.url).href, () => requestRender(), undefined, () => requestRender());
+    const url = new URL(path, import.meta.url).href;
+    const key = `${url}:${repeat}`;
+    if (textures.has(key)) return textures.get(key);
+    const result = loader.load(url, () => requestRender(), undefined, () => requestRender());
     result.colorSpace = THREE.SRGBColorSpace;
     result.wrapS = result.wrapT = THREE.RepeatWrapping;
     result.repeat.set(repeat, repeat);
     result.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
-    textures.add(result);
+    textures.set(key, result);
     return result;
   }
 
@@ -126,30 +135,30 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   grateLight.position.set(2.05, .12, -2.25);
   scene.add(grateLight);
 
-  box(6.5, .16, 7.7, floor, scene, 0, -.11, 0);
-  box(6.5, 3.2, .14, wall, scene, 0, 1.6, -3.87);
-  box(.14, 3.2, 7.7, wall, scene, -3.27, 1.6, 0);
-  box(.14, 3.2, 7.7, wall, scene, 3.27, 1.6, 0);
-  box(6.5, 3.2, .14, wall, scene, 0, 1.6, 3.87);
-  box(6.5, .12, 7.7, plaster, scene, 0, 3.26, 0);
+  box(6.5, .16, 7.7, floor, exhibit, 0, -.11, 0);
+  box(6.5, 3.2, .14, wall, exhibit, 0, 1.6, -3.87);
+  box(.14, 3.2, 7.7, wall, exhibit, -3.27, 1.6, 0);
+  box(.14, 3.2, 7.7, wall, exhibit, 3.27, 1.6, 0);
+  box(6.5, 3.2, .14, wall, exhibit, 0, 1.6, 3.87);
+  box(6.5, .12, 7.7, plaster, exhibit, 0, 3.26, 0);
   for (const z of [-3.4, -1, 1.4, 3.5]) {
-    box(6.4, .16, .19, darkMetal, scene, 0, 3.1, z);
+    box(6.4, .16, .19, darkMetal, exhibit, 0, 3.1, z);
   }
   for (const x of [-3.14, 3.14]) {
-    box(.1, .24, 7.6, darkMetal, scene, x, .12, 0);
-    box(.07, .1, 7.6, brass, scene, x, 1.23, 0);
+    box(.1, .24, 7.6, darkMetal, exhibit, x, .12, 0);
+    box(.07, .1, 7.6, brass, exhibit, x, 1.23, 0);
   }
   for (const x of [-2.5, -1.25, 0, 1.25, 2.5]) {
-    box(.012, .008, 7.55, darkMetal, scene, x, -.023, 0);
+    box(.012, .008, 7.55, darkMetal, exhibit, x, -.023, 0);
   }
   for (let z = -3.2; z < 3.8; z += 1.25) {
-    box(6.4, .008, .014, darkMetal, scene, 0, -.022, z);
+    box(6.4, .008, .014, darkMetal, exhibit, 0, -.022, z);
   }
 
   // Heavy shelving and an inset workstation establish the short walking route.
   const desk = new THREE.Group();
   desk.position.set(-1.55, 0, -.2);
-  scene.add(desk);
+  exhibit.add(desk);
   box(1.72, .13, 1.02, wood, desk, 0, .94, 0);
   box(1.78, .045, 1.06, brass, desk, 0, 1.025, 0);
   for (const x of [-.73, .73]) for (const z of [-.39, .39]) box(.09, .91, .09, darkMetal, desk, x, .46, z);
@@ -162,7 +171,7 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
 
   const pedestal = new THREE.Group();
   pedestal.position.set(.15, 0, -1.49);
-  scene.add(pedestal);
+  exhibit.add(pedestal);
   box(1.5, .12, .83, darkMetal, pedestal, 0, .89, 0);
   box(1.25, .08, .65, metal, pedestal, 0, .97, 0);
   box(.75, .81, .59, wall, pedestal, 0, .43, -.08);
@@ -221,10 +230,12 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   for (let i = 0; i < 7; i++) box(.006, .025, .006, black, cartridge, -.075 + i * .025, -.109, .035);
 
   // The grate is visibly horizontal and hinged at its far edge.
+  const grateObjects = new THREE.Group();
+  exhibit.add(grateObjects);
   const grate = new THREE.Group();
   grate.position.copy(GRATE_HOME);
-  scene.add(grate);
-  box(1.49, .16, 1.84, black, scene, GRATE_HOME.x, -.08, GRATE_HOME.z);
+  grateObjects.add(grate);
+  box(1.49, .16, 1.84, black, grateObjects, GRATE_HOME.x, -.08, GRATE_HOME.z);
   box(1.6, .065, .1, metal, grate, 0, 0, -.94);
   box(1.6, .065, .1, metal, grate, 0, 0, .94);
   box(.1, .065, 1.82, metal, grate, -.75, 0, 0);
@@ -236,27 +247,64 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   for (const z of [.08, .5, .92, 1.34, 1.68]) box(1.38, .025, .04, metal, grateLid, 0, .043, z);
   const lock = box(.13, .115, .12, brass, grateLid, 0, .075, 1.65);
   for (const x of [-.7, .7]) for (const z of [-.88, .88]) cylinder(.034, .02, brass, grate, x, .049, z);
-  const hatchGlow = plane(1.2, 1.48, material('#e8a64e', { emissive: '#ffd088', emissiveIntensity: .85 }), scene, GRATE_HOME.x, .002, GRATE_HOME.z);
+  const hatchGlow = plane(1.2, 1.48, material('#e8a64e', { emissive: '#ffd088', emissiveIntensity: .85 }), grateObjects, GRATE_HOME.x, .002, GRATE_HOME.z);
   hatchGlow.rotation.x = -Math.PI / 2;
   hatchGlow.visible = false;
 
-  // Existing cover textures give the room a sense of collection and scale.
-  const posterIds = ['jumbo-mini-golf', 'undergrowth-advance', 'the-weather-engine'];
-  for (const [index, id] of posterIds.entries()) {
-    const x = -1.95 + index * 1.25;
-    box(.91, 1.17, .07, darkMetal, scene, x, 2.15, -3.71);
-    plane(.81, 1.07, material('#ffffff', { map: texture('../art/covers/' + id + '.webp'), roughness: .86 }), scene, x, 2.15, -3.665);
-  }
-  box(.95, .09, .3, darkMetal, scene, -2.4, 2.83, -.7);
-  box(.64, .025, .18, amber, scene, -2.4, 2.77, -.69);
-  box(.95, .09, .3, darkMetal, scene, 2.35, 2.83, -2.45);
-  box(.64, .025, .18, amber, scene, 2.35, 2.77, -2.44);
+  const museum = museumGeometry({ games, box, plane, material, texture, requestRender });
+  scene.add(museum.hall);
+  exhibit.add(museum.installation);
+  box(.95, .09, .3, darkMetal, exhibit, -2.4, 2.83, -.7);
+  box(.64, .025, .18, amber, exhibit, -2.4, 2.77, -.69);
+  box(.95, .09, .3, darkMetal, exhibit, 2.35, 2.83, -2.45);
+  box(.64, .025, .18, amber, exhibit, 2.35, 2.77, -2.44);
   scene.traverse(object => { if (object.isLight) object.layers.enable(1); });
 
   const obstacles = [
     { minX: -2.48, maxX: -.62, minZ: -.79, maxZ: .42 },
     { minX: -.68, maxX: .99, minZ: -1.98, maxZ: -.98 }
   ];
+
+  function setLocation(game) {
+    if (docked || transitioning) return;
+    if (currentGame) exitDoor = museum.doors.find(door => door.game === currentGame);
+    currentGame = game || undefined;
+    museum.hall.visible = !game;
+    exhibit.visible = Boolean(game);
+    handheld.visible = Boolean(game);
+    grateObjects.visible = game?.id === 'kingfisher';
+    grateLight.visible = grateObjects.visible;
+    if (game) {
+      museum.setExhibit(game);
+      const color = game.shellColors?.plastic || '#3e9d9d';
+      teal.color.set(color);
+      wall.color.set(color).multiplyScalar(.3);
+      roomLight.color.set(game.shellColors?.top || '#76c2c3');
+      camera.position.set(0, 1.62, 3.08);
+      yaw = 0;
+      pitch = -.17;
+    } else {
+      camera.position.set(exitDoor ? exitDoor.side * 2.25 : 0, 1.62, exitDoor?.z ?? ENTRY_Z);
+      yaw = exitDoor ? exitDoor.side * Math.PI / 2 : 0;
+      pitch = -.05;
+    }
+    clearInput();
+    setCartridge(carriedGame);
+    updateCamera();
+    updateTarget();
+  }
+
+  function setCartridge(game) {
+    carriedGame = game || undefined;
+    const displayed = carriedGame || currentGame;
+    cartridge.visible = Boolean(displayed);
+    if (displayed) {
+      labelSurface.map = texture('../' + (displayed.cartLabel || displayed.cover));
+      labelSurface.needsUpdate = true;
+      cartridgePlastic.color.set(displayed.shellColors?.plastic || '#55909b');
+    }
+    setCartState(carriedGame ? 'held' : 'on-desk');
+  }
 
   function updateCamera() {
     camera.rotation.set(pitch, yaw, 0, 'YXZ');
@@ -272,18 +320,19 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   function updateTarget() {
     if (!inputEnabled || docked || transitioning) return emitTarget(null);
     camera.getWorldDirection(forward);
-    const candidates = [
-      { id: 'handheld', point: HANDHELD_HOME, label: cartState === 'held' ? 'Insert cartridge' : cartState === 'inserted' ? 'Play Kingfisher' : 'Inspect handheld' },
-      { id: 'grate', point: GRATE_HOME, label: grateOpen ? 'Inspect open grate' : 'Inspect locked grate' }
+    const candidates = !currentGame ? museum.doors.map(door => ({ id: `door:${door.game.id}`, point: door.point, label: `Enter ${door.game.title}` })) : [
+      { id: 'handheld', point: HANDHELD_HOME, label: 'Handheld' },
+      { id: 'exit', point: new THREE.Vector3(0, 1.62, 3.73), label: 'Return to corridor' }
     ];
-    if (cartState === 'on-desk') candidates.push({ id: 'cart', point: CART_HOME, label: 'Pick up Kingfisher' });
+    if (currentGame?.id === 'kingfisher') candidates.push({ id: 'grate', point: GRATE_HOME, label: grateOpen ? 'Inspect open grate' : 'Inspect locked grate' });
+    if (currentGame && cartState === 'on-desk') candidates.push({ id: 'cart', point: CART_HOME, label: `Pick up ${currentGame.title}` });
     let selected = null;
     let score = -Infinity;
     for (const item of candidates) {
       scratch.copy(item.point).sub(camera.position);
       const distance = scratch.length();
       const alignment = forward.dot(scratch.normalize());
-      if (distance > 2.05 || alignment < .35) continue;
+      if (distance > (currentGame ? 2.05 : 2.6) || alignment < .35) continue;
       const value = alignment - distance * .09;
       if (value > score) {
         selected = { id: item.id, label: item.label };
@@ -294,6 +343,7 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   }
 
   function canStand(x, z) {
+    if (!currentGame) return Math.abs(x) < 2.95 && z > ENTRY_Z + 2.3 - museum.length && z < ENTRY_Z + 1.7;
     if (x < -2.95 || x > 2.95 || z < -3.48 || z > 3.5) return false;
     return !obstacles.some(item => x > item.minX - .22 && x < item.maxX + .22 && z > item.minZ - .22 && z < item.maxZ + .22);
   }
@@ -306,9 +356,17 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
     if (!length) return;
     x /= Math.max(1, length);
     z /= Math.max(1, length);
-    const distance = delta * 2.15;
+    const distance = delta * (currentGame ? 2.15 : 4.1);
     const nextX = camera.position.x + (Math.cos(yaw) * x - Math.sin(yaw) * z) * distance;
     const nextZ = camera.position.z + (-Math.sin(yaw) * x - Math.cos(yaw) * z) * distance;
+    if (!currentGame && Math.abs(nextX) > 2.84 && Math.abs(nextX) > Math.abs(camera.position.x)) {
+      const door = museum.doors.find(item => item.side === Math.sign(nextX) && Math.abs(item.z - nextZ) < .76);
+      if (door) { onInteract(`door:${door.game.id}`); return; }
+    }
+    if (currentGame && nextZ > 3.44 && nextZ > camera.position.z && Math.abs(nextX) < .8) {
+      onInteract('exit');
+      return;
+    }
     if (canStand(nextX, camera.position.z)) camera.position.x = nextX;
     if (canStand(camera.position.x, nextZ)) camera.position.z = nextZ;
   }
@@ -350,6 +408,7 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
     updateCamera();
     for (const tween of tweens) tween.update(time);
     updateTarget();
+    museum.updateFish(time);
     renderer.clear();
     renderer.render(scene, camera);
     renderer.clearDepth();
@@ -388,6 +447,7 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
     const normalized = ({ desk: 'on-desk', carried: 'held' })[state] || state;
     if (!['on-desk', 'held', 'inserted'].includes(normalized)) return;
     cartState = normalized;
+    cartridge.visible = Boolean(carriedGame || currentGame);
     if (normalized === 'held') {
       camera.add(cartridge);
       cartridge.position.set(.33, -.32, -.67);
@@ -415,6 +475,7 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
 
   async function performDock() {
     transitioning = true;
+    releaseMouseLook();
     clearInput();
     emitTarget(null);
     savedPose = { position: camera.position.clone(), yaw, pitch };
@@ -529,6 +590,28 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   }
 
   const movementKeys = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight']);
+  function releaseMouseLook() {
+    if (document.pointerLockElement === canvas) document.exitPointerLock();
+  }
+
+  function toggleMouseLook() {
+    if (!inputEnabled || docked || transitioning) return;
+    if (document.pointerLockElement === canvas) return releaseMouseLook();
+    if (!canvas.requestPointerLock) return onMouseLook(false, 'Mouse look is unavailable. Drag the room to look.');
+    canvas.focus({ preventScroll: true });
+    try { canvas.requestPointerLock()?.catch(() => onMouseLook(false, 'Click Mouse look to try again, or drag the room.')); }
+    catch { onMouseLook(false, 'Mouse look is unavailable. Drag the room to look.'); }
+  }
+
+  function mouseLookChanged() {
+    drag = undefined;
+    onMouseLook(document.pointerLockElement === canvas);
+  }
+
+  function mouseLookMoved(event) {
+    if (document.pointerLockElement === canvas) look(event.movementX, event.movementY);
+  }
+
   function keydown(event) {
     if (!inputEnabled || docked || transitioning || /INPUT|TEXTAREA|SELECT|BUTTON/.test(event.target.tagName)) return;
     if (movementKeys.has(event.code)) {
@@ -539,11 +622,12 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
       event.preventDefault();
       interact();
     }
+    if (!event.repeat && event.code === 'KeyM') toggleMouseLook();
   }
   function keyup(event) { keys.delete(event.code); }
   let drag;
   function pointerdown(event) {
-    if (!inputEnabled || docked || transitioning || event.button !== 0) return;
+    if (!inputEnabled || docked || transitioning || event.button !== 0 || document.pointerLockElement === canvas) return;
     drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
     canvas.setPointerCapture(event.pointerId);
   }
@@ -574,6 +658,8 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
   window.addEventListener('keyup', keyup);
   window.addEventListener('blur', clearInput);
   document.addEventListener('visibilitychange', visibilitychange);
+  document.addEventListener('pointerlockchange', mouseLookChanged);
+  document.addEventListener('mousemove', mouseLookMoved);
   canvas.addEventListener('pointerdown', pointerdown);
   canvas.addEventListener('pointermove', pointermove);
   canvas.addEventListener('pointerup', pointerup);
@@ -585,6 +671,10 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
 
   return {
     setCartState,
+    setCartridge,
+    setLocation,
+    toggleMouseLook,
+    setFishCount: museum.setFishCount,
     dock,
     undock,
     openGrate,
@@ -592,6 +682,7 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
     resize,
     setInputEnabled(enabled) {
       inputEnabled = Boolean(enabled);
+      if (!inputEnabled) releaseMouseLook();
       clearInput();
       updateTarget();
       requestRender();
@@ -602,16 +693,19 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
     },
     look,
     getState() {
-      return { cartState, docked, inputEnabled, grateOpen, transitioning, target, renderedFrames, screenRect: lastScreenRect, camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw, pitch } };
+      return { cartState, location: currentGame?.id || 'corridor', carried: carriedGame?.id, docked, inputEnabled, grateOpen, transitioning, target, renderedFrames, screenRect: lastScreenRect, camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw, pitch } };
     },
     dispose() {
       disposed = true;
+      releaseMouseLook();
       cancelAnimationFrame(frameRequest);
       observer.disconnect();
       window.removeEventListener('keydown', keydown);
       window.removeEventListener('keyup', keyup);
       window.removeEventListener('blur', clearInput);
       document.removeEventListener('visibilitychange', visibilitychange);
+      document.removeEventListener('pointerlockchange', mouseLookChanged);
+      document.removeEventListener('mousemove', mouseLookMoved);
       canvas.removeEventListener('pointerdown', pointerdown);
       canvas.removeEventListener('pointermove', pointermove);
       canvas.removeEventListener('pointerup', pointerup);
@@ -620,7 +714,8 @@ export async function createRoom({ canvas, onInteract = () => {}, onTarget = () 
       tweens.clear();
       for (const geometry of geometries) geometry.dispose();
       for (const surface of materials) surface.dispose();
-      for (const loaded of textures) loaded.dispose();
+      museum.dispose();
+      for (const loaded of textures.values()) loaded.dispose();
       renderer.dispose();
     }
   };

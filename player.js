@@ -25,7 +25,9 @@ const layoutStatus = document.getElementById("layout-status");
 const pageFolder = new URL("./", location.href);
 const artFolder = new URL("./art/", pageFolder);
 const playParams = new URLSearchParams(location.search);
-const roomMode = playParams.get("game") === "kingfisher" && playParams.get("room") === "kingfisher-v1";
+const roomId = playParams.get("room");
+const kingfisherRoom = playParams.get("game") === "kingfisher" && roomId === "kingfisher-v1";
+const roomMode = kingfisherRoom || roomId === "museum-v1";
 const roomRom = new URL("./arcade/roms/Kingfisher-V10-Room-v1.gba", pageFolder);
 const layoutKey = `zang-arcade:${pageFolder.pathname}:gba-controls-v1`;
 const commonKeys = {
@@ -271,7 +273,7 @@ function startPlayer(game, romUrl, emulatorColor) {
     EJS_controlScheme: "gba",
     EJS_gameUrl: romUrl.href,
     EJS_gameName: `${game.title} ${game.version}${roomMode ? " room-v1" : ""}`,
-    EJS_gameID: roomMode ? stableGameId(`${game.id}:kingfisher-v1`) : gameId,
+    EJS_gameID: roomMode ? stableGameId(`${game.id}:${roomId}`) : gameId,
     EJS_threads: false,
     EJS_language: "en-US",
     // This release treats false as the switch to skip browser-locale detection.
@@ -359,8 +361,8 @@ async function loadCartridge() {
   }
 
   const romFolder = new URL("./roms/", pageFolder);
-  const rom = roomMode ? roomRom : typeof game.rom === "string" ? new URL(game.rom, pageFolder) : null;
-  const validRoomRom = roomMode && rom?.href === roomRom.href;
+  const rom = kingfisherRoom ? roomRom : typeof game.rom === "string" ? new URL(game.rom, pageFolder) : null;
+  const validRoomRom = kingfisherRoom && rom?.href === roomRom.href;
   const validCatalogRom = rom && rom.origin === romFolder.origin && rom.pathname.startsWith(romFolder.pathname) && /\.gba$/i.test(rom.pathname);
   if (!validRoomRom && !validCatalogRom) {
     return showFailure("This cartridge is missing a valid ROM path.");
@@ -375,7 +377,7 @@ async function loadCartridge() {
   controls.hidden = false;
   if (roomMode) {
     const { createPlayerBridge } = await import("./arcade/player-bridge.js");
-    roomBridge = createPlayerBridge(player);
+    roomBridge = createPlayerBridge(player, game.id, roomId);
     document.body.classList.add("room-player");
     const style = document.createElement("link");
     style.rel = "stylesheet";

@@ -1,10 +1,10 @@
 import { parseKingfisherSave } from "./kingfisher-save.js";
 
 const INPUTS = new Set([0, 2, 3, 4, 5, 6, 7, 8, 10, 11]);
-const ROOM = "kingfisher-v1";
-const BATTERY_DATABASE = `zang-arcade:${new URL("./", location.href).pathname}:room:${ROOM}:battery`;
-
-export function createPlayerBridge(player) {
+export function createPlayerBridge(player, game = "kingfisher", room = "kingfisher-v1") {
+  const kingfisher = room === "kingfisher-v1";
+  const saveNamespace = kingfisher ? room : `${room}:${game}`;
+  const batteryDatabase = `zang-arcade:${new URL("./", location.href).pathname}:room:${saveNamespace}:battery`;
   let emulator;
   let playing = false;
   let lowering = false;
@@ -14,7 +14,7 @@ export function createPlayerBridge(player) {
 
   function post(event, data = {}) {
     if (window.parent === window) return;
-    window.parent.postMessage({ type: "zang-room-player", room: ROOM, event, ...data }, location.origin);
+    window.parent.postMessage({ type: "zang-room-player", room, game, event, ...data }, location.origin);
   }
 
   function snapshot() {
@@ -29,7 +29,7 @@ export function createPlayerBridge(player) {
   }
 
   function readSave() {
-    if (!emulator?.started || reading || lowering) return;
+    if (!kingfisher || !emulator?.started || reading || lowering) return;
     reading = true;
     try {
       publishSave(snapshot());
@@ -109,8 +109,9 @@ export function createPlayerBridge(player) {
         releaseInputs();
         // The game writes one native bank over several live frames.
         emulator.play();
-        save = await waitForBank();
+        if (kingfisher) save = await waitForBank();
         pausePlayback();
+        if (!kingfisher) emulator.gameManager.getSaveFile();
         await syncSave();
         publishSave(save);
       }
@@ -160,7 +161,7 @@ export function createPlayerBridge(player) {
         const idbfs = this.FS.filesystems.IDBFS;
         const getDB = idbfs.getDB;
         idbfs.getDB = function (name, callback) {
-          return getDB.call(this, name === "/data/saves" ? BATTERY_DATABASE : name, callback);
+          return getDB.call(this, name === "/data/saves" ? batteryDatabase : name, callback);
         };
         return mountFileSystems.call(this);
       };

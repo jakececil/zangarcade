@@ -33,7 +33,11 @@ p { line-height: 1.5; }
 .primary { width: 100%; min-height: 54px; padding: 12px 20px; border-color: #ddff86; background: var(--lime); color: #13251a; font-weight: 800; }
 .save-note { color: #aac1b5; font-size: 14px; text-align: center; margin: 18px 0 0; }
 
-.progress { position: fixed; top: calc(max(14px, env(safe-area-inset-top)) + 61px); left: 20px; display: grid; gap: 8px; width: min(410px, calc(100% - 40px)); font-size: 14px; line-height: 1.45; text-shadow: 0 2px 4px #000; pointer-events: none; }
+.museum-tools { position: fixed; top: calc(max(14px, env(safe-area-inset-top)) + 54px); inset-inline: 20px; display: flex; flex-wrap: wrap; gap: 7px; pointer-events: none; z-index: 1; }
+.museum-tools :is(button, select) { pointer-events: auto; min-height: 42px; padding: 0 12px; border: 1px solid #93b1a366; border-radius: 5px; background: #112420f4; color: inherit; font: 650 14px system-ui, sans-serif; }
+.museum-tools select { max-width: min(100%, 17rem); }
+.museum-tools button[aria-pressed='true'] { border-color: var(--lime); color: var(--lime); }
+.progress { position: fixed; top: calc(max(14px, env(safe-area-inset-top)) + 103px); left: 20px; display: grid; gap: 8px; width: min(410px, calc(100% - 40px)); font-size: 14px; line-height: 1.45; text-shadow: 0 2px 4px #000; pointer-events: none; }
 #save-warning { padding: 10px 12px; border: 1px solid #f4bc7380; background: #261e13e8; color: #ffdc99; }
 .reticle { position: fixed; left: 50%; top: 50%; width: 5px; height: 5px; border-radius: 50%; background: #edffcfba; box-shadow: 0 0 0 1px #10221799; pointer-events: none; }
 .walk-controls { position: fixed; inset: auto 20px max(30px, env(safe-area-inset-bottom)); display: flex; align-items: end; justify-content: center; gap: 22px; pointer-events: none; }
@@ -83,6 +87,9 @@ body[data-mode='play'] .room-identity span, body[data-mode='saving'] .room-ident
 }
 
 @media (max-width: 480px) {
+  .museum-tools { inset-inline: 14px; }
+  .museum-tools select { max-width: min(100%, 50vw); }
+  .progress { left: 14px; }
   .room-header { inset-inline: 14px; }
   .room-identity { gap: 7px; font-size: 14px; }
   .room-identity img { width: 31px; height: 31px; }

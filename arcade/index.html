@@ -4,34 +4,40 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#101817">
-  <meta name="description" content="Walk into a small ZANG room, load Kingfisher, and bring a little light back with you.">
+  <meta name="description" content="Explore the ZANG Arcade Museum and play its collection of original games.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; connect-src 'self' blob:; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob: data:; frame-src 'self'">
-  <title>Kingfisher room | ZANG Arcade</title>
+  <title>Museum | ZANG Arcade</title>
   <link rel="icon" href="../art/brand/zang-favicon.png" type="image/png">
   <link rel="stylesheet" href="./room.css">
   <script type="module" src="./main.js"></script>
 </head>
 <body data-mode="loading">
-  <canvas id="room" tabindex="0" aria-label="The Kingfisher room. Use arrow keys or WASD to walk, drag to look, and E to interact."></canvas>
+  <canvas id="room" tabindex="0" aria-label="ZANG Arcade Museum. Use arrow keys or WASD to walk, drag or press M to look, and E to interact."></canvas>
   <header class="room-header">
-    <div class="room-identity"><img src="../art/brand/zang-mark.webp" alt="ZANG" width="40" height="40"><span>Kingfisher room</span></div>
-    <a href="../">Arcade shelf</a>
+    <div class="room-identity"><img src="../art/brand/zang-mark.webp" alt="ZANG" width="40" height="40"><span id="location-name">Arcade Museum</span></div>
+    <a id="game-shelf" href="../?from=museum">Game shelf</a>
   </header>
 
   <section id="entrance" class="entrance" aria-labelledby="entrance-title">
     <div class="entrance-panel">
-      <p class="eyebrow">ZANG room prototype</p>
-      <h1 id="entrance-title">Kingfisher</h1>
-      <p>Find the cartridge. Catch ten fish. Bring something back.</p>
-      <p class="instructions desktop-help">WASD or arrows to walk. Drag to look. E to interact.</p>
+      <p class="eyebrow">ZANG Arcade</p>
+      <h1 id="entrance-title">Museum</h1>
+      <p>Explore the collection. Take a cartridge and play in any exhibit.</p>
+      <p class="instructions desktop-help">WASD or arrows to walk. M for mouse look. E to interact.</p>
       <p class="instructions touch-help">Use the walking pad. Drag the room to look. Tap to interact.</p>
       <button id="enter-room" class="primary" type="button" disabled>Loading room…</button>
-      <p class="save-note">This room has its own Kingfisher save.</p>
+      <p class="save-note">Museum cartridges have their own saves.</p>
     </div>
   </section>
 
   <main id="room-hud" hidden>
-    <div class="progress" aria-live="polite"><span id="progress-label">Find the Kingfisher cartridge.</span><span id="save-warning" hidden></span></div>
+    <div class="museum-tools">
+      <label class="visually-hidden" for="exhibit-select">Exhibit directory</label>
+      <select id="exhibit-select" aria-label="Exhibit directory"><option value="">Exhibition corridor</option></select>
+      <button id="mouse-look" class="desktop-help" type="button" aria-pressed="false" title="Toggle mouse look (M)">Mouse look</button>
+      <button id="carry-cart" type="button" hidden>Take cartridge</button>
+    </div>
+    <div class="progress" aria-live="polite"><span id="progress-label"></span><span id="save-warning" hidden></span></div>
     <span class="reticle" aria-hidden="true"></span>
     <div id="walk-controls" class="walk-controls">
       <div class="move-pad" id="move-pad" role="group" aria-label="Touch walking pad">
@@ -39,7 +45,7 @@
       </div>
       <button id="interact" class="interaction" type="button" disabled>Walk to the cartridge</button>
     </div>
-    <div class="walk-help desktop-help">WASD / arrows · Drag to look · E to interact</div>
+    <div class="walk-help desktop-help">WASD / arrows · M mouse look · E interact · Esc releases mouse</div>
   </main>
 
   <section id="play-hud" class="play-hud" aria-label="Handheld controls" hidden>
@@ -66,7 +72,7 @@
       </div>
     </div>
   </section>
-  <iframe id="handheld-screen" title="Kingfisher V10 room cartridge" allow="autoplay; gamepad; fullscreen" hidden></iframe>
+  <iframe id="handheld-screen" title="Museum handheld" allow="autoplay; gamepad; fullscreen" hidden></iframe>
   <p id="announcement" class="visually-hidden" role="status" aria-live="polite"></p>
 
   <section id="failure" class="failure" aria-labelledby="failure-title" hidden>

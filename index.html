@@ -8,6 +8,7 @@
   <title>ZANG Arcade</title>
   <link rel="icon" type="image/png" href="./art/brand/zang-favicon.png">
   <script>
+    if (new URLSearchParams(location.search).get('from') === 'museum') document.documentElement.dataset.clearance = 'open';
     try {
       if (sessionStorage.getItem('zang-arcade-entrance-v2') === 'entered') {
         document.documentElement.dataset.clearance = 'open';
@@ -46,7 +47,10 @@
       <a class="brand" data-image-fallback href="./index.html" aria-label="ZANG Arcade home">
         <span class="brand-mark" aria-hidden="true">Z</span><img src="./art/brand/zang-mark.webp" alt="" width="40" height="40">
       </a>
-      <a class="shelf-link" href="#inventory">Game shelf <span aria-hidden="true">↓</span></a>
+      <nav class="arcade-nav" aria-label="Arcade views">
+        <a class="shelf-link" href="#inventory">Game shelf <span aria-hidden="true">↓</span></a>
+        <a class="museum-link" href="./arcade/">Enter 3D museum</a>
+      </nav>
     </header>
 
     <main class="wrap">
