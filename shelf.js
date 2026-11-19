@@ -131,6 +131,7 @@ function buildCartridge(game) {
   const mark = model.querySelector('.cartridge-mark');
   const titleMark = localAsset(game.titleMark);
   title.textContent = game.title;
+  title.hidden = game.cartLabelIncludesTitle && Boolean(localAsset(game.cartLabel));
   if (titleMark) {
     mark.addEventListener('error', () => {
       mark.hidden = true;

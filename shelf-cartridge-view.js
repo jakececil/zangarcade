@@ -2,10 +2,20 @@ import * as THREE from './arcade/vendor/three.module.js';
 import { loadCartridgeAsset } from './arcade/cartridge-assets.js';
 
 export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene();
+  const backdrop = document.createElement('canvas');
+  backdrop.width = backdrop.height = 256;
+  const context = backdrop.getContext('2d');
+  const gradient = context.createRadialGradient(128, 108, 12, 128, 108, 157);
+  gradient.addColorStop(0, '#263425');
+  gradient.addColorStop(1, '#101911');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 256, 256);
+  scene.background = new THREE.CanvasTexture(backdrop);
+  scene.background.colorSpace = THREE.SRGBColorSpace;
   const stage = new THREE.Group();
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, .01, 10);
   camera.position.z = 2;

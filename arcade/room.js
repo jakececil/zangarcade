@@ -228,7 +228,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   materials.add(logoSurface);
   plane(.105, .105, logoSurface, handheld, -.67, -.59, .125);
 
-  function cartridgeModel(parent) {
+  function cartridgeModel(parent, displayWidth) {
     const model = new THREE.Group();
     parent.add(model);
     const fallback = new THREE.Group();
@@ -245,7 +245,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     const label = paper();
     plane(.215, .132, label, fallback, .012, -.015, .027);
     for (const x of [-.123, .123]) box(.015, .015, .008, brass, fallback, x, .082, .027);
-    return { model, fallback, shell, board, label, asset: null, gameId: null };
+    return { model, fallback, shell, board, label, displayWidth, asset: null, gameId: null };
   }
 
   function useCartridgeAsset(parts, game) {
@@ -254,6 +254,15 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       parts.asset = model.clone(true);
       parts.asset.traverse(object => { object.layers.mask = parts.model.layers.mask; });
       parts.model.add(parts.asset);
+      if (parts.displayWidth) {
+        const bounds = new THREE.Box3().setFromObject(model);
+        const width = bounds.max.x - bounds.min.x;
+        if (width * 1.6 > parts.displayWidth) {
+          const scale = parts.displayWidth / width;
+          parts.model.scale.setScalar(scale);
+          parts.model.position.y = 1.015 - bounds.min.y * scale;
+        }
+      }
       parts.fallback.visible = false;
       requestRender();
     }).catch(error => console.warn('Cartridge model could not be loaded.', error));
@@ -266,6 +275,10 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (parts.asset) {
       parts.asset.removeFromParent();
       parts.asset = null;
+    }
+    if (parts.displayWidth) {
+      parts.model.scale.setScalar(1.6);
+      parts.model.position.y = 1.20;
     }
     parts.fallback.visible = true;
     if (game.cartridgeModel) useCartridgeAsset(parts, game);
@@ -280,7 +293,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     parts.label.needsUpdate = true;
   }
 
-  const displayCart = cartridgeModel(pedestal);
+  const displayCart = cartridgeModel(pedestal, .65);
   displayCart.model.visible = false;
   displayCart.model.position.set(0, 1.20, 0);
   displayCart.model.rotation.set(-.22, .21, -.08);
