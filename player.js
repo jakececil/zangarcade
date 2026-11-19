@@ -25,6 +25,8 @@ const layoutStatus = document.getElementById("layout-status");
 const pageFolder = new URL("./", location.href);
 const artFolder = new URL("./art/", pageFolder);
 const playParams = new URLSearchParams(location.search);
+const roomMode = playParams.get("game") === "kingfisher" && playParams.get("room") === "kingfisher-v1";
+const roomRom = new URL("./arcade/roms/Kingfisher-V10-Room-v1.gba", pageFolder);
 const layoutKey = `zang-arcade:${pageFolder.pathname}:gba-controls-v1`;
 const commonKeys = {
   2: 16, // Select
@@ -40,6 +42,7 @@ const keyboardPresets = {
 const arrowLabels = { 37: "←", 38: "↑", 39: "→", 40: "↓" };
 let bootTimer;
 let errorObserver;
+let roomBridge;
 
 function setState(state, label) {
   document.body.dataset.playState = state;
@@ -56,6 +59,7 @@ function showFailure(message, canRetry = false) {
   failureDetail.textContent = message;
   retry.hidden = !canRetry;
   failure.hidden = false;
+  roomBridge?.error(message);
 }
 
 function stableGameId(id) {
@@ -266,8 +270,8 @@ function startPlayer(game, romUrl, emulatorColor) {
     EJS_core: "mgba",
     EJS_controlScheme: "gba",
     EJS_gameUrl: romUrl.href,
-    EJS_gameName: `${game.title} ${game.version}`,
-    EJS_gameID: gameId,
+    EJS_gameName: `${game.title} ${game.version}${roomMode ? " room-v1" : ""}`,
+    EJS_gameID: roomMode ? stableGameId(`${game.id}:kingfisher-v1`) : gameId,
     EJS_threads: false,
     EJS_language: "en-US",
     // This release treats false as the switch to skip browser-locale detection.
@@ -277,7 +281,7 @@ function startPlayer(game, romUrl, emulatorColor) {
     EJS_backgroundColor: "#080a0d",
     EJS_CacheLimit: 0,
     EJS_hideSettings: ["ejs_threads"],
-    EJS_defaultOptions: { "save-state-location": "browser", rewindEnabled: "enabled" },
+    EJS_defaultOptions: { "save-state-location": "browser", rewindEnabled: "enabled", ...(roomMode ? { "virtual-gamepad": "disabled" } : {}) },
     EJS_Buttons: { cheat: false, cacheManager: false, exitEmulation: false, netplay: false },
     EJS_ready() {
       if (document.body.dataset.playState !== "loading") return;
@@ -285,7 +289,8 @@ function startPlayer(game, romUrl, emulatorColor) {
       clearTimeout(bootTimer);
       standby.hidden = true;
       setState("ready", "Ready to start");
-      scheduleBackdrop(artworkPath(game.backdrop));
+      roomBridge?.ready(window.EJS_emulator);
+      if (!roomMode) scheduleBackdrop(artworkPath(game.backdrop));
 
       const button = player.querySelector(".ejs_start_button");
       button.setAttribute("role", "button");
@@ -315,13 +320,14 @@ function startPlayer(game, romUrl, emulatorColor) {
       setState("running", "Game running");
       fullscreen.hidden = false;
       document.getElementById("save-help").hidden = false;
-      configureTouchControls();
+      if (!roomMode) configureTouchControls();
       keyboardProfile.disabled = false;
       applySharedLayout();
       syncKeyboardGuide(window.EJS_emulator);
       assignConnectedGamepads(window.EJS_emulator);
       configureToolbarKeyboard();
       if (player.classList.contains("ejs_small_screen")) window.EJS_emulator.menu.close();
+      roomBridge?.running();
     }
   });
 
@@ -353,8 +359,10 @@ async function loadCartridge() {
   }
 
   const romFolder = new URL("./roms/", pageFolder);
-  const rom = typeof game.rom === "string" ? new URL(game.rom, pageFolder) : null;
-  if (!rom || rom.origin !== romFolder.origin || !rom.pathname.startsWith(romFolder.pathname) || !/\.gba$/i.test(rom.pathname)) {
+  const rom = roomMode ? roomRom : typeof game.rom === "string" ? new URL(game.rom, pageFolder) : null;
+  const validRoomRom = roomMode && rom?.href === roomRom.href;
+  const validCatalogRom = rom && rom.origin === romFolder.origin && rom.pathname.startsWith(romFolder.pathname) && /\.gba$/i.test(rom.pathname);
+  if (!validRoomRom && !validCatalogRom) {
     return showFailure("This cartridge is missing a valid ROM path.");
   }
 
@@ -365,7 +373,16 @@ async function loadCartridge() {
   document.getElementById("metadata").hidden = false;
   document.getElementById("core-name").hidden = false;
   controls.hidden = false;
-  startPlayer(game, rom, configureMachine(game));
+  if (roomMode) {
+    const { createPlayerBridge } = await import("./arcade/player-bridge.js");
+    roomBridge = createPlayerBridge(player);
+    document.body.classList.add("room-player");
+    const style = document.createElement("link");
+    style.rel = "stylesheet";
+    style.href = "./arcade/player-embed.css";
+    document.head.appendChild(style);
+  }
+  startPlayer(game, rom, roomMode ? "#516328" : configureMachine(game));
 }
 
 function setExpanded(expanded) {

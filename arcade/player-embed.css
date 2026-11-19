@@ -1,0 +1,11 @@
+html, body.room-player { width: 100%; height: 100%; margin: 0; overflow: hidden; min-width: 0; background: #080a0d; }
+.room-player :is(.topbar, .game-heading, .controls, .footer, .world, .slot-bridge, .console-bar, .console-hardware) { display: none !important; }
+.room-player main.shell { width: 100%; height: 100%; max-width: none; padding: 0; margin: 0; }
+.room-player .console { width: 100%; height: 100%; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: #080a0d; }
+.room-player .viewport { position: fixed; inset: 0; width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; }
+.room-player #game { width: 100%; height: 100%; }
+.room-player #game :is(.ejs_virtualGamepad_parent, .ejs_virtualGamepad_open) { display: none !important; }
+.room-player .failure { padding: 1rem; font-size: 0.86rem; }
+.room-player .failure h2 { font-size: 1rem; }
+.room-player .failure .action { min-height: 35px; font-size: 0.72rem; }
+.room-player #game .ejs_start_button { min-height: 42px; padding-inline: 20px; font-size: 0.8rem; }
