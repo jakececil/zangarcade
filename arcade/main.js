@@ -1,4 +1,5 @@
 import { createRoom } from './room.js';
+import { HOME } from './guts.js';
 
 const canvas = document.getElementById('room');
 const entrance = document.getElementById('entrance');
@@ -16,13 +17,21 @@ const movePad = document.getElementById('move-pad');
 const padThumb = document.getElementById('pad-thumb');
 const directory = document.getElementById('exhibit-select');
 const mouseLook = document.getElementById('mouse-look');
-const carryButton = document.getElementById('carry-cart');
+const inventoryToggle = document.getElementById('inventory-toggle');
+const inventoryDialog = document.getElementById('inventory-dialog');
+const inventoryList = document.getElementById('inventory-list');
+const inventoryPlay = document.getElementById('inventory-play');
+const raiseButton = document.getElementById('raise-handheld');
+const runButton = document.getElementById('run-toggle');
 const locationName = document.getElementById('location-name');
 const shelfLink = document.getElementById('game-shelf');
 const base = new URL('../', location.href);
 const progressKey = `zang-arcade:${base.pathname}:room:kingfisher-v1`;
 const visitKey = `zang-arcade:${base.pathname}:museum-visit-v1`;
+const collectionKey = `zang-arcade:${base.pathname}:museum-collection-v1`;
 const games = new Map();
+const discovered = new Set();
+const shelved = new Set();
 let room;
 let exhibit;
 let cartridge;
@@ -34,6 +43,7 @@ let target;
 let gameRunning = false;
 let lowerTimer;
 let audio;
+let running = false;
 const held = new Map();
 let progress = readProgress();
 
@@ -61,6 +71,7 @@ function setMode(next) {
 function updateProgress() {
   const carried = cartridge ? `${cartridge.title} ${cartState === 'inserted' ? 'seated' : 'in hand'}. ` : '';
   if (!exhibit) progressLabel.textContent = carried + 'Walk up to a doorway or choose an exhibit from the directory.';
+  else if (exhibit === HOME) progressLabel.textContent = discovered.size > shelved.size ? 'Approach the shelf to box your new cartridges.' : 'Bring found cartridges here to fill the shelf.';
   else if (exhibit.id === 'kingfisher') {
     progressLabel.textContent = carried + (progress.open ? 'The floor grate is open.' : `${progress.catches} / 10 fish saved. Catch ten to open the floor grate.`);
   } else progressLabel.textContent = carried || exhibit.blurb || `Find the ${exhibit.title} cartridge.`;
@@ -99,16 +110,78 @@ function playerRoom() {
 }
 
 function updateInteraction() {
-  interactButton.disabled = mode !== 'room' || !target;
-  const labels = {
-    cart: exhibit ? `Pick up ${exhibit.title}` : '',
-    handheld: cartState === 'held' ? `Insert ${cartridge?.title}` : cartState === 'inserted' ? 'Raise handheld' : 'Inspect handheld',
-    grate: progress.open ? 'Look below the grate' : 'Inspect floor grate'
-  };
-  interactButton.textContent = labels[target?.id] || target?.label || (!exhibit ? 'Approach a doorway' : cartridge ? 'Walk to the handheld' : 'Walk to the cartridge');
-  const swappable = exhibit && cartridge && cartridge !== exhibit;
-  carryButton.hidden = cartState !== 'inserted' && !swappable;
-  carryButton.textContent = cartState === 'inserted' ? 'Take cartridge' : swappable ? `Take ${exhibit.title} instead` : 'Take cartridge';
+  interactButton.disabled = mode !== 'room' || !target || inventoryDialog.open;
+  interactButton.textContent = target?.label || (!exhibit ? 'Approach a doorway' : exhibit === HOME ? 'Approach the shelf' : discovered.has(exhibit.id) ? 'Explore the exhibit' : 'Approach the cartridge');
+  raiseButton.disabled = !cartridge || mode !== 'room';
+  raiseButton.setAttribute('aria-label', cartridge ? `Raise handheld with ${cartridge.title}` : 'Raise handheld');
+}
+
+function setRun(enabled) {
+  running = enabled;
+  room?.setRun(enabled);
+  runButton.setAttribute('aria-pressed', String(enabled));
+  runButton.textContent = enabled ? 'Running' : 'Run';
+}
+
+function updateCollection() {
+  try {
+    const latest = JSON.parse(localStorage.getItem(collectionKey));
+    for (const id of latest?.discovered || []) if (games.has(id)) discovered.add(id);
+    for (const id of latest?.shelved || []) if (discovered.has(id)) shelved.add(id);
+  } catch {}
+  room.setCollection(discovered, shelved);
+  try { localStorage.setItem(collectionKey, JSON.stringify({ discovered: [...discovered], shelved: [...shelved] })); }
+  catch { warn('The browser could not save your cartridge collection.'); }
+  updateProgress();
+}
+
+function loadCollection(visit) {
+  try {
+    const data = JSON.parse(localStorage.getItem(collectionKey));
+    for (const id of data?.discovered || []) if (games.has(id)) discovered.add(id);
+    for (const id of data?.shelved || []) if (discovered.has(id)) shelved.add(id);
+  } catch {}
+  if (visit?.cartridge && games.has(visit.cartridge)) discovered.add(visit.cartridge);
+  if (progress.catches) discovered.add('kingfisher');
+  updateCollection();
+}
+
+function renderInventory() {
+  inventoryList.replaceChildren();
+  for (const game of games.values()) {
+    if (!discovered.has(game.id)) continue;
+    const li = document.createElement('li');
+    const button = document.createElement('button');
+    const image = document.createElement('img');
+    const title = document.createElement('span');
+    const state = document.createElement('span');
+    button.type = 'button';
+    button.className = 'inventory-cart';
+    button.setAttribute('aria-pressed', String(game === cartridge));
+    image.src = new URL(game.cover, base);
+    image.alt = '';
+    title.textContent = game.title;
+    state.textContent = shelved.has(game.id) ? 'Boxed' : 'Found';
+    button.append(image, title, state);
+    button.addEventListener('click', () => {
+      takeCartridge(game);
+      inventoryDialog.close();
+    });
+    li.append(button);
+    inventoryList.append(li);
+  }
+  document.getElementById('inventory-count').textContent = `${discovered.size} of ${games.size} found`;
+  document.getElementById('inventory-empty').hidden = discovered.size > 0;
+  inventoryPlay.disabled = !cartridge;
+}
+
+function toggleInventory() {
+  if (mode !== 'room' || room.getState().transitioning) return;
+  if (inventoryDialog.open) { inventoryDialog.close(); return; }
+  setRun(false);
+  room.setInputEnabled(false);
+  renderInventory();
+  inventoryDialog.showModal();
 }
 
 function rememberVisit() {
@@ -122,9 +195,9 @@ function readVisit() {
 }
 
 function changeExhibit(game) {
-  if (mode !== 'room' || game === exhibit) return;
+  if (mode !== 'room' || game === exhibit || room.getState().transitioning) return;
   exhibit = game;
-  cartState = cartridge ? 'held' : 'on-desk';
+  setRun(false);
   room.setLocation(game);
   directory.value = game?.id || '';
   locationName.textContent = game?.title || 'Arcade Museum';
@@ -135,6 +208,7 @@ function changeExhibit(game) {
 }
 
 function takeCartridge(game) {
+  if (!game || game === cartridge) return;
   cartridge = game;
   cartState = 'held';
   room.setCartridge(game);
@@ -170,8 +244,9 @@ function fitScreen(rect) {
 }
 
 async function raiseHandheld() {
-  if (mode !== 'room' || !cartridge) return;
+  if (mode !== 'room' || !cartridge || room.getState().transitioning) return;
   unlockAudio();
+  setRun(false);
   const inserting = cartState === 'held';
   cartState = 'inserted';
   setMode('docking');
@@ -201,14 +276,28 @@ async function raiseHandheld() {
 async function interact(id) {
   if (mode !== 'room') return;
   if (id.startsWith('door:')) changeExhibit(games.get(id.slice(5)));
+  else if (id === 'home') changeExhibit(HOME);
   else if (id === 'exit') changeExhibit(undefined);
-  else if (id === 'cart' && cartState === 'on-desk' && exhibit) {
+  else if (id === 'cart' && exhibit && !discovered.has(exhibit.id)) {
     unlockAudio();
+    discovered.add(exhibit.id);
+    updateCollection();
     takeCartridge(exhibit);
-    announcement.textContent = `${cartridge.title} picked up. Find the handheld slot.`;
-  } else if (id === 'handheld') {
-    if (!cartridge) announcement.textContent = 'An empty slot. The cartridge is on the nearby desk.';
-    else await raiseHandheld();
+    announcement.textContent = `${cartridge.title} added to your inventory.`;
+    progressLabel.textContent = `${cartridge.title} acquired. Raise your handheld to play here.`;
+  } else if (id === 'store') {
+    for (const gameId of discovered) shelved.add(gameId);
+    updateCollection();
+    progressLabel.textContent = 'Cartridges boxed. Face a box and interact to pull it out.';
+  } else if (id.startsWith('box:')) {
+    const game = games.get(id.slice(4));
+    if (game && shelved.has(game.id)) {
+      await room.pullBox(game.id);
+      takeCartridge(game);
+      progressLabel.textContent = `${game.title} selected. Raise your handheld to play.`;
+    }
+  } else if (id === 'guide') {
+    progressLabel.textContent = 'Maze keeper: “Follow the wall until it runs out. The way through keeps changing sides.”';
   } else if (id === 'grate') {
     progressLabel.textContent = progress.open ? 'A warm light under the open grate.' : 'Locked. A small indicator reads 10.';
     announcement.textContent = progressLabel.textContent;
@@ -230,6 +319,7 @@ async function returnToRoom(error = '') {
   setMode('returning');
   await room.undock();
   setMode('room');
+  room.setInputEnabled(true);
   if (error) warn(error);
   updateProgress();
   if (leaveForShelf && !error) location.assign(shelfLink.href);
@@ -277,10 +367,21 @@ interactButton.addEventListener('click', () => {
   if (mode === 'room') canvas.focus({ preventScroll: true });
 });
 lowerButton.addEventListener('click', lowerHandheld);
-directory.addEventListener('change', () => changeExhibit(games.get(directory.value)));
+directory.addEventListener('change', () => changeExhibit(directory.value === HOME.id ? HOME : games.get(directory.value)));
 mouseLook.addEventListener('click', () => room.toggleMouseLook());
-carryButton.addEventListener('click', () => {
-  takeCartridge(cartState === 'inserted' ? cartridge : exhibit);
+inventoryToggle.addEventListener('click', toggleInventory);
+raiseButton.addEventListener('click', raiseHandheld);
+runButton.addEventListener('click', () => {
+  setRun(!running);
+  canvas.focus({ preventScroll: true });
+});
+document.getElementById('inventory-close').addEventListener('click', () => inventoryDialog.close());
+document.getElementById('inventory-home').addEventListener('click', () => { inventoryDialog.close(); changeExhibit(HOME); });
+inventoryPlay.addEventListener('click', () => { inventoryDialog.close(); raiseHandheld(); });
+inventoryDialog.addEventListener('close', () => {
+  if (mode !== 'room') return;
+  room.setInputEnabled(true);
+  updateInteraction();
   canvas.focus({ preventScroll: true });
 });
 shelfLink.addEventListener('click', event => {
@@ -293,6 +394,9 @@ shelfLink.addEventListener('click', event => {
 });
 window.addEventListener('keydown', event => {
   if (event.key === 'Escape' && mode === 'play') { event.preventDefault(); lowerHandheld(); }
+  if (event.repeat || mode !== 'room' || event.target === directory) return;
+  if (event.code === 'KeyI') { event.preventDefault(); toggleInventory(); }
+  if (event.code === 'KeyH' && !inventoryDialog.open) { event.preventDefault(); raiseHandheld(); }
 });
 
 function moveFromPointer(event) {
@@ -336,7 +440,7 @@ for (const button of document.querySelectorAll('[data-input]')) {
     setTimeout(() => send('input', { input, value: 0 }), 100);
   });
 }
-window.addEventListener('blur', () => { stopWalking(); releaseInputs(); });
+window.addEventListener('blur', () => { stopWalking(); releaseInputs(); setRun(false); });
 window.addEventListener('storage', event => {
   if (event.key !== progressKey) return;
   const stored = readProgress();
@@ -355,6 +459,7 @@ try {
   const response = await fetch(new URL('catalog.json', base));
   if (!response.ok) throw new Error('The game catalog could not be loaded.');
   const entries = (await response.json()).games.filter(game => game.status === 'verified' && game.platform === 'GBA');
+  directory.add(new Option(HOME.title, HOME.id));
   for (const game of entries) {
     games.set(game.id, game);
     directory.add(new Option(game.title, game.id));
@@ -370,7 +475,9 @@ try {
   room.setInputEnabled(false);
   const visit = readVisit();
   const requested = new URLSearchParams(location.search).get('room');
-  exhibit = games.get(requested ?? visit?.exhibit);
+  loadCollection(visit);
+  const destination = requested ?? visit?.exhibit ?? HOME.id;
+  exhibit = destination === HOME.id ? HOME : games.get(destination);
   if (!requested && visit?.cartridge) cartridge = games.get(visit.cartridge);
   if (cartridge) cartState = 'held';
   room.setLocation(exhibit);

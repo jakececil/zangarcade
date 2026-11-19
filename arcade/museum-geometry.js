@@ -4,11 +4,13 @@ export const BAY_PITCH = 4;
 export const HALL_WIDTH = 6.3;
 export const ENTRY_Z = 3;
 
-export function museumGeometry({ games, box, plane, material, texture, requestRender }) {
+export function museumGeometry({ games, box, plane, material, texture, paper, requestRender }) {
   const hall = new THREE.Group();
   const installation = new THREE.Group();
   const length = Math.max(12, Math.ceil(games.length / 2) * BAY_PITCH + 6);
-  const wall = material('#303c3c', { roughness: .86 });
+  const hallGrain = texture('./art/guts-enamel.webp', 7);
+  hallGrain.repeat.y = 1.35;
+  const wall = material('#505e54', { map: hallGrain, bumpMap: hallGrain, bumpScale: .052, roughness: .86 });
   const metal = material('#171c21', { metalness: .62, roughness: .48 });
   const stone = material('#423738', { roughness: .9 });
   const brass = material('#9c7550', { metalness: .57, roughness: .52 });
@@ -20,7 +22,7 @@ export function museumGeometry({ games, box, plane, material, texture, requestRe
   box(HALL_WIDTH, .14, length, wall, hall, 0, 3.42, center);
   box(HALL_WIDTH, 3.4, .15, wall, hall, 0, 1.7, ENTRY_Z + 2);
   box(HALL_WIDTH, 3.4, .15, wall, hall, 0, 1.7, ENTRY_Z + 2 - length);
-  const walkway = material('#3b3a3a', { roughness: .84, metalness: .08 });
+  const walkway = material('#514949', { bumpMap: hallGrain, bumpScale: .021, roughness: .84, metalness: .08 });
   box(HALL_WIDTH, .047, length - .2, walkway, hall, 0, -.02, center);
   box(.52, .05, length - .2, stone, hall, 0, -.014, center);
   for (const side of [-1, 1]) {
@@ -72,7 +74,7 @@ export function museumGeometry({ games, box, plane, material, texture, requestRe
     for (const x of [-.99, .99]) box(.055, 2.35, .06, edge, frame, x, 1.24, .15);
     box(1.76, .065, .06, edge, frame, 0, .055, .15);
     sign(game.title, `ROOM ${String(index + 1).padStart(2, '0')}`, accent, frame, 0, 2.64, .15);
-    const poster = plane(.63, .86, material('#ffffff', { map: texture('../' + game.cover), emissive: accent, emissiveIntensity: .15 }), frame, 0, 1.53, .165);
+    const poster = plane(.63, .86, paper(texture('../' + game.cover)), frame, 0, 1.53, .165);
     poster.name = game.id;
     return { game, side, z, point: new THREE.Vector3(side * 2.93, 1.52, z) };
   });
@@ -84,16 +86,19 @@ export function museumGeometry({ games, box, plane, material, texture, requestRe
     for (const side of [-1, 1]) box(.26, 3.1, .28, metal, hall, side * 2.99, 1.55, z);
   }
   sign('ZANG ARCADE MUSEUM', 'GAMES COLLECTION', '#e8f8a4', hall, 0, 2.15, ENTRY_Z + 1.9, Math.PI, 3.6);
+  box(2.13, 2.5, .14, black, hall, 0, 1.25, ENTRY_Z + 1.78);
+  box(1.95, .07, .08, lamp, hall, 0, .11, ENTRY_Z + 1.68);
+  sign('Living room', 'RETURN HOME', '#f1b981', hall, 0, 2.64, ENTRY_Z + 1.67, Math.PI);
   sign('Exhibition corridor', 'ZANG ARCADE MUSEUM', '#e8f8a4', installation, 0, 2.63, 3.69, Math.PI, 2.5);
   box(1.98, 2.41, .11, black, installation, 0, 1.22, 3.73);
   for (const x of [-1.015, 1.015]) box(.073, 2.35, .06, light, installation, x, 1.2, 3.653);
   box(1.95, .065, .04, light, installation, 0, .054, 3.64);
 
   const vistaSurface = material('#ffffff', { emissive: '#ffffff', emissiveIntensity: .26 });
-  const coverSurface = material('#ffffff', { emissive: '#d0d4c6', emissiveIntensity: .22 });
+  const coverSurface = paper();
   box(5.99, 2.42, .14, metal, installation, 0, 1.86, -3.682);
   const vista = plane(5.64, 2.12, vistaSurface, installation, 0, 1.86, -3.59);
-  const cover = plane(.99, 1.38, coverSurface, installation, -3.12, 1.82, -1.94);
+  const cover = plane(.99, 1.38, coverSurface, installation, -2.58, 1.98, -1.86);
   cover.rotation.y = Math.PI / 2;
   const roomSign = sign('', '', '#dbefa7', installation, 0, 2.94, -3.54, 0, 2.75);
   const backdropTextures = new Map();

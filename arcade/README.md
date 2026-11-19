@@ -1,8 +1,10 @@
 # ZANG Arcade Museum
 
-The shelf links to `./arcade/` under the existing Pages site. Serve the repository over HTTP and visit `/arcade/`. All assets are local and no build or installation is required. The directory lists the verified GBA catalog. Each exhibit has a corridor doorway, a desk cartridge, a handheld, and a display that uses the game's cover, backdrop, and shell colors. Add a verified GBA entry to the catalog to add a doorway and exhibit.
+The shelf links to `./arcade/` under the existing Pages site. Serve the repository over HTTP and visit `/arcade/`. All assets are local and no build or installation is required. The directory lists the verified GBA catalog. Each exhibit has a corridor doorway and a collectible cartridge. Enclosure dimensions and special room families are configured in `guts.js`. ZONK uses alternating collision baffles and a maze keeper. Add a verified GBA entry to the catalog to add a doorway and exhibit.
 
-Walk with WASD or arrows. Press M for mouse look, Escape to release it, or drag to look with the pointer free. Press E or use the interaction button near an object. Carry a cartridge into another exhibit to use that room's handheld, or swap it for the local game. Lower handheld or Escape returns to the same camera position with the emulator paused. Touch uses a walking pad and separate game buttons. The renderer idles during settled gameplay. The shelf and museum links share a tab, and the museum remembers the exhibit and cartridge for the session.
+Walk with WASD or arrows and hold Shift to run. Press M for mouse look, Escape to release it, or drag to look with the pointer free. Press E near an object to interact. I opens the inventory, and H raises your handheld wherever you stand. Lower handheld or Escape returns to the same camera position with the emulator paused. Touch uses a walking pad, Run toggle, and separate game buttons. The renderer idles during settled gameplay. The shelf and museum links share a tab, and the museum remembers the exhibit and cartridge for the session.
+
+Discovered cartridges persist under `zang-arcade:<site-path>:museum-collection-v1`. Bring them to the living-room shelf and use **Box new cartridges**. Once stored, face an individual box and interact to pull it out and load its title into your portable selection. Earlier visitors keep their last selected cartridge, and a saved Kingfisher catch also preserves discovery. Undergrowth Advance uses a translucent amber shell with a visible board and contacts.
 
 ## Cartridge and save signal
 
@@ -20,4 +22,4 @@ The nine- and ten-fish validation saves were produced by sequential normal game 
 
 Three.js 0.187.0 is vendored from its official npm package. Its license is in `vendor/THREE-LICENSE.txt`. Existing arcade artwork supplies the cartridge label and posters.
 
-The underwater vista in `art/kingfisher-window.webp` was made with the built-in image generator. It depicts a freshwater quarry from an underwater observation window, with dark rock shelves, teal light rays, kelp, and a calm blue-green center. The original PNG and full prompt are stored outside the published site.
+The underwater vista in `art/kingfisher-window.webp` and the enamel surface in `art/guts-enamel.webp` were made with the built-in image generator. The original PNGs and full prompts are stored outside the published site. Museum posters and cases use independent print materials for cover colors.

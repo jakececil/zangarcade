@@ -22,8 +22,8 @@
     <div class="entrance-panel">
       <p class="eyebrow">ZANG Arcade</p>
       <h1 id="entrance-title">Museum</h1>
-      <p>Explore the collection. Take a cartridge and play in any exhibit.</p>
-      <p class="instructions desktop-help">WASD or arrows to walk. M for mouse look. E to interact.</p>
+      <p>Find cartridges in the guts of ZANG. Play anywhere, then bring them home to the shelf.</p>
+      <p class="instructions desktop-help">Walk with WASD or arrows. Hold Shift to run. Press I for inventory or H for the handheld.</p>
       <p class="instructions touch-help">Use the walking pad. Drag the room to look. Tap to interact.</p>
       <button id="enter-room" class="primary" type="button" disabled>Loading room…</button>
       <p class="save-note">Museum cartridges have their own saves.</p>
@@ -35,9 +35,11 @@
       <label class="visually-hidden" for="exhibit-select">Exhibit directory</label>
       <select id="exhibit-select" aria-label="Exhibit directory"><option value="">Exhibition corridor</option></select>
       <button id="mouse-look" class="desktop-help" type="button" aria-pressed="false" title="Toggle mouse look (M)">Mouse look</button>
-      <button id="carry-cart" type="button" hidden>Take cartridge</button>
+      <button id="inventory-toggle" type="button">Inventory <kbd>I</kbd></button>
+      <button id="raise-handheld" type="button" disabled>Handheld <kbd>H</kbd></button>
+      <button id="run-toggle" type="button" aria-pressed="false">Run</button>
+      <div class="progress" aria-live="polite"><span id="progress-label"></span><span id="save-warning" hidden></span></div>
     </div>
-    <div class="progress" aria-live="polite"><span id="progress-label"></span><span id="save-warning" hidden></span></div>
     <span class="reticle" aria-hidden="true"></span>
     <div id="walk-controls" class="walk-controls">
       <div class="move-pad" id="move-pad" role="group" aria-label="Touch walking pad">
@@ -45,8 +47,15 @@
       </div>
       <button id="interact" class="interaction" type="button" disabled>Walk to the cartridge</button>
     </div>
-    <div class="walk-help desktop-help">WASD / arrows · M mouse look · E interact · Esc releases mouse</div>
+    <div class="walk-help desktop-help">WASD / arrows move · Shift runs · M toggles mouse look · E interacts</div>
   </main>
+
+  <dialog id="inventory-dialog" aria-labelledby="inventory-title">
+    <div class="inventory-top"><div><h2 id="inventory-title">Cartridges</h2><p id="inventory-count"></p></div><button id="inventory-close" type="button">Close</button></div>
+    <ul id="inventory-list"></ul>
+    <p id="inventory-empty">Find your first cartridge on an exhibit pedestal.</p>
+    <div class="inventory-bottom"><button id="inventory-home" type="button">Living room</button><button id="inventory-play" class="primary" type="button" disabled>Raise handheld</button></div>
+  </dialog>
 
   <section id="play-hud" class="play-hud" aria-label="Handheld controls" hidden>
     <div class="play-bar">

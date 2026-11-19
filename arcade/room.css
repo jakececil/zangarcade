@@ -37,7 +37,20 @@ p { line-height: 1.5; }
 .museum-tools :is(button, select) { pointer-events: auto; min-height: 42px; padding: 0 12px; border: 1px solid #93b1a366; border-radius: 5px; background: #112420f4; color: inherit; font: 650 14px system-ui, sans-serif; }
 .museum-tools select { max-width: min(100%, 17rem); }
 .museum-tools button[aria-pressed='true'] { border-color: var(--lime); color: var(--lime); }
-.progress { position: fixed; top: calc(max(14px, env(safe-area-inset-top)) + 103px); left: 20px; display: grid; gap: 8px; width: min(410px, calc(100% - 40px)); font-size: 14px; line-height: 1.45; text-shadow: 0 2px 4px #000; pointer-events: none; }
+.progress { flex-basis: 100%; display: grid; gap: 8px; font-size: 14px; line-height: 1.45; text-shadow: 0 2px 4px #000; pointer-events: none; }
+.progress > span { width: fit-content; max-width: min(440px, 100%); }
+#inventory-dialog { color: #f4f3dc; width: min(640px, calc(100vw - 2rem)); max-height: min(78dvh, 690px); padding: clamp(16px, 3vw, 27px); border: 1px solid #9cbb8f; border-top: 4px solid var(--lime); border-radius: 9px; background: #141d1b; box-shadow: 0 20px 85px #000b; touch-action: pan-y; }
+#inventory-dialog::backdrop { background: #080811be; backdrop-filter: blur(4px); }
+#inventory-dialog button { padding-inline: 13px; }
+.inventory-top, .inventory-bottom { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.inventory-top h2, .inventory-top p { margin: 0; }
+#inventory-count { color: #bad2b4; font-size: 14px; }
+#inventory-list { display: grid; gap: 9px; margin: 16px 0; padding: 0; list-style: none; }
+.inventory-cart { width: 100%; display: grid; grid-template-columns: 40px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 7px; text-align: left; }
+.inventory-cart img { width: 40px; height: 50px; object-fit: cover; border-radius: 2px; }
+.inventory-cart span:last-child { color: #c5d9ab; font-size: 13px; }
+.inventory-cart[aria-pressed='true'] { border-color: var(--lime); box-shadow: inset 3px 0 var(--lime); }
+.inventory-bottom .primary { width: auto; }
 #save-warning { padding: 10px 12px; border: 1px solid #f4bc7380; background: #261e13e8; color: #ffdc99; }
 .reticle { position: fixed; left: 50%; top: 50%; width: 5px; height: 5px; border-radius: 50%; background: #edffcfba; box-shadow: 0 0 0 1px #10221799; pointer-events: none; }
 .walk-controls { position: fixed; inset: auto 20px max(30px, env(safe-area-inset-bottom)); display: flex; align-items: end; justify-content: center; gap: 22px; pointer-events: none; }
