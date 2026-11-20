@@ -9,32 +9,20 @@ MAX_PATH = .050
 CAST_COLOR = (.29, .92, .69)
 
 
-def optical_paths(shell, material, width, height, shell_height, board):
+def optical_paths(shell, material, width, height, shell_height):
     shell.data.update()
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    tree = BVHTree.FromObject(shell, depsgraph)
-    board_tree = BVHTree.FromObject(board, depsgraph) if board else None
+    tree = BVHTree.FromObject(shell, bpy.context.evaluated_depsgraph_get())
     paths = np.empty(len(shell.data.vertices), dtype=np.float32)
-    board_hits = np.zeros_like(paths)
     for vertex in shell.data.vertices:
         inward = -vertex.normal
         start = vertex.co + inward*.0004
         _, _, _, distance = tree.ray_cast(start, inward, .12)
-        if board_tree and distance is not None:
-            _, _, _, board_distance = board_tree.ray_cast(start, inward, distance)
-            if board_distance is not None:
-                distance = board_distance
-                board_hits[vertex.index] = 1
         depth = .006 if distance is None else distance + .0004
         paths[vertex.index] = min(MAX_PATH, max(.0018, depth)) / MAX_PATH
 
     name = 'Measured optical path'
     attribute = shell.data.attributes.new(name, 'FLOAT', 'POINT')
     attribute.data.foreach_set('value', paths)
-    board_name = 'Optical path meets PCB'
-    if board_tree:
-        attribute = shell.data.attributes.new(board_name, 'FLOAT', 'POINT')
-        attribute.data.foreach_set('value', board_hits)
     nodes, links = material.node_tree.nodes, material.node_tree.links
     output = nodes.get('Material Output')
     image = bpy.data.images.new('Temporary optical paths', width, height, alpha=False, float_buffer=True)
@@ -55,21 +43,14 @@ def optical_paths(shell, material, width, height, shell_height, board):
     links.new(xyz.outputs['Z'], level.inputs[0])
     links.new(depth.outputs['Fac'], channels.inputs['Red'])
     links.new(level.outputs[0], channels.inputs['Green'])
-    board_surface = None
-    if board_tree:
-        board_surface = nodes.new('ShaderNodeAttribute')
-        board_surface.attribute_name = board_name
-        links.new(board_surface.outputs['Fac'], channels.inputs['Blue'])
     links.new(channels.outputs[0], emission.inputs[0])
     links.new(emission.outputs[0], output.inputs['Surface'])
     nodes.active = target
     bpy.ops.object.bake(type='EMIT', margin=10)
-    measured = pixels(image)[:, :, :3].copy()
+    measured = pixels(image)[:, :, :2].copy()
     links.new(nodes.get('Principled BSDF').outputs[0], output.inputs['Surface'])
     for node in (target, depth, geometry, xyz, level, channels, emission):
         nodes.remove(node)
-    if board_surface:
-        nodes.remove(board_surface)
     bpy.data.images.remove(image)
     return measured
 
@@ -84,13 +65,13 @@ def soft_noise(rng, width, height, scale):
 
 def refractive_resin(shell, material, surface_image, folder, shell_height, *, board=None):
     width, height = surface_image.size
-    path, level, board_coverage = np.moveaxis(
-        optical_paths(shell, material, width, height, shell_height, board), -1, 0)
+    # The shell keeps its own thickness and finish across the entire casting.
+    path, level = np.moveaxis(optical_paths(shell, material, width, height, shell_height), -1, 0)
     linear = np.clip(pixels(surface_image)[:, :, :3], 0, 1)
     r, g, b = np.moveaxis(linear**(1/2.2), -1, 0)
     tongue = 1-smooth(.096, .146, level)
     gold = smooth(.018, .115, r-g)*smooth(.12, .32, g-b)*smooth(.24, .46, g)
-    contact = tongue*gold
+    contact = np.zeros_like(tongue) if board else tongue*gold
     rng = np.random.default_rng(502)
     cloud = smooth(.33, .73, .69*soft_noise(rng, width, height, 13) +
                    .31*soft_noise(rng, width, height, 58))
@@ -104,15 +85,11 @@ def refractive_resin(shell, material, surface_image, folder, shell_height, *, bo
     resin = tint*(.68 - .28*cloud[:, :, None]) + .37*linear + .10*flecks[:, :, None]
     color = resin*(1-tongue[:, :, None]) + linear*tongue[:, :, None]
     if board:
-        # Narrow clear areas over the hardware preserve legibility while the
-        # rest of the casting keeps its original, thicker cloudy finish.
-        clarity = smooth(.08, .94, board_coverage)*(1-tongue)
-        roughness *= 1-.70*clarity
-        transmission += (.985-transmission)*.91*clarity
-        rails = np.array([.032, .39, .27]) + .10*linear
+        # The old projections showed gold on both faces. The molded foot
+        # gets its own resin color now that the bare board supplies the pins.
+        rails = np.array([.032, .34, .24]) + .025*flecks[:, :, None]
         color = resin*(1-tongue[:, :, None]) + rails*tongue[:, :, None]
-        transmission = (1-tongue)*transmission + tongue*(.81-.32*cloud)
-        contact = np.zeros_like(contact)
+        transmission = (1-tongue)*transmission + tongue*(.43-.20*cloud)
 
     nodes, links = material.node_tree.nodes, material.node_tree.links
     output = nodes.get('Material Output')
@@ -143,7 +120,7 @@ def refractive_resin(shell, material, surface_image, folder, shell_height, *, bo
     links.new(optic_channels.outputs['Green'], scale.inputs[0])
     links.new(scale.outputs[0], volume.inputs['Thickness'])
     absorption = nodes.new('ShaderNodeVolumeAbsorption')
-    absorption.inputs['Color'].default_value = (.37, .92, .74, 1) if board else (*CAST_COLOR, 1)
+    absorption.inputs['Color'].default_value = (*CAST_COLOR, 1)
     absorption.inputs['Density'].default_value = 1/.038
     scatter = nodes.new('ShaderNodeVolumeScatter')
     scatter.inputs['Color'].default_value = (.58, .86, .77, 1)

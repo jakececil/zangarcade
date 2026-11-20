@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('folder', type=Path)
 parser.add_argument('--width', type=float, default=.248)
 parser.add_argument('--height', type=float, default=.201)
-parser.add_argument('--depth', type=float, default=.019)
+parser.add_argument('--depth', type=float, default=.022)
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 folder = args.folder.resolve()
 
@@ -63,6 +63,16 @@ channels = nodes.new('ShaderNodeSeparateColor')
 links.new(finish.outputs['Color'], channels.inputs[0])
 links.new(channels.outputs['Green'], bsdf.inputs['Roughness'])
 links.new(channels.outputs['Blue'], bsdf.inputs['Metallic'])
+laminate = bpy.data.materials.new('Unplated connector back')
+laminate.use_nodes = True
+substrate = laminate.node_tree.nodes.get('Principled BSDF')
+substrate.inputs['Base Color'].default_value = (.026, .095, .048, 1)
+substrate.inputs['Roughness'].default_value = .53
+board.data.materials.append(laminate)
+contact_top = -.143 + .195*args.height
+for face in board.data.polygons:
+    if face.center.z < contact_top and face.normal.y >= -.1:
+        face.material_index = 1
 board['Source'] = 'Hunyuan3D-2mv with six orthographic texture projections'
 board['Connector'] = 'Centered on X, Z=-.143 in Blender, Y=-.143 in glTF'
 frame_asset(.45)

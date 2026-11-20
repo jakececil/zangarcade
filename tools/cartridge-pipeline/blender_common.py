@@ -27,17 +27,18 @@ def import_reconstruction(path, *, native_gltf=False):
 
 
 def open_pcb_window(shell, board, top):
-    """Expose the board's real contact edge between the shell rails."""
-    contacts = [v.co.x for v in board.data.vertices if v.co.z <= top]
+    """Recess the front contacts and seat the PCB against a molded backing."""
+    contacts = [v.co for v in board.data.vertices if v.co.z <= top]
     if not contacts:
         raise ValueError('PCB window must reach above the edge-card tip')
-    left, right = min(contacts) - .002, max(contacts) + .002
+    left, right = min(v.x for v in contacts) - .002, max(v.x for v in contacts) + .002
     if max(abs(left), abs(right)) > .129:
         raise ValueError('PCB window leaves too little room for the connector rails')
     bottom = -.175
-    bpy.ops.mesh.primitive_cube_add(size=1, location=((left+right)/2, 0, (top+bottom)/2))
+    front, recess = -.09, max(v.y for v in contacts) + .0014
+    bpy.ops.mesh.primitive_cube_add(size=1, location=((left+right)/2, (front+recess)/2, (top+bottom)/2))
     cutter = bpy.context.object
-    cutter.dimensions = (right-left, .18, top-bottom)
+    cutter.dimensions = (right-left, recess-front, top-bottom)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     cutter.select_set(False)
     shell.select_set(True)
@@ -48,6 +49,41 @@ def open_pcb_window(shell, board, top):
     bpy.ops.object.modifier_apply(modifier=opening.name)
     bpy.data.objects.remove(cutter, do_unlink=True)
     board.parent = shell
+
+    toe = min(v.z for v in contacts)
+    tip = [v for v in contacts if v.z < toe + .014]
+    heel_left, heel_right = min(v.x for v in tip)-.003, max(v.x for v in tip)+.003
+    shoulder = top + .023
+    # The molded saddle runs behind the contact row. Two taller ears hold
+    # the board shoulders while leaving the routed area above them visible.
+    profile = [
+        (heel_left, toe+.001), (heel_right, toe+.001), (heel_right, top-.005),
+        (right, top+.002), (right, shoulder), (right-.016, shoulder),
+        (right-.020, top+.007), (left+.020, top+.007), (left+.016, shoulder),
+        (left, shoulder), (left, top+.002), (heel_left, top-.005),
+    ]
+    rear_seat = max(v.y for v in tip) - .0006
+    count = len(profile)
+    verts = [(x, y, z) for y in (rear_seat, recess+.005) for x, z in profile]
+    faces = [tuple(range(count)), tuple(reversed(range(count, 2*count)))]
+    for i in range(count):
+        next_index = (i+1) % count
+        faces.append((i, i+count, next_index+count, next_index))
+    mesh = bpy.data.meshes.new('Molded connector saddle')
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    backing = bpy.data.objects.new(mesh.name, mesh)
+    bpy.context.collection.objects.link(backing)
+    backing.parent = shell
+    bevel = backing.modifiers.new('Molded edge radius', 'BEVEL')
+    bevel.width = .0014
+    bevel.segments = 3
+    material = bpy.data.materials.new('Mineral-filled teal support plastic')
+    material.use_nodes = True
+    shader = material.node_tree.nodes.get('Principled BSDF')
+    shader.inputs['Base Color'].default_value = (.025, .132, .103, 1)
+    shader.inputs['Roughness'].default_value = .48
+    mesh.materials.append(material)
 
 
 def fit_label(shell, image_path, *, width, height, z, radius, bulge, x=0):
