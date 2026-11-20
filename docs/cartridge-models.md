@@ -69,12 +69,21 @@ blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaqu
 
 ### Aquarium enamel and gummy machinery
 
-Kingfisher's aquarium face pairs vitreous blue highlights with worn brass, coral, and colored fish relief. Triple Giblet uses a slicker finish on the hot pink shell and chartreuse spring, with satin mint plates and a dark rubber face. Its two-color title is cut out from `label.png` to follow the recess.
+Kingfisher's base housing pairs vitreous blue highlights with worn brass and coral. The aquarium assembly seats a curved clear pane in the brass rim and recesses a small scene with three separately reconstructed fish, modelled kelp and gravel, and a habitat backing. Triple Giblet uses a slicker finish on the hot pink shell and chartreuse spring, with satin mint plates and a dark rubber face. Its two-color title is cut out from `label.png` to follow the recess.
 
 ```powershell
 blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/kingfisher' 'kingfisher' --native-gltf --shell-width .515 --shell-height .316 --shell-depth .102 --label-width .207 --label-height .050 --label-y -.067 --artifact-material aquarium-enamel
-blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/triple-giblet' 'triple-giblet' --native-gltf --shell-width .463 --shell-height .386 --shell-depth .090 --label-width .258 --label-height .095 --label-x .014 --label-y .011 --artifact-material gummy-machine --ink-title
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/triple-giblet' 'triple-giblet' --native-gltf --shell-width .463 --shell-height .386 --shell-depth .090 --label-width .234 --label-height .078 --label-x .014 --label-y -.005 --artifact-material gummy-machine --ink-title
 ```
+
+Keep the aquarium's fitted shell input as `build/kingfisher-housing.blend`. The fish source sheets have four orthographic views apiece. Split them into front, rear, left, and right reference images, then run `reconstruct-multiview.py` with those views at resolution 288. Put each baked `specimen.glb` below the corresponding `lure-fish`, `axolotl-fish`, or `moth-fish` subfolder in the assembly directory, with `habitat.jpg` and `label.jpg` at its root.
+
+```powershell
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-aquarium-fish.py" -- 'build/lure-fish' 'lure-fish'
+blender -b 'build/kingfisher-housing.blend' --python-exit-code 1 --python "$pipeline/assemble-kingfisher-aquarium.py" -- 'build/kingfisher'
+```
+
+The Blender master gives the dome an actual inner wall. The browser uses the curved outer mesh, glTF thickness and IOR. The `cartridgeClearGlazing` flag keeps the transmitted image sharp while leaving the glass reflections and bend in place. Inspect both directions of rotation to verify that the fish sit inside the pane.
 
 ### Case and slot previews
 

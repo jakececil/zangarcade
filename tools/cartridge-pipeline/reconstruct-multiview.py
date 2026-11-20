@@ -16,16 +16,15 @@ parser.add_argument('--weights', type=Path, help='folder with config.yaml and mo
 parser.add_argument('--projections-only', action='store_true',
                     help='rebake references using the existing four-view reconstruction')
 conditioning_views = ('front', 'left', 'back', 'right')
-reference_views = (*conditioning_views, 'top')
-for view in reference_views:
+for view in conditioning_views:
     parser.add_argument('--' + view, required=True, type=Path)
+parser.add_argument('--top', type=Path, help='top projection for the reference bake')
 parser.add_argument('--bottom', type=Path, help='underside projection for the reference bake')
 parser.add_argument('--resolution', type=int, default=352)
 parser.add_argument('--steps', type=int, default=12)
 parser.add_argument('--seed', type=int, default=12345)
 args = parser.parse_args()
-if args.bottom:
-    reference_views = (*reference_views, 'bottom')
+reference_views = (*conditioning_views, *(view for view in ('top', 'bottom') if getattr(args, view)))
 if args.output.name == 'shell-dense.glb':
     parser.error('use a separate filename for the raw model, such as hunyuan-multiview.glb')
 if not args.projections_only and (not args.source or not args.weights):
