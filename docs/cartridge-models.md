@@ -52,11 +52,18 @@ This pass keeps the generated eyespots, antennae, and thorax geometry. Register 
 
 ### Specimen Run and other opaque shells
 
-Reconstruct the straight-on front as `shell-dense.glb`. Use `--keep-holes` for silhouettes with large enclosed gaps such as the Specimen Run tendrils. Use `reference_mask.py` to make the optional `shell-rear.projection.png` from the matched rear elevation. Put the full-bleed print in `label.jpg`. The script centers on the generated connector, simplifies the shell, and bakes both reference views into the atlas. The printed label remains a separate mesh.
+Use matched front, left, rear, and right elevations when the shape wraps around the cartridge. Specimen Run was rebuilt with all four images conditioning one mesh. The geometry generator is [Hunyuan3D-2mv](https://huggingface.co/tencent/Hunyuan3D-2mv), using the [official code revision](https://github.com/Tencent-Hunyuan/Hunyuan3D-2/tree/f8db63096c8282cb27354314d896feba5ba6ff8a) and the `hunyuan3d-dit-v2-mv-turbo` weights under [this model revision](https://huggingface.co/tencent/Hunyuan3D-2mv/tree/3a761b539b29fe4ff64714813aa9560fd66f5de0). Place `config.yaml` and `model.fp16.safetensors` together. The model is used locally to generate geometry and the browser serves the resulting GLB. See the [model license](https://huggingface.co/tencent/Hunyuan3D-2mv/blob/main/LICENSE) for terms.
+
+Use the Python dependencies from above and matching `torchvision==0.23.0` from the CUDA 12.8 PyTorch index. The Windows run also used `diffusers==0.35.2`, `accelerate==1.10.1`, `pymeshlab==2025.7`, and `opencv-python-headless==4.12.0.88`.
 
 ```powershell
-blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/specimen-run' 'gut-punch-specimen-run' --label-width .222 --label-height .109 --label-y -.015
+python "$pipeline/reconstruct-multiview.py" 'build/specimen-run/hunyuan-multiview.glb' --source 'local/Hunyuan3D-2' --weights 'local/hunyuan-mv-weights' --front 'masters/specimen-front.png' --left 'masters/specimen-left.png' --back 'masters/specimen-rear.png' --right 'masters/specimen-right.png'
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/specimen-run' 'gut-punch-specimen-run' --native-gltf --shell-depth .089 --label-width .222 --label-height .109 --label-y -.015
 ```
+
+Put the full-bleed print in `label.jpg` before running Blender. The reconstruction script also writes `shell-dense.glb` for the largest connected component and the four cropped projections consumed by the baker. It retains larger gaps between the tendrils. The 352-resolution run peaked at 5.42 GiB of allocated CUDA memory on the RTX 5070. Check the untextured shell edge-on and at rear three-quarter before baking the art. The bake projects all four images and exports the atlas on UV0. The printed label remains a separate mesh.
+
+For a one-image TripoSR build, run `reconstruct.py` on the front and use the same Blender baker with its default input axes. Add `--keep-holes` when segmenting a front with enclosed negative space.
 
 ## Fit and publish
 

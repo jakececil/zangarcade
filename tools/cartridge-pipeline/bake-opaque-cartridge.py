@@ -1,10 +1,11 @@
 """Fit and bake a generated opaque cartridge, with a replaceable printed label."""
 import argparse
+import math
 import sys
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True
@@ -15,6 +16,9 @@ parser.add_argument('folder', type=Path)
 parser.add_argument('slug')
 parser.add_argument('--shell-width', type=float, default=.501)
 parser.add_argument('--shell-height', type=float, default=.321)
+parser.add_argument('--shell-depth', type=float, default=.099)
+parser.add_argument('--native-gltf', action='store_true', help='input mesh already uses glTF axes')
+parser.add_argument('--yaw', type=float, default=0, help='input yaw adjustment in degrees')
 parser.add_argument('--label-width', type=float, required=True)
 parser.add_argument('--label-height', type=float, required=True)
 parser.add_argument('--label-x', type=float, default=0)
@@ -24,7 +28,9 @@ folder = args.folder.resolve()
 
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
-shell = import_reconstruction(folder / 'shell-dense.glb')
+shell = import_reconstruction(folder / 'shell-dense.glb', native_gltf=args.native_gltf)
+if args.yaw:
+    shell.data.transform(Matrix.Rotation(math.radians(args.yaw), 4, 'Z'))
 shell.name = args.slug + ' · reconstructed shell'
 coords = [v.co.copy() for v in shell.data.vertices]
 lo = Vector(tuple(min(v[i] for v in coords) for i in range(3)))
@@ -35,22 +41,24 @@ toe = [v.x for v in coords if lo.z < v.z < lo.z + .064*span.z]
 seat_center = (min(toe) + max(toe)) / 2
 
 front_name, rear_name = 'Front reference', 'Rear reference'
-shell.data.uv_layers.new(name=front_name)
-shell.data.uv_layers.new(name=rear_name)
-front = shell.data.uv_layers[front_name]
-rear = shell.data.uv_layers[rear_name]
+left_name, right_name = 'Left reference', 'Right reference'
+for name in (front_name, rear_name, left_name, right_name):
+    shell.data.uv_layers.new(name=name)
+front, rear, left, right = (shell.data.uv_layers[name] for name in (front_name, rear_name, left_name, right_name))
 for loop in shell.data.loops:
-    x, _, z = coords[loop.vertex_index]
-    u, v = (x-lo.x)/span.x, (z-lo.z)/span.z
+    x, y, z = coords[loop.vertex_index]
+    u, depth, v = (x-lo.x)/span.x, (y-lo.y)/span.y, (z-lo.z)/span.z
     front.data[loop.index].uv = (u, v)
     rear.data[loop.index].uv = (1-u, v)
+    left.data[loop.index].uv = (1-depth, v)
+    right.data[loop.index].uv = (depth, v)
 
 # Preserve the shell's lean and asymmetry. The bottom of the recovered part
 # defines the connector center. Only the lower strip is constrained to the slot.
 for vertex, (x, y, z) in zip(shell.data.vertices, coords):
     fraction = (z-lo.z)/span.z
     x = (x-seat_center)*args.shell_width/span.x
-    y = (y-center.y)*.099/span.y
+    y = (y-center.y)*args.shell_depth/span.y
     z = -.143 + fraction*args.shell_height
     seat = 1-smoothstep(.17, .34, fraction)
     x += (min(.157, max(-.157, x))-x)*seat
@@ -62,7 +70,7 @@ decimate.ratio = min(.78, 135000/source_faces)
 bpy.ops.object.modifier_apply(modifier=decimate.name)
 for face in shell.data.polygons:
     face.use_smooth = True
-paint = shell.data.color_attributes.active_color or shell.data.color_attributes[0]
+paint = shell.data.color_attributes.active_color
 atlas = shell.data.uv_layers.new(name='Baked shell UV')
 shell.data.uv_layers.active = atlas
 atlas.active_render = True
@@ -78,12 +86,16 @@ shell.data.materials.append(material)
 nodes, links = material.node_tree.nodes, material.node_tree.links
 bsdf = nodes.get('Principled BSDF')
 output = nodes.get('Material Output')
-vertex_color = nodes.new('ShaderNodeVertexColor')
-vertex_color.layer_name = paint.name
+if paint:
+    base_color = nodes.new('ShaderNodeVertexColor')
+    base_color.layer_name = paint.name
+else:
+    base_color = nodes.new('ShaderNodeRGB')
+    base_color.outputs[0].default_value = (.029, .072, .089, 1)
 normal = nodes.new('ShaderNodeNewGeometry').outputs['Normal']
 
 
-def project(image, layer, direction, previous):
+def project(image, layer, direction, previous, *, side=False):
     texture = nodes.new('ShaderNodeTexImage')
     texture.image = bpy.data.images.load(str(image))
     texture.image.pack()
@@ -97,8 +109,8 @@ def project(image, layer, direction, previous):
     links.new(normal, facing.inputs[0])
     weight = nodes.new('ShaderNodeMapRange')
     weight.interpolation_type = 'SMOOTHSTEP'
-    weight.inputs['From Min'].default_value = .10
-    weight.inputs['From Max'].default_value = .68
+    weight.inputs['From Min'].default_value = .36 if side else .10
+    weight.inputs['From Max'].default_value = .89 if side else .68
     links.new(facing.outputs['Value'], weight.inputs['Value'])
     coverage = nodes.new('ShaderNodeMath')
     coverage.operation = 'MULTIPLY'
@@ -111,10 +123,14 @@ def project(image, layer, direction, previous):
     return mix.outputs[0]
 
 
-surface = project(folder / 'shell-dense.projection.png', front_name, (0, -1, 0), vertex_color.outputs[0])
+surface = project(folder / 'shell-dense.projection.png', front_name, (0, -1, 0), base_color.outputs[0])
 back_art = folder / 'shell-rear.projection.png'
 if back_art.is_file():
     surface = project(back_art, rear_name, (0, 1, 0), surface)
+for side, layer, direction in (('left', left_name, (-1, 0, 0)), ('right', right_name, (1, 0, 0))):
+    path = folder / (side + '.projection.png')
+    if path.is_file():
+        surface = project(path, layer, direction, surface, side=True)
 emission = nodes.new('ShaderNodeEmission')
 links.new(surface, emission.inputs[0])
 links.new(emission.outputs[0], output.inputs['Surface'])
@@ -138,9 +154,14 @@ bsdf.inputs['Coat Roughness'].default_value = .24
 
 fit_label(shell, folder / 'label.jpg', width=args.label_width, height=args.label_height,
           z=args.label_y, x=args.label_x, radius=.006, bulge=.0014)
-shell['Source'] = 'TripoSR. Reference projection baked to the reconstructed shell.'
+shell['Source'] = 'Hunyuan3D-2mv.' if args.native_gltf else 'TripoSR.'
+shell['Surface'] = 'Orthographic reference projections baked to the reconstructed shell.'
 frame_asset(.90)
 bpy.ops.wm.save_as_mainfile(filepath=str(folder / (args.slug + '.blend')))
+# Four projector UVs stay editable in the .blend. The runtime only needs the
+# baked atlas, and it belongs on UV0 for WebGL compatibility.
+for name in (front_name, rear_name, left_name, right_name):
+    shell.data.uv_layers.remove(shell.data.uv_layers[name])
 bpy.ops.export_scene.gltf(filepath=str(folder / (args.slug + '.glb')), export_format='GLB',
                          export_yup=True, export_apply=True, export_extras=True,
                          export_vertex_color='NONE', export_cameras=False, export_lights=False)

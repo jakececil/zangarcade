@@ -11,16 +11,17 @@ def smoothstep(low, high, value):
     return t * t * (3 - 2 * t)
 
 
-def import_reconstruction(path):
+def import_reconstruction(path, *, native_gltf=False):
     bpy.ops.import_scene.gltf(filepath=str(path))
     shell = next(obj for obj in bpy.context.selected_objects if obj.type == 'MESH')
     bpy.ops.object.select_all(action='DESELECT')
     shell.select_set(True)
     bpy.context.view_layer.objects.active = shell
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-    for vertex in shell.data.vertices:
-        x, y, z = vertex.co
-        vertex.co = (z, -x, -y)
+    if not native_gltf:
+        for vertex in shell.data.vertices:
+            x, y, z = vertex.co
+            vertex.co = (z, -x, -y)
     shell.data.update()
     return shell
 
