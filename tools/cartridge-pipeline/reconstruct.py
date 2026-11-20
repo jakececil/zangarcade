@@ -15,6 +15,7 @@ parser.add_argument("image", type=Path)
 parser.add_argument("output", type=Path)
 parser.add_argument("--resolution", type=int, default=192)
 parser.add_argument("--neutral-background", action="store_true")
+parser.add_argument("--keep-holes", action="store_true", help="retain larger enclosed background gaps in silhouettes")
 parser.add_argument("--source", type=Path, help="checkout of the pinned TripoSR revision")
 parser.add_argument("--weights", type=Path, help="directory containing config.yaml and model.ckpt")
 args = parser.parse_args()
@@ -41,7 +42,7 @@ from tsr.utils import resize_foreground
 output = args.output.resolve()
 with Image.open(args.image) as reference:
     rgba = foreground_rgba(reference, neutral_background=args.neutral_background,
-                           threshold=24 if args.neutral_background else 25)
+                           threshold=24 if args.neutral_background else 25, keep_holes=args.keep_holes)
 rgba.crop(rgba.getbbox()).save(output.with_suffix(".projection.png"))
 cropped = resize_foreground(rgba, 0.85)
 background = Image.new("RGBA", cropped.size, (128, 128, 128, 255))

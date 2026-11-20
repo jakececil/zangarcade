@@ -50,6 +50,14 @@ Use `--resolution 352` in `reconstruct.py` to reproduce the direct Undergrowth p
 
 This pass keeps the generated eyespots, antennae, and thorax geometry. Register the entire shell to the PCB, trim the contact foot, and reduce the tessellation. Bake the source photograph directly onto the front UVs and blend to generated vertex color around the sides. The photo makes the fine ridges and scratches legible. Its color also drives the three optical maps, including clearer, smoother windows and more solid orange structural details.
 
+### Specimen Run and other opaque shells
+
+Reconstruct the straight-on front as `shell-dense.glb`. Use `--keep-holes` for silhouettes with large enclosed gaps such as the Specimen Run tendrils. Use `reference_mask.py` to make the optional `shell-rear.projection.png` from the matched rear elevation. Put the full-bleed print in `label.jpg`. The script centers on the generated connector, simplifies the shell, and bakes both reference views into the atlas. The printed label remains a separate mesh.
+
+```powershell
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/specimen-run' 'gut-punch-specimen-run' --label-width .222 --label-height .109 --label-y -.015
+```
+
 ## Fit and publish
 
 - Blender coordinates use **+Z up and −Y forward**. Export GLB with **+Y up** so the runtime sees +Y up and +Z forward. Keep the connector centered at X = 0. The tongue reaches Y ≈ −0.143 in the GLB. Use a tongue at most 0.316 wide and 0.062 deep at the mating end. Keep wide shoulders above the slot rails. The arcade positions the model at the shared handheld seat.

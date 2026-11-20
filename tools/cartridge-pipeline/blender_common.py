@@ -25,7 +25,7 @@ def import_reconstruction(path):
     return shell
 
 
-def fit_label(shell, image_path, *, width, height, z, radius, bulge):
+def fit_label(shell, image_path, *, width, height, z, radius, bulge, x=0):
     """Make a rounded UV-mapped laminate fitted to the shell's front surface."""
     tree = BVHTree.FromObject(shell, bpy.context.evaluated_depsgraph_get())
     columns, rows = 38, 26
@@ -35,13 +35,13 @@ def fit_label(shell, image_path, *, width, height, z, radius, bulge):
         corner = max(0, abs(local_z) - (height / 2 - radius))
         half_width = width / 2 - radius + math.sqrt(max(0, radius**2 - corner**2))
         for column in range(columns + 1):
-            x = half_width * (2 * column / columns - 1)
-            point, _, _, _ = tree.ray_cast(Vector((x, -1, z + local_z)), Vector((0, 1, 0)), 2)
+            local_x = half_width * (2 * column / columns - 1)
+            point, _, _, _ = tree.ray_cast(Vector((x + local_x, -1, z + local_z)), Vector((0, 1, 0)), 2)
             if point is None:
                 raise ValueError('Label footprint crosses outside the reconstructed shell')
-            dome = max(0, 1 - (2 * x / width)**2 - (2 * local_z / height)**2)
-            vertices.append((x, point.y - .0007 - dome * bulge, z + local_z))
-            uv.append((x / width + .5, row / rows))
+            dome = max(0, 1 - (2 * local_x / width)**2 - (2 * local_z / height)**2)
+            vertices.append((x + local_x, point.y - .0007 - dome * bulge, z + local_z))
+            uv.append((local_x / width + .5, row / rows))
             if row < rows and column < columns:
                 i = row * (columns + 1) + column
                 faces.append((i, i + 1, i + columns + 2, i + columns + 1))
