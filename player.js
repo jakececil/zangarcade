@@ -100,12 +100,23 @@ function scheduleBackdrop(path) {
   else setTimeout(assignImage, 0);
 }
 
-function playSlotArrival(theme, cartridgeLabel) {
+function revealCartridge(image, preview, label) {
+  if (preview) {
+    image.parentElement.classList.add("has-cartridge-preview");
+    image.addEventListener("error", () => {
+      image.parentElement.classList.remove("has-cartridge-preview");
+      if (label) image.src = label;
+    }, { once: true });
+  }
+  revealArtwork(image, preview || label);
+}
+
+function playSlotArrival(theme, preview, label) {
   if (playParams.get("from") !== "slot" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const dock = document.getElementById("incoming-machine");
   dock.dataset.machineTheme = theme;
   dock.dataset.loaded = "true";
-  revealArtwork(document.getElementById("incoming-label"), cartridgeLabel);
+  revealCartridge(document.getElementById("incoming-label"), preview, label);
   slotBridge.hidden = false;
   slotBridge.addEventListener("animationend", event => {
     if (event.target === slotBridge) slotBridge.hidden = true;
@@ -136,7 +147,8 @@ function configureMachine(game) {
   });
 
   const label = artworkPath(game.cartLabel);
-  if (theme === "neutral" && !label) return emulatorColor;
+  const preview = artworkPath(game.cartridgePreview);
+  if (theme === "neutral" && !label && !preview) return emulatorColor;
 
   if (theme !== "neutral") {
     document.body.classList.add("is-themed");
@@ -146,8 +158,8 @@ function configureMachine(game) {
   eject.href = `./?eject=${encodeURIComponent(game.id)}`;
   eject.hidden = false;
   document.getElementById("console-cart").hidden = false;
-  revealArtwork(document.getElementById("console-cart-label"), label);
-  playSlotArrival(theme, label);
+  revealCartridge(document.getElementById("console-cart-label"), preview, label);
+  playSlotArrival(theme, preview, label);
   return emulatorColor;
 }
 
@@ -347,7 +359,7 @@ async function loadCartridge() {
   bootTimer = setTimeout(() => showFailure("The player took too long to load. Reload the player to try again.", true), 25000);
   let catalog;
   try {
-    const response = await fetch("./catalog.json");
+    const response = await fetch("./catalog.json", { cache: "no-cache" });
     if (!response.ok) throw new Error("Catalog unavailable");
     catalog = await response.json();
     if (!Array.isArray(catalog.games)) throw new Error("Catalog incomplete");

@@ -145,6 +145,7 @@ h2 { font-size: 1.1rem; line-height: 1.25; }
 .console-identification { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.75rem; }
 .console-cart { display: inline-flex; align-items: center; gap: 0.35rem; }
 .console-cart img { width: 2rem; height: 1.3rem; border-radius: 2px; object-fit: cover; }
+.console-cart.has-cartridge-preview img { object-fit: contain; }
 
 .console-state { display: inline-flex; align-items: center; gap: 0.53rem; }
 
@@ -417,6 +418,17 @@ body:is(.is-themed, .has-world) .footer { color: var(--cream); text-shadow: 0 1p
   box-shadow: 0 6px 0 #0007;
 }
 .bridge-cart img { width: 100%; height: 100%; object-fit: cover; }
+.bridge-cart.has-cartridge-preview {
+  height: auto;
+  aspect-ratio: 1.24;
+  transform: translate(-50%, -88%);
+  clip-path: inset(0 0 12% 0);
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.bridge-cart.has-cartridge-preview img { display: block; object-fit: contain; object-position: center bottom; }
+.bridge-cart.has-cartridge-preview img[hidden] { display: none; }
 
 @keyframes bridge-drop {
   from { transform: translateY(-72px); }

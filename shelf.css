@@ -777,13 +777,15 @@ body:has(.ritual[open]) { overflow: hidden; }
 .ritual-dock { position: absolute; top: 66%; left: 68%; transform: translate(-50%, -50%); }
 .ritual-device-motion { position: relative; }
 
+.ritual-stage { --ritual-cart-width: clamp(5.1rem, 15vw, 10rem); }
+
 .ritual-cart {
   --label-size: clamp(.48rem, .94vw, .77rem);
   --cartridge-depth: .56rem;
   position: absolute;
   inset: 0 auto auto 0;
   z-index: 3;
-  width: clamp(5.1rem, 15vw, 10rem);
+  width: var(--ritual-cart-width);
   opacity: 0;
   transform-origin: center center;
   filter: drop-shadow(.2rem .35rem .2rem #080b07aa);
@@ -800,6 +802,17 @@ body:has(.ritual[open]) { overflow: hidden; }
 }
 
 .slot-machine[data-loaded='true'] .slot-loaded-cart { visibility: visible; }
+
+.slot-loaded-cart.has-cartridge-preview {
+  inset: 50% auto auto 50%;
+  width: var(--ritual-cart-width);
+  aspect-ratio: 1.24;
+  transform: translate(-50%, -88%) rotateX(-27deg);
+  clip-path: inset(0 0 12% 0);
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
 
 @media (max-width: 68rem) {
   .wrap { width: calc(100% - 3.75rem); }

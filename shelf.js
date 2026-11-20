@@ -102,7 +102,7 @@ function themeFor(game) {
 }
 
 function hasRitual(game) {
-  return Boolean(localAsset(game.cartLabel)) || themeFor(game) !== 'neutral';
+  return Boolean(localAsset(game.cartridgePreview) || localAsset(game.cartLabel)) || themeFor(game) !== 'neutral';
 }
 
 function shellColor(game, channel) {
@@ -119,6 +119,22 @@ function styleShell(element, game) {
       element.style.removeProperty('--shell-' + channel);
     }
   }
+}
+
+function addCartridgePreview(element, game) {
+  const src = localAsset(game.cartridgePreview);
+  if (!src) return;
+  const image = document.createElement('img');
+  image.className = 'cartridge-render';
+  image.alt = '';
+  image.decoding = 'async';
+  image.hidden = true;
+  image.addEventListener('load', () => {
+    element.classList.add('has-cartridge-preview');
+    image.hidden = false;
+  }, { once: true });
+  image.src = src;
+  element.append(image);
 }
 
 function buildCartridge(game) {
@@ -141,6 +157,7 @@ function buildCartridge(game) {
     mark.hidden = false;
     title.hidden = true;
   }
+  addCartridgePreview(model, game);
   return model;
 }
 
@@ -303,19 +320,19 @@ function centerOf(element, stageRect) {
   };
 }
 
-function cartPath() {
+function cartPath(fullCart) {
   const stageRect = stage.getBoundingClientRect();
   const start = centerOf(box, stageRect);
   const opening = centerOf(slot, stageRect);
   const height = cart.offsetHeight;
-  const raised = { x: opening.x, y: opening.y - height * .46 };
+  const raised = { x: opening.x, y: opening.y - height * (fullCart ? .78 : .46) };
   const midway = {
     x: (start.x + raised.x) / 2,
     y: Math.max(height * .72, Math.min(start.y, raised.y) - height * .36)
   };
-  const partlySeated = { x: opening.x, y: opening.y + height * .11 };
-  const seated = { x: opening.x, y: opening.y + height * .39 };
-  return { start, raised, midway, partlySeated, seated };
+  const partlySeated = { x: opening.x, y: opening.y + height * (fullCart ? -.44 : .11) };
+  const seated = { x: opening.x, y: opening.y + height * (fullCart ? -.38 : .39) };
+  return { start, raised, midway, partlySeated, seated, partialClip: fullCart ? 6 : 57, seatedClip: fullCart ? 12 : 90 };
 }
 
 function pose(point, angle = 0, scale = 1, opacity = 1, clip = 0) {
@@ -333,7 +350,7 @@ function animate(run, element, keyframes, duration, easing, delay = 0) {
 }
 
 async function loadCartridge(run, path) {
-  const { start, raised, midway, partlySeated, seated } = path;
+  const { start, raised, midway, partlySeated, seated, partialClip, seatedClip } = path;
   ritualStatus.textContent = 'Opening the box…';
   await animate(run, lid, [
     { transform: 'rotateY(0deg)' },
@@ -352,9 +369,9 @@ async function loadCartridge(run, path) {
   ritualStatus.textContent = 'Seating cartridge…';
   await animate(run, cart, [
     pose(raised),
-    { ...pose(partlySeated, 0, 1, 1, 57), offset: .62 },
-    { ...pose(seated, 0, 1, 1, 90), offset: .96 },
-    pose(seated, 0, 1, 0, 90)
+    { ...pose(partlySeated, 0, 1, 1, partialClip), offset: .62 },
+    { ...pose(seated, 0, 1, 1, seatedClip), offset: .96 },
+    pose(seated, 0, 1, 0, seatedClip)
   ], 320, 'cubic-bezier(.46,0,.28,1)');
 
   machine.dataset.loaded = 'true';
@@ -369,7 +386,7 @@ async function loadCartridge(run, path) {
 }
 
 async function ejectCartridge(run, path) {
-  const { start, raised, midway, partlySeated, seated } = path;
+  const { start, raised, midway, partlySeated, seated, partialClip, seatedClip } = path;
   ritualStatus.textContent = 'Returning to the shelf…';
   await animate(run, dock, [
     { transform: 'translateY(' + stage.offsetHeight + 'px)' },
@@ -379,8 +396,8 @@ async function ejectCartridge(run, path) {
   machine.dataset.loaded = 'false';
   ritualStatus.textContent = 'Ejecting cartridge…';
   await animate(run, cart, [
-    pose(seated, 0, 1, 1, 90),
-    { ...pose(partlySeated, 0, 1, 1, 57), offset: .43 },
+    pose(seated, 0, 1, 1, seatedClip),
+    { ...pose(partlySeated, 0, 1, 1, partialClip), offset: .43 },
     pose(raised)
   ], 340, 'cubic-bezier(.27,.68,.3,1)');
 
@@ -429,6 +446,10 @@ function openRitual(game, mode, trigger) {
   boxTitle.textContent = game.title;
   boxTitle.hidden = Boolean(cover);
   cart.replaceChildren(buildCartridge(game));
+  const seatedPreview = slot.querySelector('.slot-loaded-cart');
+  seatedPreview.replaceChildren();
+  seatedPreview.classList.remove('has-cartridge-preview');
+  addCartridgePreview(seatedPreview, game);
   lid.style.transform = returning ? 'rotateY(-120deg)' : '';
   setArtwork(lid, '--box-art', cover);
   setArtwork(stage, '--stage-art', backdrop);
@@ -441,7 +462,7 @@ function openRitual(game, mode, trigger) {
 
   activeRitual = run;
   ritualSkip.focus({ preventScroll: true });
-  const path = cartPath();
+  const path = cartPath(Boolean(localAsset(game.cartridgePreview)));
   const sequence = returning ? ejectCartridge(run, path) : loadCartridge(run, path);
   sequence.catch((error) => {
     if (activeRitual !== run) return;

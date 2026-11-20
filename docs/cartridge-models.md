@@ -67,6 +67,24 @@ blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaqu
 blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/riverbed' 'riverbed' --native-gltf --shell-width .529 --shell-height .242 --shell-depth .089 --label-width .241 --label-height .071 --label-x -.022 --label-y -.084 --artifact-material creek-stone --ink-title
 ```
 
+### Aquarium enamel and gummy machinery
+
+Kingfisher's aquarium face pairs vitreous blue highlights with worn brass, coral, and colored fish relief. Triple Giblet uses a slicker finish on the hot pink shell and chartreuse spring, with satin mint plates and a dark rubber face. Its two-color title is cut out from `label.png` to follow the recess.
+
+```powershell
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/kingfisher' 'kingfisher' --native-gltf --shell-width .515 --shell-height .316 --shell-depth .102 --label-width .207 --label-height .050 --label-y -.067 --artifact-material aquarium-enamel
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/triple-giblet' 'triple-giblet' --native-gltf --shell-width .463 --shell-height .386 --shell-depth .090 --label-width .258 --label-height .095 --label-x .014 --label-y .011 --artifact-material gummy-machine --ink-title
+```
+
+### Case and slot previews
+
+Render previews from the finished GLBs. The renderer centers the connector, and the WebP packer preserves that horizontal center when it crops the transparent margins. Add the result as `cartridgePreview` in the catalog. The shelf uses it in the open case, during insertion and ejection, and in the player’s cartridge UI. The carousel and museum use `cartridgeModel` for interactive 3D. Regenerate the WebP after a model revision and version its URL if replacing an existing public file.
+
+```powershell
+blender -b --python-exit-code 1 --python "$pipeline/render-cartridge-previews.py" -- 'build/previews' 'build/kingfisher/kingfisher.glb' 'build/triple-giblet/triple-giblet.glb'
+python "$pipeline/pack-cartridge-previews.py" 'art/cartridges' 'build/previews/kingfisher.png' 'build/previews/triple-giblet.png'
+```
+
 ## Earlier builds and material studies
 
 The earlier ZONK and Undergrowth builds use [TripoSR](https://github.com/VAST-AI-Research/TripoSR/tree/107cefdc244c39106fa830359024f6a2f1c78871) and its [matching checkpoint](https://huggingface.co/stabilityai/TripoSR/tree/5b521936b01fbe1890f6f9baed0254ab6351c04a). Their first inference loads the public DINO ViT configuration.

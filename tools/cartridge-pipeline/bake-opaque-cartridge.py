@@ -24,8 +24,8 @@ finish = parser.add_mutually_exclusive_group()
 finish.add_argument('--candy-graft-material', action='store_true', help='metal pins and localized roughness for candy graft shells')
 finish.add_argument('--refractive-resin', action='store_true', help='cloudy cast shell with depth-dependent refraction')
 finish.add_argument('--compacted-scrap', action='store_true', help='mixed enamel, bare steel, plastic, and plated contacts')
-finish.add_argument('--artifact-material', choices=('gilt-enamel', 'creek-stone'),
-                    help='surface finish for a gilt instrument or a wet creek landform')
+finish.add_argument('--artifact-material', choices=('gilt-enamel', 'creek-stone', 'aquarium-enamel', 'gummy-machine'),
+                    help='surface finish for a reconstructed artifact')
 parser.add_argument('--resin-haze', type=float, default=1, help='uniform haze strength from 0 to 1')
 parser.add_argument('--pcb', type=Path, help='standalone fitted edge-card GLB')
 parser.add_argument('--pcb-window-top', type=float, default=-.105, help='top of the contact opening in GLB coordinates')
@@ -92,7 +92,9 @@ elif args.compacted_scrap:
     finish_name = 'Compacted enamel and salvage'
 elif args.artifact_material:
     finish_name = {'gilt-enamel': 'Gilt brass and indigo enamel',
-                   'creek-stone': 'River-worn stone, moss, and wet channel'}[args.artifact_material]
+                   'creek-stone': 'River-worn stone, moss, and wet channel',
+                   'aquarium-enamel': 'Vitreous aquarium enamel and brass',
+                   'gummy-machine': 'Gummy polymer, mint plates, and rubber gasket'}[args.artifact_material]
 material = bpy.data.materials.new(finish_name)
 atlas = bake_reference_atlas(shell, material, folder,
                              size=1024 if args.refractive_resin else 1536, basename='shell-atlas')

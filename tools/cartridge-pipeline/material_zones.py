@@ -140,11 +140,27 @@ def artifact_material(material, atlas, folder, shell_height, style):
         metal = np.maximum(.985*pins, .90*smooth(.085, .235, r-b)*smooth(.023, .17, g-b))
         darkness = 1-smooth(.15, .40, .24*r+.61*g+.15*b)
         roughness = .34 + .14*darkness - .15*metal
-    else:
+        coat = .10
+    elif style == 'creek-stone':
         moss = smooth(.018, .17, g-r)*smooth(.032, .25, g-b)
         water = smooth(.035, .18, b-r)*smooth(.050, .22, g-r)*(1-moss)
         metal = .99*pins
         roughness = .61 + .22*moss - .35*water - .32*pins
+        coat = .026
+    elif style == 'aquarium-enamel':
+        brass = smooth(.04, .20, r-g)*smooth(.10, .25, g-b)*smooth(.17, .45, g)
+        vitreous = smooth(.046, .26, np.maximum(g, b)-r)
+        coral = smooth(.045, .22, r-g)*smooth(.016, .12, b-g)
+        metal = np.maximum(.99*pins, .80*brass)
+        roughness = .37 - .19*vitreous - .10*brass + .13*coral
+        coat = .23
+    else:
+        pink = smooth(.05, .24, r-g)*smooth(.018, .15, b-g)
+        lime = smooth(.06, .22, g-b)*smooth(.30, .72, g)
+        mint = smooth(.05, .23, g-r)*smooth(.08, .45, b)
+        metal = .99*pins
+        roughness = .51 - .31*np.maximum(pink, lime) - .115*mint - .26*pins
+        coat = .22
     wear = np.random.default_rng(317).normal(0, .014, level.shape)
     finish = map_texture(nodes, folder, 'artifact-finish.png', 'Surface roughness G · metal B',
                          np.stack((np.ones_like(metal), np.clip(roughness+wear, .19, .89), metal), axis=-1))
@@ -152,4 +168,4 @@ def artifact_material(material, atlas, folder, shell_height, style):
     links.new(finish.outputs['Color'], channels.inputs[0])
     links.new(channels.outputs['Green'], bsdf.inputs['Roughness'])
     links.new(channels.outputs['Blue'], bsdf.inputs['Metallic'])
-    bsdf.inputs['Coat Weight'].default_value = .10 if style == 'gilt-enamel' else .026
+    bsdf.inputs['Coat Weight'].default_value = coat
