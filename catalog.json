@@ -287,7 +287,7 @@
       "cover": "./art/covers/swamp-rocket.webp",
       "cartLabel": "./art/labels/swamp-rocket-printed.webp",
       "cartLabelIncludesTitle": true,
-      "cartridgeModel": "./arcade/art/swamp-rocket.glb?v=94b5b9d4733f",
+      "cartridgeModel": "./arcade/art/swamp-rocket.glb?v=b4012cedf00e",
       "backdrop": "./art/backdrops/swamp-rocket.webp",
       "titleMark": null,
       "shellVariant": "ribbed",

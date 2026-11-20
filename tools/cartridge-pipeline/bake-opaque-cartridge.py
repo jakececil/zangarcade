@@ -95,8 +95,11 @@ if args.refractive_resin:
                                   board=board, haze=args.resin_haze)
     shell['opticalDisplay'] = True
 
-fit_label(shell, folder / 'label.jpg', width=args.label_width, height=args.label_height,
-          z=args.label_y, x=args.label_x, radius=.006, bulge=.0014)
+label = fit_label(shell, folder / 'label.jpg', width=args.label_width, height=args.label_height,
+                  z=args.label_y, x=args.label_x, radius=.006, bulge=.0014)
+if board:
+    label['cartridgeShadow'] = 'cast'
+    board['cartridgeShadow'] = 'receive'
 shell['Source'] = 'Hunyuan3D-2mv.' if args.native_gltf else 'TripoSR.'
 shell['Surface'] = 'Orthographic reference projections baked to the reconstructed shell.'
 frame_asset(.90)

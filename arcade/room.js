@@ -2,6 +2,7 @@ import * as THREE from './vendor/three.module.js';
 import { ENTRY_Z, museumGeometry } from './museum-geometry.js';
 import { HOME, buildGuts, mazeWalls, roomProfile } from './guts.js';
 import { loadCartridgeAsset } from './cartridge-assets.js';
+import { configureCartridgeKey, createCartridgeReflections, enableCartridgeShadows } from './cartridge-lighting.js';
 
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
@@ -60,6 +61,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   let dockPromise;
   let renderedFrames = 0;
   let lastScreenRect = null;
+  let inspectionReflections;
   let externalMove = { x: 0, z: 0 };
   const keys = new Set();
   const tweens = new Set();
@@ -245,15 +247,17 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     const label = paper();
     plane(.215, .132, label, fallback, .012, -.015, .027);
     for (const x of [-.123, .123]) box(.015, .015, .008, brass, fallback, x, .082, .027);
-    return { model, fallback, shell, board, label, displayWidth, asset: null, gameId: null };
+    return { model, fallback, shell, board, label, displayWidth, asset: null, gameId: null, shadows: false };
   }
 
   function useCartridgeAsset(parts, game) {
     loadCartridgeAsset(game.cartridgeModel).then(model => {
       if (disposed || parts.gameId !== game.id || parts.asset) return;
       parts.asset = model.clone(true);
+      parts.shadows = parts === inspectionCart && enableCartridgeShadows(parts.asset);
       parts.asset.traverse(object => { object.layers.mask = parts.model.layers.mask; });
       parts.model.add(parts.asset);
+      if (parts.shadows) parts.model.traverse(object => object.layers.set(2));
       if (parts.displayWidth) {
         const bounds = new THREE.Box3().setFromObject(model);
         const width = bounds.max.x - bounds.min.x;
@@ -271,6 +275,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function skinCartridge(parts, game) {
     if (parts.gameId === game.id) return;
     parts.gameId = game.id;
+    parts.shadows = false;
     const translucent = game.id === UNDERSHELL;
     if (parts.asset) {
       parts.asset.removeFromParent();
@@ -368,6 +373,14 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   box(.95, .09, .3, darkMetal, exhibit, 2.35, 2.83, -2.45);
   box(.64, .025, .18, amber, exhibit, 2.35, 2.77, -2.44);
   scene.traverse(object => { if (object.isLight) object.layers.enable(1); });
+  const inspectionKey = new THREE.DirectionalLight('#fff5df', 3.15);
+  configureCartridgeKey(inspectionKey);
+  const inspectionKeyOffset = inspectionKey.position.clone();
+  inspectionKey.castShadow = true;
+  const inspectionFill = new THREE.HemisphereLight('#fff4e2', '#a09baa', .88);
+  const inspectionRim = new THREE.DirectionalLight('#c3dcff', 1.23);
+  for (const light of [inspectionKey, inspectionFill, inspectionRim]) light.layers.set(2);
+  camera.add(inspectionKey, inspectionKey.target, inspectionFill, inspectionRim, inspectionRim.target);
 
   const homeObstacles = [
     { x: -2.38, z: .72, w: 2.14, d: .82 },
@@ -563,8 +576,16 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       renderer.clearDepth();
       scene.background = null;
     }
-    camera.layers.set(1);
+    const shadowedInspection = inspecting && inspectionCart.shadows;
+    if (shadowedInspection) {
+      scene.environment = inspectionReflections ??= createCartridgeReflections();
+      scene.environmentIntensity = .76;
+    }
+    renderer.shadowMap.enabled = shadowedInspection;
+    camera.layers.set(shadowedInspection ? 2 : 1);
     renderer.render(scene, camera);
+    renderer.shadowMap.enabled = false;
+    if (shadowedInspection) scene.environment = null;
     camera.layers.set(0);
     scene.background = background;
     renderedFrames++;
@@ -627,6 +648,10 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function inspectionPose() {
     const width = Math.min(.76, camera.aspect * .72);
     inspectedModel.position.set(0, 0, -.43 / (2 * width * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))));
+    inspectionKey.target.position.copy(inspectedModel.position);
+    inspectionKey.position.copy(inspectedModel.position).add(inspectionKeyOffset);
+    inspectionRim.target.position.copy(inspectedModel.position);
+    inspectionRim.position.set(.60, .10, -.50).add(inspectedModel.position);
   }
 
   function inspectCartridge(game) {
@@ -636,8 +661,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     clearInput();
     if (game) {
       releaseMouseLook();
-      inspectedModel.traverse(object => object.layers.set(1));
       skinCartridge(inspectionCart, game);
+      inspectedModel.traverse(object => object.layers.set(inspectionCart.shadows ? 2 : 1));
       inspectedModel.visible = true;
       inspectedModel.rotation.set(-.09, .19, 0);
       inspectionPose();
@@ -913,6 +938,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       museum.dispose();
       guts.dispose();
       for (const loaded of textures.values()) loaded.dispose();
+      inspectionKey.shadow.dispose();
+      inspectionReflections?.dispose();
       renderer.dispose();
     }
   };

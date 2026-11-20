@@ -75,6 +75,7 @@ def open_pcb_window(shell, board, top):
     backing = bpy.data.objects.new(mesh.name, mesh)
     bpy.context.collection.objects.link(backing)
     backing.parent = shell
+    backing['cartridgeShadow'] = 'both'
     bevel = backing.modifiers.new('Molded edge radius', 'BEVEL')
     bevel.width = .0014
     bevel.segments = 3

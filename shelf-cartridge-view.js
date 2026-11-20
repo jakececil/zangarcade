@@ -1,29 +1,6 @@
 import * as THREE from './arcade/vendor/three.module.js';
 import { loadCartridgeAsset } from './arcade/cartridge-assets.js';
-
-function displayReflections() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 128;
-  const context = canvas.getContext('2d');
-  context.fillStyle = '#666066';
-  context.fillRect(0, 0, 256, 128);
-  const softbox = context.createLinearGradient(0, 35, 0, 82);
-  softbox.addColorStop(0, '#666066');
-  softbox.addColorStop(.43, '#fff7ed');
-  softbox.addColorStop(.65, '#dfecff');
-  softbox.addColorStop(1, '#666066');
-  context.fillStyle = softbox;
-  context.fillRect(0, 35, 256, 47);
-  context.fillStyle = '#fff2e4';
-  context.fillRect(31, 39, 52, 23);
-  context.fillStyle = '#bedbff';
-  context.fillRect(171, 45, 25, 33);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.mapping = THREE.EquirectangularReflectionMapping;
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-}
+import { configureCartridgeKey, createCartridgeReflections, enableCartridgeShadows } from './arcade/cartridge-lighting.js';
 
 function transmissionPanel() {
   const surface = document.createElement('canvas');
@@ -63,12 +40,13 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
   const stage = new THREE.Group();
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, .01, 10);
   camera.position.z = 2;
-  scene.add(stage, new THREE.HemisphereLight('#fff4e2', '#a09baa', 2.15));
+  const fill = new THREE.HemisphereLight('#fff4e2', '#a09baa', 2.15);
   const key = new THREE.DirectionalLight('#fff5df', 1.65);
-  key.position.set(-1.4, 1.6, .7);
+  configureCartridgeKey(key);
+  const studioKeyPosition = key.position.clone();
   const rim = new THREE.DirectionalLight('#c3dcff', .84);
   rim.position.set(.9, .15, -.75);
-  scene.add(key, rim);
+  scene.add(stage, fill, key, rim);
 
   let active = false;
   let visible = false;
@@ -152,14 +130,21 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
     const asset = await loadCartridgeAsset(path);
     if (version !== request) return false;
     const model = asset.clone(true);
+    const shadows = enableCartridgeShadows(model);
     let usesMetalMap = false;
     let usesOpticalDisplay = false;
     model.traverse(object => {
       if (object.material?.metalnessMap && object.material.metalness > 0) usesMetalMap = true;
       if (object.userData.opticalDisplay) usesOpticalDisplay = true;
     });
-    if (usesMetalMap || usesOpticalDisplay) scene.environment = reflections ??= displayReflections();
-    scene.environmentIntensity = usesOpticalDisplay ? .94 : .63;
+    if (usesMetalMap || usesOpticalDisplay) scene.environment = reflections ??= createCartridgeReflections();
+    scene.environmentIntensity = shadows ? .76 : usesOpticalDisplay ? .94 : .63;
+    fill.intensity = shadows ? .88 : 2.15;
+    key.intensity = shadows ? 3.15 : 1.65;
+    rim.intensity = shadows ? 1.23 : .84;
+    if (shadows) key.position.copy(studioKeyPosition);
+    else key.position.set(-1.4, 1.6, .7);
+    key.castShadow = renderer.shadowMap.enabled = shadows;
     if (usesOpticalDisplay) {
       if (!panel) {
         panel = transmissionPanel();

@@ -46,6 +46,8 @@ blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaqu
 
 When baking a translucent shell, `--pcb` seats this mesh against a molded plastic backing and recesses the front contacts between the resin rails. The rear shell covers the tongue. Use `--pcb-window-top` to align the opening to the pin shoulder. The exterior resin keeps the same finish over the routed board and the surrounding casting. Inspect the front contacts, the covered rear edge, and the insertion fit. Publish the combined game GLB. Keep the standalone board and source in the authoring archive for the next shell.
 
+The PCB assembly exports a `cartridgeShadow` role on its opaque parts. The printed laminate casts, the board receives, and the saddle does both. The shelf and museum inspection use a small filtered shadow map and a lower fill light for models with these roles. The transparent casting reveals the lit interior through refraction. Rotate the cartridge under the fixed key light to check the moving label shadow.
+
 ## Earlier builds and material studies
 
 The earlier ZONK and Undergrowth builds use [TripoSR](https://github.com/VAST-AI-Research/TripoSR/tree/107cefdc244c39106fa830359024f6a2f1c78871) and its [matching checkpoint](https://huggingface.co/stabilityai/TripoSR/tree/5b521936b01fbe1890f6f9baed0254ab6351c04a). Their first inference loads the public DINO ViT configuration.
