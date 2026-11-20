@@ -160,6 +160,7 @@
       "status": "verified",
       "cover": "./art/covers/landfill.webp",
       "cartLabel": "./art/labels/landfill.webp",
+      "cartridgeModel": "./arcade/art/landfill.glb?v=1b2b20f3756e",
       "backdrop": "./art/backdrops/landfill.webp",
       "titleMark": null,
       "shellVariant": "notched",

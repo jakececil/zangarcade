@@ -29,9 +29,17 @@ The reconstruction writes the raw GLB, the largest connected shell as `shell-den
 
 Bake the reference colors into the shell atlas, fit the contact end, and keep the source mesh and projection UVs in Blender. The runtime exports the atlas on UV0. Lower Management uses a packed glTF roughness/metallic texture. The contacts and brass claw use a high metallic response. Plastic, bone, rubber, and the separate print use different roughness values. The carousel supplies a soft reflection environment for models with a metallic map. Rotate the result to check that these differences survive the bake.
 
+### Tile lettering and compacted scrap
+
+Landfill's six shell references leave a clear face for the title. The shell is reconstructed from the four horizontal views. The bake projects all six references and gives bare steel, painted enamel, and connector plating different finishes. The title tiles fit directly to the recovered front surface as shallow solid pieces with bevels and cast shadows.
+
+```powershell
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/landfill' 'landfill' --native-gltf --shell-width .512 --shell-height .313 --shell-depth .083 --label-width .305 --label-y -.041 --compacted-scrap --tile-title LANDFILL
+```
+
 ### Cloudy refractive resin
 
-The Swamp Rocket bake casts inward rays through the recovered mesh and puts the measured optical paths on the UV atlas. The browser uses that map for depth-dependent absorption and refraction at IOR 1.47. Mottled transmission, roughness, and pigment flecks give the cloudy regions a softer response. Set `--resin-haze` from 0 to 1 to tune that finish across the whole casting. The Blender master adds a volume-scatter shader for Cycles. The carousel uses a dark backlit panel for tagged models so you can see what the clear edges do as you rotate them. [glTF volume extension](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_volume)
+The Swamp Rocket bake casts inward rays through the recovered mesh and puts the measured optical paths on the UV atlas. The browser uses that map for depth-dependent absorption and refraction at IOR 1.47. Mottled transmission, roughness, and pigment flecks give the cloudy regions a softer response. Set `--resin-haze` from 0 to 1 to tune that finish across the whole casting. The Blender master adds a volume-scatter shader for Cycles. The carousel lights the resin from the same dark display backdrop used by the rest of the collection. [glTF volume extension](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_volume)
 
 ### Reusable edge-card PCB
 

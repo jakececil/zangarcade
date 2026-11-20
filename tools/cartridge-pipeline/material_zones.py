@@ -102,3 +102,26 @@ def candy_graft_material(material, surface_image, folder, shell_height):
     links.new(channels.outputs['Green'], bsdf.inputs['Roughness'])
     links.new(channels.outputs['Blue'], bsdf.inputs['Metallic'])
     bsdf.inputs['Coat Weight'].default_value = .075
+
+
+def compacted_scrap_material(material, atlas, folder, shell_height):
+    nodes, links = material.node_tree.nodes, material.node_tree.links
+    bsdf = nodes.get('Principled BSDF')
+    level = height_atlas(material, *atlas.size, shell_height)
+    r, g, b = np.moveaxis(np.clip(pixels(atlas)[:, :, :3], 0, 1)**(1/2.2), -1, 0)
+    brightness = .23*r + .64*g + .13*b
+    color_span = np.maximum.reduce((r, g, b)) - np.minimum.reduce((r, g, b))
+    gold = smooth(.02, .14, r-g)*smooth(.07, .25, g-b)*smooth(.24, .51, g)
+    contacts = (1-smooth(.078, .126, level))*gold
+    bare_steel = smooth(.28, .68, brightness)*(1-smooth(.066, .24, color_span))
+    metal = np.maximum(.99*contacts, .77*bare_steel)
+    tooling = 1-smooth(.16, .39, brightness)
+    scuffs = np.random.default_rng(513).normal(0, .021, level.shape)
+    roughness = np.clip(.39 + .18*tooling - .25*metal + scuffs, .15, .69)
+    atlas_node = map_texture(nodes, folder, 'scrap-finish.png', 'Salvage and plating B · roughness G',
+                             np.stack((np.ones_like(metal), roughness, metal), axis=-1))
+    channels = nodes.new('ShaderNodeSeparateColor')
+    links.new(atlas_node.outputs['Color'], channels.inputs[0])
+    links.new(channels.outputs['Green'], bsdf.inputs['Roughness'])
+    links.new(channels.outputs['Blue'], bsdf.inputs['Metallic'])
+    bsdf.inputs['Coat Weight'].default_value = .12

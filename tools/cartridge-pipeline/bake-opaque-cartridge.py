@@ -23,11 +23,13 @@ parser.add_argument('--yaw', type=float, default=0, help='input yaw adjustment i
 finish = parser.add_mutually_exclusive_group()
 finish.add_argument('--candy-graft-material', action='store_true', help='metal pins and localized roughness for candy graft shells')
 finish.add_argument('--refractive-resin', action='store_true', help='cloudy cast shell with depth-dependent refraction')
+finish.add_argument('--compacted-scrap', action='store_true', help='mixed enamel, bare steel, plastic, and plated contacts')
 parser.add_argument('--resin-haze', type=float, default=1, help='uniform haze strength from 0 to 1')
 parser.add_argument('--pcb', type=Path, help='standalone fitted edge-card GLB')
 parser.add_argument('--pcb-window-top', type=float, default=-.105, help='top of the contact opening in GLB coordinates')
+parser.add_argument('--tile-title', choices=('LANDFILL',), help='fit solid title tiles into the face')
 parser.add_argument('--label-width', type=float, required=True)
-parser.add_argument('--label-height', type=float, required=True)
+parser.add_argument('--label-height', type=float)
 parser.add_argument('--label-x', type=float, default=0)
 parser.add_argument('--label-y', type=float, required=True, help='label center height in GLB coordinates')
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
@@ -35,6 +37,8 @@ if args.pcb and not args.refractive_resin:
     parser.error('--pcb requires --refractive-resin')
 if not 0 <= args.resin_haze <= 1:
     parser.error('--resin-haze must be between 0 and 1')
+if not args.tile_title and args.label_height is None:
+    parser.error('--label-height is required for a printed label')
 folder = args.folder.resolve()
 
 bpy.ops.object.select_all(action='SELECT')
@@ -77,7 +81,12 @@ if args.pcb:
     for image in bpy.data.images:
         if image.filepath and not image.packed_file:
             image.pack()
-material = bpy.data.materials.new('Cast turquoise resin' if args.refractive_resin else 'Worn specimen carapace')
+finish_name = 'Worn specimen carapace'
+if args.refractive_resin:
+    finish_name = 'Cast turquoise resin'
+elif args.compacted_scrap:
+    finish_name = 'Compacted enamel and salvage'
+material = bpy.data.materials.new(finish_name)
 atlas = bake_reference_atlas(shell, material, folder,
                              size=1024 if args.refractive_resin else 1536, basename='shell-atlas')
 nodes, links = material.node_tree.nodes, material.node_tree.links
@@ -89,14 +98,23 @@ bsdf.inputs['Coat Roughness'].default_value = .24
 if args.candy_graft_material:
     from material_zones import candy_graft_material
     candy_graft_material(material, atlas, folder, args.shell_height)
+if args.compacted_scrap:
+    from material_zones import compacted_scrap_material
+    compacted_scrap_material(material, atlas, folder, args.shell_height)
 if args.refractive_resin:
     from resin_material import refractive_resin
     absorption = refractive_resin(shell, material, atlas, folder, args.shell_height,
                                   board=board, haze=args.resin_haze)
     shell['opticalDisplay'] = True
 
-label = fit_label(shell, folder / 'label.jpg', width=args.label_width, height=args.label_height,
-                  z=args.label_y, x=args.label_x, radius=.006, bulge=.0014)
+if args.tile_title:
+    from tile_title import fit_tile_title
+    label = fit_tile_title(shell, args.tile_title, width=args.label_width, x=args.label_x, z=args.label_y)
+    label['cartridgeShadow'] = 'cast'
+    shell['cartridgeShadow'] = 'receive'
+else:
+    label = fit_label(shell, folder / 'label.jpg', width=args.label_width, height=args.label_height,
+                      z=args.label_y, x=args.label_x, radius=.006, bulge=.0014)
 if board:
     label['cartridgeShadow'] = 'cast'
     board['cartridgeShadow'] = 'receive'
