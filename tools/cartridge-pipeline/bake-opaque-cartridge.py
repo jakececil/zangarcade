@@ -24,10 +24,14 @@ finish = parser.add_mutually_exclusive_group()
 finish.add_argument('--candy-graft-material', action='store_true', help='metal pins and localized roughness for candy graft shells')
 finish.add_argument('--refractive-resin', action='store_true', help='cloudy cast shell with depth-dependent refraction')
 finish.add_argument('--compacted-scrap', action='store_true', help='mixed enamel, bare steel, plastic, and plated contacts')
+finish.add_argument('--artifact-material', choices=('gilt-enamel', 'creek-stone'),
+                    help='surface finish for a gilt instrument or a wet creek landform')
 parser.add_argument('--resin-haze', type=float, default=1, help='uniform haze strength from 0 to 1')
 parser.add_argument('--pcb', type=Path, help='standalone fitted edge-card GLB')
 parser.add_argument('--pcb-window-top', type=float, default=-.105, help='top of the contact opening in GLB coordinates')
-parser.add_argument('--tile-title', choices=('LANDFILL',), help='fit solid title tiles into the face')
+title_style = parser.add_mutually_exclusive_group()
+title_style.add_argument('--tile-title', choices=('LANDFILL',), help='fit solid title tiles into the face')
+title_style.add_argument('--ink-title', action='store_true', help='fit the opaque lettering from alpha in label.png')
 parser.add_argument('--label-width', type=float, required=True)
 parser.add_argument('--label-height', type=float)
 parser.add_argument('--label-x', type=float, default=0)
@@ -86,6 +90,9 @@ if args.refractive_resin:
     finish_name = 'Cast turquoise resin'
 elif args.compacted_scrap:
     finish_name = 'Compacted enamel and salvage'
+elif args.artifact_material:
+    finish_name = {'gilt-enamel': 'Gilt brass and indigo enamel',
+                   'creek-stone': 'River-worn stone, moss, and wet channel'}[args.artifact_material]
 material = bpy.data.materials.new(finish_name)
 atlas = bake_reference_atlas(shell, material, folder,
                              size=1024 if args.refractive_resin else 1536, basename='shell-atlas')
@@ -101,6 +108,9 @@ if args.candy_graft_material:
 if args.compacted_scrap:
     from material_zones import compacted_scrap_material
     compacted_scrap_material(material, atlas, folder, args.shell_height)
+if args.artifact_material:
+    from material_zones import artifact_material
+    artifact_material(material, atlas, folder, args.shell_height, args.artifact_material)
 if args.refractive_resin:
     from resin_material import refractive_resin
     absorption = refractive_resin(shell, material, atlas, folder, args.shell_height,
@@ -113,8 +123,9 @@ if args.tile_title:
     label['cartridgeShadow'] = 'cast'
     shell['cartridgeShadow'] = 'receive'
 else:
-    label = fit_label(shell, folder / 'label.jpg', width=args.label_width, height=args.label_height,
-                      z=args.label_y, x=args.label_x, radius=.006, bulge=.0014)
+    label = fit_label(shell, folder / ('label.png' if args.ink_title else 'label.jpg'),
+                      width=args.label_width, height=args.label_height, z=args.label_y,
+                      x=args.label_x, radius=.006, bulge=0 if args.ink_title else .0014, ink_only=args.ink_title)
 if board:
     label['cartridgeShadow'] = 'cast'
     board['cartridgeShadow'] = 'receive'

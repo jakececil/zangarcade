@@ -125,3 +125,31 @@ def compacted_scrap_material(material, atlas, folder, shell_height):
     links.new(channels.outputs['Green'], bsdf.inputs['Roughness'])
     links.new(channels.outputs['Blue'], bsdf.inputs['Metallic'])
     bsdf.inputs['Coat Weight'].default_value = .12
+
+
+def artifact_material(material, atlas, folder, shell_height, style):
+    nodes, links = material.node_tree.nodes, material.node_tree.links
+    bsdf = nodes.get('Principled BSDF')
+    level = height_atlas(material, *atlas.size, shell_height)
+    linear = np.clip(pixels(atlas)[:, :, :3], 0, 1)
+    r, g, b = np.moveaxis(linear**(1/2.2), -1, 0)
+    gold = smooth(.023, .136, r-g)*smooth(.04, .17, g-b)*smooth(.17, .48, g)
+    pins = (1-smooth(.078, .124, level))*gold
+
+    if style == 'gilt-enamel':
+        metal = np.maximum(.985*pins, .90*smooth(.085, .235, r-b)*smooth(.023, .17, g-b))
+        darkness = 1-smooth(.15, .40, .24*r+.61*g+.15*b)
+        roughness = .34 + .14*darkness - .15*metal
+    else:
+        moss = smooth(.018, .17, g-r)*smooth(.032, .25, g-b)
+        water = smooth(.035, .18, b-r)*smooth(.050, .22, g-r)*(1-moss)
+        metal = .99*pins
+        roughness = .61 + .22*moss - .35*water - .32*pins
+    wear = np.random.default_rng(317).normal(0, .014, level.shape)
+    finish = map_texture(nodes, folder, 'artifact-finish.png', 'Surface roughness G · metal B',
+                         np.stack((np.ones_like(metal), np.clip(roughness+wear, .19, .89), metal), axis=-1))
+    channels = nodes.new('ShaderNodeSeparateColor')
+    links.new(finish.outputs['Color'], channels.inputs[0])
+    links.new(channels.outputs['Green'], bsdf.inputs['Roughness'])
+    links.new(channels.outputs['Blue'], bsdf.inputs['Metallic'])
+    bsdf.inputs['Coat Weight'].default_value = .10 if style == 'gilt-enamel' else .026

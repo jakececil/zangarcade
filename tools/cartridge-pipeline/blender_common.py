@@ -87,8 +87,8 @@ def open_pcb_window(shell, board, top):
     mesh.materials.append(material)
 
 
-def fit_label(shell, image_path, *, width, height, z, radius, bulge, x=0):
-    """Make a rounded UV-mapped laminate fitted to the shell's front surface."""
+def fit_label(shell, image_path, *, width, height, z, radius, bulge, x=0, ink_only=False):
+    """Fit an opaque laminate or cutout lettering to the shell's front surface."""
     tree = BVHTree.FromObject(shell, bpy.context.evaluated_depsgraph_get())
     columns, rows = 38, 26
     vertices, uv, faces = [], [], []
@@ -116,14 +116,15 @@ def fit_label(shell, image_path, *, width, height, z, radius, bulge, x=0):
         layer.data[loop.index].uv = uv[loop.vertex_index]
     for polygon in data.polygons:
         polygon.use_smooth = True
-    label = bpy.data.objects.new('Replaceable printed laminate', data)
+    label = bpy.data.objects.new('Face lettering' if ink_only else 'Replaceable printed laminate', data)
     bpy.context.collection.objects.link(label)
     label.parent = shell
-    thickness = label.modifiers.new('Paper and adhesive', 'SOLIDIFY')
-    thickness.thickness = .0004
-    thickness.offset = -1
+    if not ink_only:
+        thickness = label.modifiers.new('Paper and adhesive', 'SOLIDIFY')
+        thickness.thickness = .0004
+        thickness.offset = -1
 
-    material = bpy.data.materials.new('Printed label')
+    material = bpy.data.materials.new('Mineral-filled lettering' if ink_only else 'Printed label')
     material.use_nodes = True
     shader = material.node_tree.nodes.get('Principled BSDF')
     shader.inputs['Roughness'].default_value = .61
@@ -132,6 +133,12 @@ def fit_label(shell, image_path, *, width, height, z, radius, bulge, x=0):
     texture.image = bpy.data.images.load(str(image_path))
     texture.image.pack()
     material.node_tree.links.new(texture.outputs['Color'], shader.inputs['Base Color'])
+    if ink_only:
+        threshold = material.node_tree.nodes.new('ShaderNodeMath')
+        threshold.operation = 'GREATER_THAN'
+        threshold.inputs[1].default_value = .43
+        material.node_tree.links.new(texture.outputs['Alpha'], threshold.inputs[0])
+        material.node_tree.links.new(threshold.outputs[0], shader.inputs['Alpha'])
     data.materials.append(material)
     return label
 

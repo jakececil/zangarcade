@@ -27,6 +27,8 @@ blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaqu
 
 The reconstruction writes the raw GLB, the largest connected shell as `shell-dense.glb`, all six cropped projections, and a manifest of the view hashes and inference settings. Inspect the untextured shell edge-on, from above and below, and at rear three-quarter. Then measure the label well and use the top and sides to set `--shell-depth`. Older five-view builds can omit `--bottom`.
 
+For a revised top or underside image, rerun the command against the existing raw GLB with `--projections-only` and the six reference paths. It refreshes the texture projections and their hashes without running Hunyuan again. The four conditioning images must still match the reconstruction.
+
 Bake the reference colors into the shell atlas, fit the contact end, and keep the source mesh and projection UVs in Blender. The runtime exports the atlas on UV0. Lower Management uses a packed glTF roughness/metallic texture. The contacts and brass claw use a high metallic response. Plastic, bone, rubber, and the separate print use different roughness values. The carousel supplies a soft reflection environment for models with a metallic map. Rotate the result to check that these differences survive the bake.
 
 ### Tile lettering and compacted scrap
@@ -55,6 +57,15 @@ blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaqu
 When baking a translucent shell, `--pcb` seats this mesh against a molded plastic backing and recesses the front contacts between the resin rails. The rear shell covers the tongue. Use `--pcb-window-top` to align the opening to the pin shoulder. The exterior resin keeps the same finish over the routed board and the surrounding casting. Inspect the front contacts, the covered rear edge, and the insertion fit. Publish the combined game GLB. Keep the standalone board and source in the authoring archive for the next shell.
 
 The PCB assembly exports a `cartridgeShadow` role on its opaque parts. The printed laminate casts, the board receives, and the saddle does both. The shelf and museum inspection use a small filtered shadow map and a lower fill light for models with these roles. The transparent casting reveals the lit interior through refraction. Rotate the cartridge under the fixed key light to check the moving label shadow.
+
+### Gilt instruments and creek stone
+
+Reconstruct and project the six views as above. Cat’s Cradle uses raised brass thread pegs, a dark enamel plate, and a thin, fitted title transfer in its recessed well. Riverbed uses two different finishes for moss and the wet creek channel. Fit the lettering from `label.png` with `--ink-title` to reveal the stone beneath the gaps in the title.
+
+```powershell
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/cats-cradle' 'cats-cradle' --native-gltf --shell-width .405 --shell-height .405 --shell-depth .077 --label-width .207 --label-height .051 --label-y -.013 --artifact-material gilt-enamel
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/riverbed' 'riverbed' --native-gltf --shell-width .529 --shell-height .242 --shell-depth .089 --label-width .241 --label-height .071 --label-x -.022 --label-y -.084 --artifact-material creek-stone --ink-title
+```
 
 ## Earlier builds and material studies
 
