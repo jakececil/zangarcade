@@ -14,7 +14,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('output', type=Path)
 parser.add_argument('--source', required=True, type=Path, help='checkout of Tencent-Hunyuan/Hunyuan3D-2')
 parser.add_argument('--weights', required=True, type=Path, help='folder with config.yaml and model.fp16.safetensors')
-for view in ('front', 'left', 'back', 'right'):
+conditioning_views = ('front', 'left', 'back', 'right')
+reference_views = (*conditioning_views, 'top')
+for view in reference_views:
     parser.add_argument('--' + view, required=True, type=Path)
 parser.add_argument('--resolution', type=int, default=352)
 parser.add_argument('--steps', type=int, default=12)
@@ -30,15 +32,16 @@ folder = args.output.resolve().parent
 folder.mkdir(parents=True, exist_ok=True)
 inputs = {}
 hashes = {}
-projections = {'front': 'shell-dense.projection.png', 'back': 'shell-rear.projection.png',
-               'left': 'left.projection.png', 'right': 'right.projection.png'}
-for view in ('front', 'left', 'back', 'right'):
+projections = {'front': 'shell-dense.projection.png', 'back': 'shell-rear.projection.png'}
+for view in reference_views:
     path = getattr(args, view)
     hashes[view] = hashlib.sha256(path.read_bytes()).hexdigest()
     with Image.open(path) as image:
         masked = foreground_rgba(image, neutral_background=True, threshold=24, keep_holes=True)
-    inputs[view] = masked.crop(masked.getbbox())
-    inputs[view].save(folder / projections[view])
+    projection = masked.crop(masked.getbbox())
+    projection.save(folder / projections.get(view, view + '.projection.png'))
+    if view in conditioning_views:
+        inputs[view] = projection
 
 print('Conditioning views: ' + ', '.join(inputs), flush=True)
 torch.cuda.reset_peak_memory_stats()
@@ -54,7 +57,8 @@ body = max(mesh.split(only_watertight=False), key=lambda part: len(part.faces))
 if body.volume < 0:
     body.invert()
 body.export(folder / 'shell-dense.glb')
-stats = {'views': hashes, 'triangles': len(mesh.faces), 'steps': args.steps, 'seed': args.seed,
+stats = {'views': hashes, 'conditioning_views': list(inputs), 'triangles': len(mesh.faces),
+         'steps': args.steps, 'seed': args.seed,
          'resolution': args.resolution, 'gpu': torch.cuda.get_device_name(),
          'peak_allocated_gib': round(torch.cuda.max_memory_allocated()/2**30, 2),
          'main_component_triangles': len(body.faces)}

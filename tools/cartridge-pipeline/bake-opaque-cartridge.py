@@ -19,6 +19,7 @@ parser.add_argument('--shell-height', type=float, default=.321)
 parser.add_argument('--shell-depth', type=float, default=.099)
 parser.add_argument('--native-gltf', action='store_true', help='input mesh already uses glTF axes')
 parser.add_argument('--yaw', type=float, default=0, help='input yaw adjustment in degrees')
+parser.add_argument('--candy-graft-material', action='store_true', help='metal pins and localized roughness for candy graft shells')
 parser.add_argument('--label-width', type=float, required=True)
 parser.add_argument('--label-height', type=float, required=True)
 parser.add_argument('--label-x', type=float, default=0)
@@ -42,9 +43,11 @@ seat_center = (min(toe) + max(toe)) / 2
 
 front_name, rear_name = 'Front reference', 'Rear reference'
 left_name, right_name = 'Left reference', 'Right reference'
-for name in (front_name, rear_name, left_name, right_name):
+top_name = 'Top reference'
+projector_uvs = (front_name, rear_name, left_name, right_name, top_name)
+for name in projector_uvs:
     shell.data.uv_layers.new(name=name)
-front, rear, left, right = (shell.data.uv_layers[name] for name in (front_name, rear_name, left_name, right_name))
+front, rear, left, right, top = (shell.data.uv_layers[name] for name in projector_uvs)
 for loop in shell.data.loops:
     x, y, z = coords[loop.vertex_index]
     u, depth, v = (x-lo.x)/span.x, (y-lo.y)/span.y, (z-lo.z)/span.z
@@ -52,6 +55,7 @@ for loop in shell.data.loops:
     rear.data[loop.index].uv = (1-u, v)
     left.data[loop.index].uv = (1-depth, v)
     right.data[loop.index].uv = (depth, v)
+    top.data[loop.index].uv = (u, depth)
 
 # Preserve the shell's lean and asymmetry. The bottom of the recovered part
 # defines the connector center. Only the lower strip is constrained to the slot.
@@ -131,6 +135,9 @@ for side, layer, direction in (('left', left_name, (-1, 0, 0)), ('right', right_
     path = folder / (side + '.projection.png')
     if path.is_file():
         surface = project(path, layer, direction, surface, side=True)
+top_art = folder / 'top.projection.png'
+if top_art.is_file():
+    surface = project(top_art, top_name, (0, 0, 1), surface, side=True)
 emission = nodes.new('ShaderNodeEmission')
 links.new(surface, emission.inputs[0])
 links.new(emission.outputs[0], output.inputs['Surface'])
@@ -151,6 +158,9 @@ links.new(bsdf.outputs[0], output.inputs['Surface'])
 bsdf.inputs['Roughness'].default_value = .29
 bsdf.inputs['Coat Weight'].default_value = .20
 bsdf.inputs['Coat Roughness'].default_value = .24
+if args.candy_graft_material:
+    from material_zones import candy_graft_material
+    candy_graft_material(material, baked.image, folder, args.shell_height)
 
 fit_label(shell, folder / 'label.jpg', width=args.label_width, height=args.label_height,
           z=args.label_y, x=args.label_x, radius=.006, bulge=.0014)
@@ -158,9 +168,9 @@ shell['Source'] = 'Hunyuan3D-2mv.' if args.native_gltf else 'TripoSR.'
 shell['Surface'] = 'Orthographic reference projections baked to the reconstructed shell.'
 frame_asset(.90)
 bpy.ops.wm.save_as_mainfile(filepath=str(folder / (args.slug + '.blend')))
-# Four projector UVs stay editable in the .blend. The runtime only needs the
+# Projector UVs stay editable in the .blend. The runtime only needs the
 # baked atlas, and it belongs on UV0 for WebGL compatibility.
-for name in (front_name, rear_name, left_name, right_name):
+for name in projector_uvs:
     shell.data.uv_layers.remove(shell.data.uv_layers[name])
 bpy.ops.export_scene.gltf(filepath=str(folder / (args.slug + '.glb')), export_format='GLB',
                          export_yup=True, export_apply=True, export_extras=True,

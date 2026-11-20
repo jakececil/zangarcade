@@ -1,12 +1,37 @@
 import * as THREE from './arcade/vendor/three.module.js';
 import { loadCartridgeAsset } from './arcade/cartridge-assets.js';
 
+function displayReflections() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  context.fillStyle = '#666066';
+  context.fillRect(0, 0, 256, 128);
+  const softbox = context.createLinearGradient(0, 35, 0, 82);
+  softbox.addColorStop(0, '#666066');
+  softbox.addColorStop(.43, '#fff7ed');
+  softbox.addColorStop(.65, '#dfecff');
+  softbox.addColorStop(1, '#666066');
+  context.fillStyle = softbox;
+  context.fillRect(0, 35, 256, 47);
+  context.fillStyle = '#fff2e4';
+  context.fillRect(31, 39, 52, 23);
+  context.fillStyle = '#bedbff';
+  context.fillRect(171, 45, 25, 33);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.mapping = THREE.EquirectangularReflectionMapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#0d0d0e');
+  scene.environmentIntensity = .63;
   const stage = new THREE.Group();
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, .01, 10);
   camera.position.z = 2;
@@ -27,6 +52,7 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
   let pitch = 0;
   let phase = 0;
   let lastTime = 0;
+  let reflections;
 
   function invalidate() {
     if (active && !queued) queued = requestAnimationFrame(draw);
@@ -87,6 +113,7 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
     active = false;
     canvas.hidden = true;
     stage.clear();
+    scene.environment = null;
   }
 
   async function show(path) {
@@ -95,6 +122,11 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
     const asset = await loadCartridgeAsset(path);
     if (version !== request) return false;
     const model = asset.clone(true);
+    let usesMetalMap = false;
+    model.traverse(object => {
+      if (object.material?.metalnessMap && object.material.metalness > 0) usesMetalMap = true;
+    });
+    if (usesMetalMap) scene.environment = reflections ??= displayReflections();
     const box = new THREE.Box3().setFromObject(model);
     bounds = box.getSize(new THREE.Vector3());
     model.position.sub(box.getCenter(new THREE.Vector3()));
