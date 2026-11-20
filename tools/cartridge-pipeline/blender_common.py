@@ -26,6 +26,30 @@ def import_reconstruction(path, *, native_gltf=False):
     return shell
 
 
+def open_pcb_window(shell, board, top):
+    """Expose the board's real contact edge between the shell rails."""
+    contacts = [v.co.x for v in board.data.vertices if v.co.z <= top]
+    if not contacts:
+        raise ValueError('PCB window must reach above the edge-card tip')
+    left, right = min(contacts) - .002, max(contacts) + .002
+    if max(abs(left), abs(right)) > .129:
+        raise ValueError('PCB window leaves too little room for the connector rails')
+    bottom = -.175
+    bpy.ops.mesh.primitive_cube_add(size=1, location=((left+right)/2, 0, (top+bottom)/2))
+    cutter = bpy.context.object
+    cutter.dimensions = (right-left, .18, top-bottom)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    cutter.select_set(False)
+    shell.select_set(True)
+    bpy.context.view_layer.objects.active = shell
+    opening = shell.modifiers.new('Expose the PCB contact edge', 'BOOLEAN')
+    opening.operation = 'DIFFERENCE'
+    opening.object = cutter
+    bpy.ops.object.modifier_apply(modifier=opening.name)
+    bpy.data.objects.remove(cutter, do_unlink=True)
+    board.parent = shell
+
+
 def fit_label(shell, image_path, *, width, height, z, radius, bulge, x=0):
     """Make a rounded UV-mapped laminate fitted to the shell's front surface."""
     tree = BVHTree.FromObject(shell, bpy.context.evaluated_depsgraph_get())

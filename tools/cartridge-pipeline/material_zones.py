@@ -15,6 +15,24 @@ def pixels(image):
     return buffer.reshape(height, width, 4)
 
 
+def map_texture(nodes, folder, filename, label, rgb, *, color=False):
+    height, width, _ = rgb.shape
+    image = bpy.data.images.new(label, width, height, alpha=False)
+    if not color:
+        image.colorspace_settings.name = 'Non-Color'
+    rgba = np.ones((height, width, 4), dtype=np.float32)
+    rgba[:, :, :3] = np.clip(rgb, 0, 1)
+    image.pixels.foreach_set(rgba.ravel())
+    image.filepath_raw = str(folder / filename)
+    image.file_format = 'JPEG' if color else 'PNG'
+    image.save()
+    image.pack()
+    texture = nodes.new('ShaderNodeTexImage')
+    texture.image = image
+    texture.label = label
+    return texture
+
+
 def candy_graft_material(material, surface_image, folder, shell_height):
     nodes, links = material.node_tree.nodes, material.node_tree.links
     output = nodes.get('Material Output')

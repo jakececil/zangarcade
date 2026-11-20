@@ -31,7 +31,20 @@ Bake the reference colors into the shell atlas, fit the contact end, and keep th
 
 ### Cloudy refractive resin
 
-The Swamp Rocket bake casts inward rays through the recovered mesh and puts the measured optical paths on the UV atlas. The browser uses that map for depth-dependent absorption and refraction at IOR 1.47. Mottled transmission, roughness, and pigment flecks give the cloudy regions a softer response. Metal remains localized to the contacts. The Blender master adds a volume-scatter shader for Cycles. The carousel uses a dark backlit panel for tagged models so you can see what the clear edges do as you rotate them. [glTF volume extension](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_volume)
+The Swamp Rocket bake casts inward rays through the recovered mesh and puts the measured optical paths on the UV atlas. The browser uses that map for depth-dependent absorption and refraction at IOR 1.47. Mottled transmission, roughness, and pigment flecks give the cloudy regions a softer response. The Blender master adds a volume-scatter shader for Cycles. The carousel uses a dark backlit panel for tagged models so you can see what the clear edges do as you rotate them. [glTF volume extension](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_volume)
+
+### Reusable edge-card PCB
+
+Start with six matching views of the bare PCB. Match the contact row on the front, rear, and underside. Give at least one side clear traces and components so they read through tinted resin. Reconstruct the board with `reconstruct-multiview.py`, as above, using `build/zang-pcb/hunyuan-multiview.glb` as the output. Then bake the separate mesh using the same reference projector as the shell.
+
+```powershell
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-pcb.py" -- 'build/zang-pcb'
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/swamp-rocket' 'swamp-rocket' --native-gltf --shell-width .508 --shell-height .289 --shell-depth .074 --label-width .205 --label-height .092 --label-x -.022 --label-y -.015 --refractive-resin --pcb 'build/zang-pcb/zang-pcb.glb'
+```
+
+`zang-pcb.blend` keeps the reference projectors. The standalone `zang-pcb.glb` is aligned to the shared connector with its tongue bottom at Y = −0.143, centered on X. It has a baked color atlas and a separate packed roughness/metallic atlas for the warm copper and gold. Check how the board sits inside each new shell. The PCB bake's `--width`, `--height`, and `--depth` options can adapt it to the available space while preserving the connector datum.
+
+When baking a translucent shell, `--pcb` seats this mesh as a separate opaque child and cuts a contact opening between the resin rails. Use `--pcb-window-top` to align that opening to the pin shoulder. The optical bake measures through the resin to the PCB where the ray meets it, so the board details show at the right depth. Check both sides, the exposed gold edge, and the insertion fit. Publish the combined game GLB. Keep the standalone board and source in the authoring archive for the next shell.
 
 ## Earlier builds and material studies
 
