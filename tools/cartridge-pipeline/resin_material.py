@@ -63,7 +63,7 @@ def soft_noise(rng, width, height, scale):
     return np.stack([np.interp(y, np.arange(scale), col) for col in rows.T], axis=1)
 
 
-def refractive_resin(shell, material, surface_image, folder, shell_height, *, board=None):
+def refractive_resin(shell, material, surface_image, folder, shell_height, *, board=None, haze=1):
     width, height = surface_image.size
     # The shell keeps its own thickness and finish across the entire casting.
     path, level = np.moveaxis(optical_paths(shell, material, width, height, shell_height), -1, 0)
@@ -79,8 +79,9 @@ def refractive_resin(shell, material, surface_image, folder, shell_height, *, bo
     flecks = smooth(.967, .997, grain)*(.35 + .65*cloud)
     foam = smooth(.48, .85, .18*r + .62*g + .20*b)*smooth(.27, .71, r)
     cloud = np.clip(.51*cloud + .24*path + .36*foam, 0, 1)
-    roughness = (.077 + .31*cloud + .06*flecks)*(1-tongue) + .32*tongue
-    transmission = (.97 - .50*cloud)*(1-.93*tongue)*(1-contact)
+    frost = haze*cloud
+    roughness = (.077 + .31*frost + .06*flecks)*(1-tongue) + .32*tongue
+    transmission = (.97 - .50*frost)*(1-.93*tongue)*(1-contact)
     tint = np.array([.73, .97, .91])
     resin = tint*(.68 - .28*cloud[:, :, None]) + .37*linear + .10*flecks[:, :, None]
     color = resin*(1-tongue[:, :, None]) + linear*tongue[:, :, None]
@@ -121,10 +122,10 @@ def refractive_resin(shell, material, surface_image, folder, shell_height, *, bo
     links.new(scale.outputs[0], volume.inputs['Thickness'])
     absorption = nodes.new('ShaderNodeVolumeAbsorption')
     absorption.inputs['Color'].default_value = (*CAST_COLOR, 1)
-    absorption.inputs['Density'].default_value = 1/.038
+    absorption.inputs['Density'].default_value = 1/(.038*(1 + .60*(1-haze)))
     scatter = nodes.new('ShaderNodeVolumeScatter')
     scatter.inputs['Color'].default_value = (.58, .86, .77, 1)
-    scatter.inputs['Density'].default_value = 10
+    scatter.inputs['Density'].default_value = 10*haze
     scatter.inputs['Anisotropy'].default_value = .24
     volumes = nodes.new('ShaderNodeAddShader')
     links.new(absorption.outputs[0], volumes.inputs[0])

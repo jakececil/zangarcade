@@ -10,7 +10,7 @@ from mathutils import Vector
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.dont_write_bytecode = True
 from blender_common import frame_asset, import_reconstruction, smoothstep
-from material_zones import map_texture, pixels, smooth
+from material_zones import height_atlas, map_texture, pixels, smooth
 from reference_bake import bake_reference_atlas, create_projectors, remove_projectors
 
 parser = argparse.ArgumentParser()
@@ -55,8 +55,13 @@ bsdf = nodes.get('Principled BSDF')
 r, g, b = np.moveaxis(np.clip(pixels(atlas)[:, :, :3], 0, 1)**(1/2.2), -1, 0)
 copper = smooth(.047, .19, r-g)*smooth(.07, .22, r-b)*smooth(.25, .57, r)
 gold = smooth(.04, .21, g-b)*smooth(.08, .22, r-g)*smooth(.37, .66, g)
-metal = np.maximum(.72*copper, .94*gold)
-roughness = .55 - .27*metal
+level = height_atlas(material, *atlas.size, args.height)
+# The front gold plating gets a stronger metallic response than the routed
+# copper. Restrict it to the edge and preserve the dark gaps between pads.
+pad = (1-smooth(.188, .213, level))*smooth(.014, .085, r-g)*smooth(.09, .20, g-b)
+pad *= smooth(.22, .45, g)
+metal = np.maximum(np.maximum(.72*copper, .94*gold), .99*pad)
+roughness = .55 - .27*metal - .095*pad
 finish = map_texture(nodes, folder, 'pcb-finish.png', 'Copper and gold B · roughness G',
                      np.stack((np.ones_like(metal), roughness, metal), axis=-1))
 channels = nodes.new('ShaderNodeSeparateColor')

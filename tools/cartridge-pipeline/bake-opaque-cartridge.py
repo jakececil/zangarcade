@@ -23,6 +23,7 @@ parser.add_argument('--yaw', type=float, default=0, help='input yaw adjustment i
 finish = parser.add_mutually_exclusive_group()
 finish.add_argument('--candy-graft-material', action='store_true', help='metal pins and localized roughness for candy graft shells')
 finish.add_argument('--refractive-resin', action='store_true', help='cloudy cast shell with depth-dependent refraction')
+parser.add_argument('--resin-haze', type=float, default=1, help='uniform haze strength from 0 to 1')
 parser.add_argument('--pcb', type=Path, help='standalone fitted edge-card GLB')
 parser.add_argument('--pcb-window-top', type=float, default=-.105, help='top of the contact opening in GLB coordinates')
 parser.add_argument('--label-width', type=float, required=True)
@@ -32,6 +33,8 @@ parser.add_argument('--label-y', type=float, required=True, help='label center h
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 if args.pcb and not args.refractive_resin:
     parser.error('--pcb requires --refractive-resin')
+if not 0 <= args.resin_haze <= 1:
+    parser.error('--resin-haze must be between 0 and 1')
 folder = args.folder.resolve()
 
 bpy.ops.object.select_all(action='SELECT')
@@ -88,7 +91,8 @@ if args.candy_graft_material:
     candy_graft_material(material, atlas, folder, args.shell_height)
 if args.refractive_resin:
     from resin_material import refractive_resin
-    absorption = refractive_resin(shell, material, atlas, folder, args.shell_height, board=board)
+    absorption = refractive_resin(shell, material, atlas, folder, args.shell_height,
+                                  board=board, haze=args.resin_haze)
     shell['opticalDisplay'] = True
 
 fit_label(shell, folder / 'label.jpg', width=args.label_width, height=args.label_height,

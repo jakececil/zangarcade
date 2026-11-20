@@ -33,15 +33,11 @@ def map_texture(nodes, folder, filename, label, rgb, *, color=False):
     return texture
 
 
-def candy_graft_material(material, surface_image, folder, shell_height):
+def height_atlas(material, width, height, object_height):
     nodes, links = material.node_tree.nodes, material.node_tree.links
     output = nodes.get('Material Output')
     bsdf = nodes.get('Principled BSDF')
-    width, height = surface_image.size
-
-    # Bake object height into the same atlas. Color can then distinguish the
-    # gold contacts below the shell from similarly colored wear in the plastic.
-    height_image = bpy.data.images.new('Temporary shell height', width, height, alpha=False, float_buffer=True)
+    height_image = bpy.data.images.new('Temporary object height', width, height, alpha=False, float_buffer=True)
     height_image.colorspace_settings.name = 'Non-Color'
     target = nodes.new('ShaderNodeTexImage')
     target.image = height_image
@@ -49,8 +45,8 @@ def candy_graft_material(material, surface_image, folder, shell_height):
     xyz = nodes.new('ShaderNodeSeparateXYZ')
     normalize = nodes.new('ShaderNodeMath')
     normalize.operation = 'MULTIPLY_ADD'
-    normalize.inputs[1].default_value = 1/shell_height
-    normalize.inputs[2].default_value = .143/shell_height
+    normalize.inputs[1].default_value = 1/object_height
+    normalize.inputs[2].default_value = .143/object_height
     emission = nodes.new('ShaderNodeEmission')
     links.new(geometry.outputs['Position'], xyz.inputs[0])
     links.new(xyz.outputs['Z'], normalize.inputs[0])
@@ -63,7 +59,14 @@ def candy_graft_material(material, surface_image, folder, shell_height):
     for node in (target, geometry, xyz, normalize, emission):
         nodes.remove(node)
     bpy.data.images.remove(height_image)
+    return level
 
+
+def candy_graft_material(material, surface_image, folder, shell_height):
+    nodes, links = material.node_tree.nodes, material.node_tree.links
+    bsdf = nodes.get('Principled BSDF')
+    width, height = surface_image.size
+    level = height_atlas(material, width, height, shell_height)
     linear = np.clip(pixels(surface_image)[:, :, :3], 0, 1)
     r, g, b = np.moveaxis(linear**(1/2.2), -1, 0)
     bright = .29*r + .57*g + .14*b

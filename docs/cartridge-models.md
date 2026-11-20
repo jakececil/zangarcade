@@ -31,7 +31,7 @@ Bake the reference colors into the shell atlas, fit the contact end, and keep th
 
 ### Cloudy refractive resin
 
-The Swamp Rocket bake casts inward rays through the recovered mesh and puts the measured optical paths on the UV atlas. The browser uses that map for depth-dependent absorption and refraction at IOR 1.47. Mottled transmission, roughness, and pigment flecks give the cloudy regions a softer response. The Blender master adds a volume-scatter shader for Cycles. The carousel uses a dark backlit panel for tagged models so you can see what the clear edges do as you rotate them. [glTF volume extension](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_volume)
+The Swamp Rocket bake casts inward rays through the recovered mesh and puts the measured optical paths on the UV atlas. The browser uses that map for depth-dependent absorption and refraction at IOR 1.47. Mottled transmission, roughness, and pigment flecks give the cloudy regions a softer response. Set `--resin-haze` from 0 to 1 to tune that finish across the whole casting. The Blender master adds a volume-scatter shader for Cycles. The carousel uses a dark backlit panel for tagged models so you can see what the clear edges do as you rotate them. [glTF volume extension](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_volume)
 
 ### Reusable edge-card PCB
 
@@ -39,10 +39,10 @@ Start with six matching views of the bare PCB. Match the contact row on the fron
 
 ```powershell
 blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-pcb.py" -- 'build/zang-pcb'
-blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/swamp-rocket' 'swamp-rocket' --native-gltf --shell-width .508 --shell-height .289 --shell-depth .074 --label-width .205 --label-height .092 --label-x -.022 --label-y -.015 --refractive-resin --pcb 'build/zang-pcb/zang-pcb.glb'
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/swamp-rocket' 'swamp-rocket' --native-gltf --shell-width .508 --shell-height .289 --shell-depth .074 --label-width .205 --label-height .092 --label-x -.022 --label-y -.015 --refractive-resin --resin-haze .28 --pcb 'build/zang-pcb/zang-pcb.glb'
 ```
 
-`zang-pcb.blend` keeps the reference projectors. The standalone `zang-pcb.glb` is aligned to the shared connector with its tongue bottom at Y = −0.143, centered on X. It has a baked color atlas and a separate packed roughness/metallic atlas for the warm copper and gold. The tongue is plated on the front. Check how the board sits inside each new shell. The PCB bake's `--width`, `--height`, and `--depth` options can adapt it to the available space while preserving the connector datum.
+`zang-pcb.blend` keeps the reference projectors. The standalone `zang-pcb.glb` is aligned to the shared connector with its tongue bottom at Y = −0.143, centered on X. It has a baked color atlas and a packed roughness/metallic atlas for the copper and gold. The front gold pads have a higher metallic response and a smoother finish than the laminate between them. Check how the board sits inside each new shell. The PCB bake's `--width`, `--height`, and `--depth` options can adapt it to the available space while preserving the connector datum.
 
 When baking a translucent shell, `--pcb` seats this mesh against a molded plastic backing and recesses the front contacts between the resin rails. The rear shell covers the tongue. Use `--pcb-window-top` to align the opening to the pin shoulder. The exterior resin keeps the same finish over the routed board and the surrounding casting. Inspect the front contacts, the covered rear edge, and the insertion fit. Publish the combined game GLB. Keep the standalone board and source in the authoring archive for the next shell.
 
