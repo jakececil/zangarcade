@@ -486,7 +486,7 @@ window.addEventListener('storage', event => {
 });
 
 try {
-  const response = await fetch(new URL('catalog.json', base));
+  const response = await fetch(new URL('catalog.json', base), { cache: 'no-cache' });
   if (!response.ok) throw new Error('The game catalog could not be loaded.');
   const entries = (await response.json()).games.filter(game => game.status === 'verified' && game.platform === 'GBA');
   directory.add(new Option(HOME.title, HOME.id));

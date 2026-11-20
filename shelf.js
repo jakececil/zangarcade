@@ -522,7 +522,7 @@ watchImage(machineArt, (loaded) => {
 
 async function loadShelf() {
   try {
-    const response = await fetch('./catalog.json');
+    const response = await fetch('./catalog.json', { cache: 'no-cache' });
     if (!response.ok) throw new Error('Catalog returned HTTP ' + response.status);
     const catalog = await response.json();
     const games = catalog.games.filter((game) => game.status === 'verified')
