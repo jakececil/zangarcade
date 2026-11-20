@@ -1,33 +1,37 @@
 # Making cartridges for ZANG Arcade
 
-**The standard for new cartridges is five matched orthographic references and Hunyuan3D-2mv reconstruction.** Specimen Run established the multiview geometry workflow. Lower Management adds the top reference and separate material zones. All cartridges share the handheld connector coordinates.
+**The standard for new cartridges is six matched orthographic references and Hunyuan3D-2mv reconstruction.** Specimen Run established the multiview geometry workflow. Lower Management added the top reference and separate material zones. Swamp Rocket adds the underside and a cloudy refractive casting. All cartridges share the handheld connector coordinates.
 
 ## Art masters
 
 1. Generate a **straight-on front** with the whole shell isolated on a neutral background. Give it a centered contact tongue and a well for a separate label. Lock the design before making the other views.
 2. Make the **rear, left, and right** from that front reference. The rear reverses the front's handedness. The sides show the profile, the connector depth, and how the details wrap around the body. Keep the same casing, pose, contact line, and scale across the set.
-3. Make a **top** elevation with the label side toward the bottom of the image. Use it to check front-to-back depth and bake the upper rim and exposed top surfaces.
+3. Make a **top** elevation with the label side toward the bottom of the image. Make an **underside** elevation with the label side toward the top. Check front-to-back depth, the connector opening, and where the contact board meets the shell. Bake both edges from their matching views.
 4. Generate the print separately using the game's box art. Fit it to the measured well and keep it on its own mesh.
 
 Keep full-resolution references, dense GLBs, raw textures, and Blender files outside the Pages folder. Bring only the optimized GLB and the optional flat WebP print into the site.
 
 ## Standard multiview build
 
-[Hunyuan3D-2mv](https://huggingface.co/tencent/Hunyuan3D-2mv) jointly conditions one mesh on the front, left, rear, and right. The top reference is required for the project and used in the Blender bake and depth check. Use [code revision f8db630](https://github.com/Tencent-Hunyuan/Hunyuan3D-2/tree/f8db63096c8282cb27354314d896feba5ba6ff8a) and the `hunyuan3d-dit-v2-mv-turbo` weights under [model revision 3a761b5](https://huggingface.co/tencent/Hunyuan3D-2mv/tree/3a761b539b29fe4ff64714813aa9560fd66f5de0). Place `config.yaml` and `model.fp16.safetensors` together. The browser receives the resulting GLB. [Model license](https://huggingface.co/tencent/Hunyuan3D-2mv/blob/main/LICENSE)
+[Hunyuan3D-2mv](https://huggingface.co/tencent/Hunyuan3D-2mv) jointly conditions one mesh on the front, left, rear, and right. Use the top and underside for the Blender bake and fit check. Use [code revision f8db630](https://github.com/Tencent-Hunyuan/Hunyuan3D-2/tree/f8db63096c8282cb27354314d896feba5ba6ff8a) and the `hunyuan3d-dit-v2-mv-turbo` weights under [model revision 3a761b5](https://huggingface.co/tencent/Hunyuan3D-2mv/tree/3a761b539b29fe4ff64714813aa9560fd66f5de0). Place `config.yaml` and `model.fp16.safetensors` together. The browser receives the resulting GLB. [Model license](https://huggingface.co/tencent/Hunyuan3D-2mv/blob/main/LICENSE)
 
-These commands use Python 3.12, a Python virtual environment, [PyTorch 2.8.0 with CUDA 12.8](https://download.pytorch.org/whl/cu128), and Blender 4.5 LTS. Put the fitted print in `build/lower-management/label.jpg`.
+These commands use Python 3.12, a Python virtual environment, [PyTorch 2.8.0 with CUDA 12.8](https://download.pytorch.org/whl/cu128), and Blender 4.5 LTS. Put the fitted print in `build/swamp-rocket/label.jpg`.
 
 ```powershell
 python -m pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
 python -m pip install omegaconf==2.3.0 transformers==4.51.3 trimesh==4.6.11 einops==0.8.1 scikit-image==0.25.2 imageio==2.37.0 diffusers==0.35.2 accelerate==1.10.1 pymeshlab==2025.7 opencv-python-headless==4.12.0.88
 $pipeline = 'tools/cartridge-pipeline'
-python "$pipeline/reconstruct-multiview.py" 'build/lower-management/hunyuan-multiview.glb' --source 'local/Hunyuan3D-2' --weights 'local/hunyuan-mv-weights' --front 'masters/lower-front.png' --left 'masters/lower-left.png' --back 'masters/lower-rear.png' --right 'masters/lower-right.png' --top 'masters/lower-top.png'
-blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/lower-management' 'gut-punch-lower-management' --native-gltf --shell-depth .078 --label-width .252 --label-height .095 --label-y -.011 --candy-graft-material
+python "$pipeline/reconstruct-multiview.py" 'build/swamp-rocket/hunyuan-multiview.glb' --source 'local/Hunyuan3D-2' --weights 'local/hunyuan-mv-weights' --front 'masters/swamp-rocket-cartridge-front.png' --left 'masters/swamp-rocket-cartridge-left.png' --back 'masters/swamp-rocket-cartridge-back.png' --right 'masters/swamp-rocket-cartridge-right.png' --top 'masters/swamp-rocket-cartridge-top.png' --bottom 'masters/swamp-rocket-cartridge-bottom.png'
+blender -b --factory-startup --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/swamp-rocket' 'swamp-rocket' --native-gltf --shell-width .508 --shell-height .289 --shell-depth .074 --label-width .205 --label-height .092 --label-x -.022 --label-y -.015 --refractive-resin
 ```
 
-The reconstruction writes the raw GLB, the largest connected shell as `shell-dense.glb`, all five cropped projections, and a manifest of the view hashes and inference settings. Inspect the untextured shell edge-on, from above, and at rear three-quarter. Then measure the label well and use the top and sides to set `--shell-depth`.
+The reconstruction writes the raw GLB, the largest connected shell as `shell-dense.glb`, all six cropped projections, and a manifest of the view hashes and inference settings. Inspect the untextured shell edge-on, from above and below, and at rear three-quarter. Then measure the label well and use the top and sides to set `--shell-depth`. Older five-view builds can omit `--bottom`.
 
 Bake the reference colors into the shell atlas, fit the contact end, and keep the source mesh and projection UVs in Blender. The runtime exports the atlas on UV0. Lower Management uses a packed glTF roughness/metallic texture. The contacts and brass claw use a high metallic response. Plastic, bone, rubber, and the separate print use different roughness values. The carousel supplies a soft reflection environment for models with a metallic map. Rotate the result to check that these differences survive the bake.
+
+### Cloudy refractive resin
+
+The Swamp Rocket bake casts inward rays through the recovered mesh and puts the measured optical paths on the UV atlas. The browser uses that map for depth-dependent absorption and refraction at IOR 1.47. Mottled transmission, roughness, and pigment flecks give the cloudy regions a softer response. Metal remains localized to the contacts. The Blender master adds a volume-scatter shader for Cycles. The carousel uses a dark backlit panel for tagged models so you can see what the clear edges do as you rotate them. [glTF volume extension](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_volume)
 
 ## Earlier builds and material studies
 

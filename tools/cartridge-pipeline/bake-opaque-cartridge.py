@@ -1,4 +1,4 @@
-"""Fit and bake a generated opaque cartridge, with a replaceable printed label."""
+"""Fit and bake a multiview cartridge, with a separate printed label."""
 import argparse
 import math
 import sys
@@ -19,7 +19,9 @@ parser.add_argument('--shell-height', type=float, default=.321)
 parser.add_argument('--shell-depth', type=float, default=.099)
 parser.add_argument('--native-gltf', action='store_true', help='input mesh already uses glTF axes')
 parser.add_argument('--yaw', type=float, default=0, help='input yaw adjustment in degrees')
-parser.add_argument('--candy-graft-material', action='store_true', help='metal pins and localized roughness for candy graft shells')
+finish = parser.add_mutually_exclusive_group()
+finish.add_argument('--candy-graft-material', action='store_true', help='metal pins and localized roughness for candy graft shells')
+finish.add_argument('--refractive-resin', action='store_true', help='cloudy cast shell with depth-dependent refraction')
 parser.add_argument('--label-width', type=float, required=True)
 parser.add_argument('--label-height', type=float, required=True)
 parser.add_argument('--label-x', type=float, default=0)
@@ -43,11 +45,11 @@ seat_center = (min(toe) + max(toe)) / 2
 
 front_name, rear_name = 'Front reference', 'Rear reference'
 left_name, right_name = 'Left reference', 'Right reference'
-top_name = 'Top reference'
-projector_uvs = (front_name, rear_name, left_name, right_name, top_name)
+top_name, bottom_name = 'Top reference', 'Underside reference'
+projector_uvs = (front_name, rear_name, left_name, right_name, top_name, bottom_name)
 for name in projector_uvs:
     shell.data.uv_layers.new(name=name)
-front, rear, left, right, top = (shell.data.uv_layers[name] for name in projector_uvs)
+front, rear, left, right, top, bottom = (shell.data.uv_layers[name] for name in projector_uvs)
 for loop in shell.data.loops:
     x, y, z = coords[loop.vertex_index]
     u, depth, v = (x-lo.x)/span.x, (y-lo.y)/span.y, (z-lo.z)/span.z
@@ -56,6 +58,7 @@ for loop in shell.data.loops:
     left.data[loop.index].uv = (1-depth, v)
     right.data[loop.index].uv = (depth, v)
     top.data[loop.index].uv = (u, depth)
+    bottom.data[loop.index].uv = (u, 1-depth)
 
 # Preserve the shell's lean and asymmetry. The bottom of the recovered part
 # defines the connector center. Only the lower strip is constrained to the slot.
@@ -83,7 +86,7 @@ bpy.ops.mesh.select_all(action='SELECT')
 bpy.ops.uv.smart_project(angle_limit=1.10, island_margin=.010, correct_aspect=True)
 bpy.ops.object.mode_set(mode='OBJECT')
 
-material = bpy.data.materials.new('Worn specimen carapace')
+material = bpy.data.materials.new('Cast turquoise resin' if args.refractive_resin else 'Worn specimen carapace')
 material.use_nodes = True
 shell.data.materials.clear()
 shell.data.materials.append(material)
@@ -135,14 +138,16 @@ for side, layer, direction in (('left', left_name, (-1, 0, 0)), ('right', right_
     path = folder / (side + '.projection.png')
     if path.is_file():
         surface = project(path, layer, direction, surface, side=True)
-top_art = folder / 'top.projection.png'
-if top_art.is_file():
-    surface = project(top_art, top_name, (0, 0, 1), surface, side=True)
+for view, layer, direction in (('top', top_name, (0, 0, 1)), ('bottom', bottom_name, (0, 0, -1))):
+    path = folder / (view + '.projection.png')
+    if path.is_file():
+        surface = project(path, layer, direction, surface, side=True)
 emission = nodes.new('ShaderNodeEmission')
 links.new(surface, emission.inputs[0])
 links.new(emission.outputs[0], output.inputs['Surface'])
 baked = nodes.new('ShaderNodeTexImage')
-baked.image = bpy.data.images.new('Specimen reference bake', width=1536, height=1536)
+size = 1024 if args.refractive_resin else 1536
+baked.image = bpy.data.images.new('Shell reference bake', width=size, height=size)
 nodes.active = baked
 bpy.context.scene.render.engine = 'CYCLES'
 bpy.context.scene.cycles.device = 'CPU'
@@ -161,6 +166,10 @@ bsdf.inputs['Coat Roughness'].default_value = .24
 if args.candy_graft_material:
     from material_zones import candy_graft_material
     candy_graft_material(material, baked.image, folder, args.shell_height)
+if args.refractive_resin:
+    from resin_material import refractive_resin
+    absorption = refractive_resin(shell, material, baked.image, folder, args.shell_height)
+    shell['opticalDisplay'] = True
 
 fit_label(shell, folder / 'label.jpg', width=args.label_width, height=args.label_height,
           z=args.label_y, x=args.label_x, radius=.006, bulge=.0014)
@@ -172,6 +181,10 @@ bpy.ops.wm.save_as_mainfile(filepath=str(folder / (args.slug + '.blend')))
 # baked atlas, and it belongs on UV0 for WebGL compatibility.
 for name in projector_uvs:
     shell.data.uv_layers.remove(shell.data.uv_layers[name])
+if args.refractive_resin:
+    # Leave scattering in the editable Cycles shader. The glTF exporter
+    # recognizes a direct absorption connection for KHR_materials_volume.
+    links.new(absorption, output.inputs['Volume'])
 bpy.ops.export_scene.gltf(filepath=str(folder / (args.slug + '.glb')), export_format='GLB',
                          export_yup=True, export_apply=True, export_extras=True,
                          export_vertex_color='NONE', export_cameras=False, export_lights=False)

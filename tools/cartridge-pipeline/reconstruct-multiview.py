@@ -18,10 +18,13 @@ conditioning_views = ('front', 'left', 'back', 'right')
 reference_views = (*conditioning_views, 'top')
 for view in reference_views:
     parser.add_argument('--' + view, required=True, type=Path)
+parser.add_argument('--bottom', type=Path, help='underside projection for the reference bake')
 parser.add_argument('--resolution', type=int, default=352)
 parser.add_argument('--steps', type=int, default=12)
 parser.add_argument('--seed', type=int, default=12345)
 args = parser.parse_args()
+if args.bottom:
+    reference_views = (*reference_views, 'bottom')
 if args.output.name == 'shell-dense.glb':
     parser.error('use a separate filename for the raw model, such as hunyuan-multiview.glb')
 
