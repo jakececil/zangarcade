@@ -233,6 +233,8 @@
       "status": "verified",
       "cover": "./art/covers/parasol.webp",
       "cartLabel": "./art/labels/parasol.webp",
+      "cartridgeModel": "./arcade/art/parasol.glb?v=410a86985414",
+      "cartridgePreview": "./art/cartridges/parasol.webp?v=70b07d9cf164",
       "backdrop": "./art/backdrops/parasol.webp",
       "titleMark": null,
       "shellVariant": "survey",

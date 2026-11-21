@@ -85,6 +85,12 @@ blender -b 'build/kingfisher-housing.blend' --python-exit-code 1 --python "$pipe
 
 The Blender master gives the dome an actual inner wall. The browser uses the curved outer mesh, glTF thickness and IOR. The `cartridgeClearGlazing` flag keeps the transmitted image sharp while leaving the glass reflections and bend in place. Inspect both directions of rotation to verify that the fish sit inside the pane.
 
+### Parasol optical assembly
+
+Use the six-view sunburst board for Parasol's bronze casting, ceramic shield, and rear photovoltaic array. Reconstruct the shell with the four horizontal views and keep the top and underside projections for the texture bake. Run `assemble-parasol.py` with that build folder to fit the shell, cut the optical chamber, and install the solid fluted lens, circuit boards, and keyed connector.
+
+The lens exports with transmission, IOR, and amber absorption. Two groups of four amber LED dies sit behind it, with short-range point lights for light spill. A cyan phosphor inlay traces the shield edge. The GLB exports the lights and emissive materials independently of the housing texture. Inspect the front, profile, and back in the browser before rendering the case preview.
+
 ### Case and slot previews
 
 Render previews from the finished GLBs. The renderer centers the connector, and the WebP packer preserves that horizontal center when it crops the transparent margins. Add the result as `cartridgePreview` in the catalog. The shelf uses it in the open case, during insertion and ejection, and in the player’s cartridge UI. The carousel and museum use `cartridgeModel` for interactive 3D. Regenerate the WebP after a model revision and version its URL if replacing an existing public file.

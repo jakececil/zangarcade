@@ -171,23 +171,25 @@ html[data-clearance='open'] .clearance { display: none; }
 
 .masthead {
   display: grid;
-  grid-template-columns: minmax(0, .68fr) minmax(0, 1.32fr);
-  align-items: center;
-  gap: clamp(1.4rem, 3.4vw, 3.35rem);
-  padding-block: clamp(2.1rem, 4.5vw, 3.6rem) clamp(2.25rem, 4vw, 4.1rem);
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: clamp(.65rem, 1.8vw, 1.4rem);
+  padding-block: clamp(.9rem, 1.9vw, 1.55rem) clamp(1.8rem, 3.4vw, 3.4rem);
 }
 
 .wordmark {
   position: relative;
+  width: min(84%, 26rem);
   min-width: 0;
   margin: 0;
+  text-align: center;
 }
 
 .wordmark-art {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 31rem;
+  max-height: clamp(6.6rem, 12vw, 8.75rem);
   object-fit: contain;
   filter: drop-shadow(.25rem .65rem .85rem #0b0e0bd9);
 }
@@ -212,12 +214,15 @@ html[data-clearance='open'] .clearance { display: none; }
   --deck-right: 9.8%;
   position: relative;
   min-width: 0;
+  width: 100%;
 }
 
 .machine-body {
   position: relative;
   isolation: isolate;
+  width: 100%;
   aspect-ratio: var(--frame-aspect, 1.5);
+  max-height: clamp(25rem, 79svh, 51rem);
   border: 1px solid #71795f;
   border-radius: 4% / 6%;
   background:
@@ -340,7 +345,7 @@ html[data-clearance='open'] .clearance { display: none; }
 }
 
 .gallery-float, .gallery-cartridge { transform-style: preserve-3d; }
-.gallery-float { width: min(51%, 24rem); width: min(68cqw, 82cqh, 25rem); animation: gallery-float 4s ease-in-out infinite alternate; }
+.gallery-float { width: min(80cqw, 93cqh, 38rem); animation: gallery-float 4s ease-in-out infinite alternate; }
 .gallery-cartridge {
   --cartridge-depth: clamp(.38rem, 1.63vw, 1.44rem);
   --label-size: clamp(.54rem, 4.2cqh, 1.25rem);
@@ -842,22 +847,14 @@ body:has(.ritual[open]) { overflow: hidden; }
   .game-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-@media (max-width: 54rem) {
-  .masthead {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    gap: 1rem;
-    padding-block: 1.8rem 2.1rem;
-  }
-  .wordmark { width: min(92%, 29rem); }
-  .wordmark-art { max-height: min(45vw, 14rem); }
-  .wordmark-text { font-size: clamp(3.35rem, 12vw, 6.5rem); text-align: center; }
-  .carousel-machine { width: 100%; }
+@media (max-height: 50rem) and (min-width: 55rem) {
+  .wordmark-art { max-height: 7.5rem; }
 }
 
 @media (max-width: 48rem) {
   body { background-size: 100% max(62rem, 200vw), max(100%, 31rem) auto, auto; }
   .wrap { width: calc(100% - 2rem); }
+  .wordmark-text { font-size: clamp(3.25rem, 10vw, 5.3rem); }
   .game-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem .9rem; }
   .game-info { grid-template-columns: 1fr; }
   .game-action { grid-column: 1; grid-row: auto; }
@@ -878,17 +875,10 @@ body:has(.ritual[open]) { overflow: hidden; }
 }
 
 @media (max-width: 35rem) {
-  .gallery-float { width: min(68cqw, 85cqh, 24rem); }
+  .carousel-machine { --deck-left: 7.6%; --deck-right: 7.6%; }
+  .machine-body { aspect-ratio: 1.12; min-height: 15rem; }
   .carousel-controls {
-    position: relative;
-    inset: auto;
-    margin: -3.5% 3.5% 0;
-    padding: .3rem;
-    border: 1px solid #68755d;
-    border-radius: .32rem;
-    background: linear-gradient(#4c5545, #242b22);
-    box-shadow: inset 0 .11rem #dbeac941, .15rem .27rem #080c07d9;
-    transform: none;
+    grid-template-columns: 2.4rem minmax(0, 1fr) 2.4rem auto;
   }
   .carousel-meta { padding: .15rem .22rem; }
 }

@@ -57,7 +57,9 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
     if (!active || !width || !height) return;
     renderer.setSize(width, height, false);
     const aspect = width / height;
-    const halfHeight = Math.max(bounds.y / .76, bounds.x / (.79 * aspect)) * .5;
+    const heightWithTilt = Math.hypot(bounds.y, bounds.z);
+    const widthWithTurn = Math.hypot(bounds.x, bounds.z);
+    const halfHeight = Math.max(heightWithTilt / .85, widthWithTurn / (.87 * aspect)) * .5;
     camera.top = halfHeight;
     camera.bottom = -halfHeight;
     camera.left = -halfHeight * aspect;
