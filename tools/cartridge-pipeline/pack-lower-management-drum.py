@@ -4,7 +4,7 @@ import argparse
 import random
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageOps
+from PIL import Image, ImageChops, ImageDraw
 
 
 parser = argparse.ArgumentParser()
@@ -32,10 +32,11 @@ for side, (sheet, column) in enumerate(columns):
         tile = source.crop(bounds).resize((tile_w - 2 * inset, tile_h), Image.Resampling.LANCZOS)
         left = side * tile_w
         top = row * tile_h
-        atlas.paste(ImageOps.mirror(tile.crop((0, 0, inset, tile_h))), (left, top))
+        left_edge = tile.crop((0, 0, 6, tile_h)).resize((inset, tile_h), Image.Resampling.BICUBIC)
+        right_edge = tile.crop((tile.width-6, 0, tile.width, tile_h)).resize((inset, tile_h), Image.Resampling.BICUBIC)
+        atlas.paste(left_edge, (left, top))
         atlas.paste(tile, (left + inset, top))
-        atlas.paste(ImageOps.mirror(tile.crop((tile.width-inset, 0, tile.width, tile_h))),
-                    (left + tile_w - inset, top))
+        atlas.paste(right_edge, (left + tile_w - inset, top))
 atlas.save(folder / 'specimen-face-atlas.jpg', quality=92, subsampling=0, optimize=True)
 
 cover = Image.open(args.cover).convert('RGB').resize((380, 476), Image.Resampling.LANCZOS)
