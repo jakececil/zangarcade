@@ -200,7 +200,7 @@ async function showGalleryModel(game) {
   drumControls.hidden = true;
   if (!localAsset(game.cartridgeModel)) return;
   try {
-    meshViewer ??= import('./shelf-cartridge-view.js').then(({ createShelfCartridgeView }) => {
+    meshViewer ??= import('./shelf-cartridge-view.js?v=812fc315712f').then(({ createShelfCartridgeView }) => {
       meshView = createShelfCartridgeView(galleryMesh, { isPaused: () => gallery.dataset.paused === 'true', reducedMotion: reduceMotion });
       return meshView;
     });
