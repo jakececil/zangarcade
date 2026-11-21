@@ -61,11 +61,17 @@
   <section id="inspect-hud" class="inspect-hud" aria-labelledby="inspect-title" hidden>
     <div>
       <h2 id="inspect-title">Cartridge</h2>
-      <p>Drag to rotate.</p>
+      <p id="inspect-hint">Drag to rotate.</p>
     </div>
     <div class="inspect-actions">
       <button id="turn-cartridge" type="button">Turn over</button>
       <button id="close-inspection" type="button">Back to room <kbd>Esc</kbd></button>
+    </div>
+    <div class="inspect-actions" id="inspect-drums" role="group" aria-label="Cartridge drums" hidden>
+      <button type="button" data-band="0" aria-label="Turn head band">Head</button>
+      <button type="button" data-band="1" aria-label="Turn body band">Body</button>
+      <button type="button" data-band="2" aria-label="Turn legs band">Legs</button>
+      <button type="button" id="inspect-drum-auto" aria-pressed="true">Auto shuffle</button>
     </div>
   </section>
 

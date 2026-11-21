@@ -89,6 +89,17 @@ The Blender master gives the dome an actual inner wall. The browser uses the cur
 
 Render previews from the finished GLBs. The renderer centers the connector, and the WebP packer preserves that horizontal center when it crops the transparent margins. Add the result as `cartridgePreview` in the catalog. The shelf uses it in the open case, during insertion and ejection, and in the player’s cartridge UI. The carousel and museum use `cartridgeModel` for interactive 3D. Regenerate the WebP after a model revision and version its URL if replacing an existing public file.
 
+### Lower Management hex drum
+
+The Specimen Cabinet in v2 supplied six matching head, body, and leg sets. The two print masters have three columns of specimens and three rows of body parts. Keep the neck and waist joins centered in each column. Side 0 defaults to Rabbit/Puddle, followed around the drum by Jelly/Shroud, Stress/Knuckle, Wisp/Buddress, Granite/Coil, and the human/Webwalker.
+
+```powershell
+python "$pipeline/pack-lower-management-drum.py" 'build/lower-management-drum' 'art/covers/gut-punch-lower-management.webp'
+blender -b --python-exit-code 1 --python "$pipeline/build-lower-management-drum.py" -- 'build/lower-management-drum'
+```
+
+Store the source sheets as `print-1.png` and `print-2.png` in that build folder. The Blender script builds concentric six-face bands around a fixed axle and packs the texture atlas. Keep the rotation pivots as separate nodes with glTF extras `cartridgeDrumBand` set to 0, 1, and 2 from top to bottom. Each band turns 60° at a time in the shelf viewer and museum inspection. The fixed housing tapers into a keyed connector with 32 front pads and insulated rear support. Use the preview renderer below for the case and handheld transitions.
+
 ```powershell
 blender -b --python-exit-code 1 --python "$pipeline/render-cartridge-previews.py" -- 'build/previews' 'build/kingfisher/kingfisher.glb' 'build/triple-giblet/triple-giblet.glb'
 python "$pipeline/pack-cartridge-previews.py" 'art/cartridges' 'build/previews/kingfisher.png' 'build/previews/triple-giblet.png'

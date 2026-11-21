@@ -301,6 +301,29 @@ html[data-clearance='open'] .clearance { display: none; }
 
 .gallery-mesh { position: absolute; inset: 0; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
 .gallery-mesh:active { cursor: grabbing; }
+.gallery-mesh.on-drum:not(:active) { cursor: pointer; }
+.carousel-drum-controls:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .375rem;
+  margin-top: .45rem;
+}
+.carousel-drum-controls button {
+  background: #151910;
+  border: 1px solid #738154;
+  border-radius: .25rem;
+  color: #f3ebd9;
+  min-height: 34px;
+  padding: .25rem .55rem;
+  font: 650 .75rem system-ui, sans-serif;
+  cursor: pointer;
+}
+.carousel-drum-controls button:hover,
+.carousel-drum-controls button[aria-pressed='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 .cartridge-gallery[data-mesh='true'] .gallery-scene { visibility: hidden; }
 .carousel-turn {
   position: absolute;

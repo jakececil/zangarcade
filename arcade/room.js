@@ -2,6 +2,7 @@ import * as THREE from './vendor/three.module.js';
 import { ENTRY_Z, museumGeometry } from './museum-geometry.js';
 import { HOME, buildGuts, mazeWalls, roomProfile } from './guts.js';
 import { loadCartridgeAsset } from './cartridge-assets.js';
+import { createCartridgeDrums } from './cartridge-drums.js';
 import { configureCartridgeKey, createCartridgeReflections, enableCartridgeShadows } from './cartridge-lighting.js';
 
 const SCREEN_WIDTH = 1.44;
@@ -17,7 +18,7 @@ const GRATE_HOME = new THREE.Vector3(1.92, .015, -2.18);
 const UNDERSHELL = 'undergrowth-advance';
 const INSPECTION_BACKGROUND = new THREE.Color('#252922');
 
-export async function createRoom({ canvas, games, onInteract = () => {}, onTarget = () => {}, onScreenRect = () => {}, onMouseLook = () => {} }) {
+export async function createRoom({ canvas, games, onInteract = () => {}, onTarget = () => {}, onScreenRect = () => {}, onMouseLook = () => {}, onInspectionDrums = () => {} }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -69,6 +70,10 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   const textures = new Map();
   const geometries = new Set();
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const inspectionRay = new THREE.Raycaster();
+  let inspectionDrums;
+  let inspectionShuffleTimer;
+  let inspectionAuto = true;
   const loader = new THREE.TextureLoader();
   const forward = new THREE.Vector3();
   const scratch = new THREE.Vector3();
@@ -268,6 +273,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
         }
       }
       parts.fallback.visible = false;
+      if (inspecting && parts === inspectionCart) setupInspectionDrums();
       requestRender();
     }).catch(error => console.warn('Cartridge model could not be loaded.', error));
   }
@@ -568,6 +574,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       hallLights.forEach((light, index) => { light.visible = Math.abs(index - nearest) <= 1; });
     }
     const background = scene.background;
+    window.clearTimeout(inspectionShuffleTimer);
+    const drumDelay = inspecting ? inspectionDrums?.update(time, !drag) : undefined;
     renderer.clear();
     if (inspecting) {
       scene.background = INSPECTION_BACKGROUND;
@@ -577,7 +585,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       scene.background = null;
     }
     const shadowedInspection = inspecting && inspectionCart.shadows;
-    if (shadowedInspection) {
+    const reflectedInspection = shadowedInspection || (inspecting && inspectionDrums);
+    if (reflectedInspection) {
       scene.environment = inspectionReflections ??= createCartridgeReflections();
       scene.environmentIntensity = .76;
     }
@@ -585,12 +594,13 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     camera.layers.set(shadowedInspection ? 2 : 1);
     renderer.render(scene, camera);
     renderer.shadowMap.enabled = false;
-    if (shadowedInspection) scene.environment = null;
+    if (reflectedInspection) scene.environment = null;
     camera.layers.set(0);
     scene.background = background;
     renderedFrames++;
     if (docked) emitScreenRect();
-    if ((!docked && !inspecting) || tweens.size) requestRender();
+    if ((!docked && !inspecting) || tweens.size || drumDelay === 0) requestRender();
+    else if (Number.isFinite(drumDelay)) inspectionShuffleTimer = window.setTimeout(requestRender, drumDelay);
   }
 
   function tween(duration, update) {
@@ -666,17 +676,27 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       inspectedModel.visible = true;
       inspectedModel.rotation.set(-.09, .19, 0);
       inspectionPose();
+      setupInspectionDrums();
       emitTarget(null);
     } else {
       inspectedModel.visible = false;
+      inspectionDrums = undefined;
+      onInspectionDrums(false);
       updateTarget();
     }
     requestRender();
     return true;
   }
 
+  function setupInspectionDrums() {
+    inspectionDrums = inspectionCart.asset && createCartridgeDrums(inspectionCart.asset, reduceMotion);
+    inspectionDrums?.setAuto(inspectionAuto);
+    onInspectionDrums(Boolean(inspectionDrums));
+  }
+
   function turnCartridge() {
     if (!inspecting) return;
+    inspectionDrums?.resetIdle();
     inspectedModel.rotation.y += Math.PI;
     requestRender();
   }
@@ -844,23 +864,43 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   let drag;
   function pointerdown(event) {
     if (!inputEnabled || docked || transitioning || event.button !== 0 || document.pointerLockElement === canvas) return;
-    drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+    if (inspectionDrums) {
+      inspectionDrums.resetIdle();
+      requestRender();
+    }
     canvas.setPointerCapture(event.pointerId);
   }
   function pointermove(event) {
     if (!drag || event.pointerId !== drag.id) return;
+    if (inspectionDrums && !drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return;
+    drag.moved = true;
     look(event.clientX - drag.x, event.clientY - drag.y);
     drag.x = event.clientX;
     drag.y = event.clientY;
   }
   function pointerup(event) {
     if (event.pointerId !== drag?.id) return;
+    if (inspectionDrums && !drag.moved && event.type === 'pointerup') {
+      const rect = canvas.getBoundingClientRect();
+      inspectionRay.layers.mask = inspectedModel.layers.mask;
+      inspectionRay.setFromCamera({
+        x: 2 * (event.clientX - rect.left) / rect.width - 1,
+        y: 1 - 2 * (event.clientY - rect.top) / rect.height
+      }, camera);
+      const hit = inspectionRay.intersectObject(inspectionCart.asset, true)[0];
+      const index = hit ? inspectionDrums.indexFor(hit.object) : -1;
+      if (index >= 0) inspectionDrums.turn(index);
+    }
     if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
     drag = undefined;
+    if (inspectionDrums) requestRender();
   }
   function visibilitychange() {
     clearInput();
     if (document.hidden) {
+      inspectionDrums?.resetIdle();
+      window.clearTimeout(inspectionShuffleTimer);
       cancelAnimationFrame(frameRequest);
       frameRequest = 0;
     } else {
@@ -870,6 +910,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
+  reduceMotion.addEventListener('change', requestRender);
   window.addEventListener('keydown', keydown);
   window.addEventListener('keyup', keyup);
   window.addEventListener('blur', clearInput);
@@ -894,6 +935,15 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     pullBox,
     inspectCartridge,
     turnCartridge,
+    turnInspectionBand(index) {
+      inspectionDrums?.turn(index);
+      requestRender();
+    },
+    setInspectionAuto(value) {
+      inspectionAuto = value;
+      inspectionDrums?.setAuto(value);
+      requestRender();
+    },
     toggleMouseLook,
     setFishCount: museum.setFishCount,
     dock,
@@ -920,7 +970,9 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       disposed = true;
       releaseMouseLook();
       cancelAnimationFrame(frameRequest);
+      window.clearTimeout(inspectionShuffleTimer);
       observer.disconnect();
+      reduceMotion.removeEventListener('change', requestRender);
       window.removeEventListener('keydown', keydown);
       window.removeEventListener('keyup', keyup);
       window.removeEventListener('blur', clearInput);

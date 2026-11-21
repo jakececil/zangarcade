@@ -25,6 +25,9 @@ const raiseButton = document.getElementById('raise-handheld');
 const inspectButton = document.getElementById('inspect-cartridge');
 const inspectHud = document.getElementById('inspect-hud');
 const inspectTitle = document.getElementById('inspect-title');
+const inspectHint = document.getElementById('inspect-hint');
+const inspectDrums = document.getElementById('inspect-drums');
+const inspectDrumAuto = document.getElementById('inspect-drum-auto');
 const closeInspection = document.getElementById('close-inspection');
 const runButton = document.getElementById('run-toggle');
 const locationName = document.getElementById('location-name');
@@ -400,6 +403,14 @@ function exitInspection() {
 }
 closeInspection.addEventListener('click', exitInspection);
 document.getElementById('turn-cartridge').addEventListener('click', () => room.turnCartridge());
+inspectDrums.addEventListener('click', event => {
+  if (event.target.matches('[data-band]')) room.turnInspectionBand(Number(event.target.dataset.band));
+});
+inspectDrumAuto.addEventListener('click', () => {
+  const active = inspectDrumAuto.getAttribute('aria-pressed') !== 'true';
+  inspectDrumAuto.setAttribute('aria-pressed', String(active));
+  room.setInspectionAuto(active);
+});
 runButton.addEventListener('click', () => {
   setRun(!running);
   canvas.focus({ preventScroll: true });
@@ -495,6 +506,10 @@ try {
     directory.add(new Option(game.title, game.id));
   }
   room = await createRoom({
+    onInspectionDrums(available) {
+      inspectDrums.hidden = !available;
+      inspectHint.textContent = available ? 'Drag to rotate. Tap a band to turn it.' : 'Drag to rotate.';
+    },
     canvas, games: entries, onInteract: interact, onTarget(value) { target = value; updateInteraction(); }, onScreenRect: fitScreen,
     onMouseLook(locked, error) {
       mouseLook.setAttribute('aria-pressed', String(locked));

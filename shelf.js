@@ -10,6 +10,8 @@ const gallery = document.getElementById('cartridge-gallery');
 const galleryCartridge = document.getElementById('gallery-cartridge');
 const galleryMesh = document.getElementById('gallery-mesh');
 const carouselTurn = document.getElementById('carousel-turn');
+const drumControls = document.getElementById('carousel-drum-controls');
+const drumAuto = document.getElementById('carousel-drum-auto');
 const carouselMachine = document.getElementById('carousel-machine');
 const machineArt = document.getElementById('machine-art');
 const carouselSelect = document.getElementById('carousel-select');
@@ -195,6 +197,7 @@ async function showGalleryModel(game) {
   meshView?.hide();
   delete gallery.dataset.mesh;
   carouselTurn.hidden = true;
+  drumControls.hidden = true;
   if (!localAsset(game.cartridgeModel)) return;
   try {
     meshViewer ??= import('./shelf-cartridge-view.js').then(({ createShelfCartridgeView }) => {
@@ -205,6 +208,8 @@ async function showGalleryModel(game) {
     if (version !== meshSelection || !await view.show(game.cartridgeModel) || version !== meshSelection) return;
     gallery.dataset.mesh = 'true';
     carouselTurn.hidden = false;
+    drumControls.hidden = !view.hasDrums;
+    view.setDrumAuto(drumAuto.getAttribute('aria-pressed') === 'true');
   } catch {
     // The existing cartridge art stays in the display if WebGL or the model is unavailable.
   }
@@ -500,6 +505,14 @@ carouselPrevious.addEventListener('click', () => selectCartridge(selectedIndex -
 carouselNext.addEventListener('click', () => selectCartridge(selectedIndex + 1));
 carouselSelect.addEventListener('change', () => selectCartridge(Number(carouselSelect.value)));
 carouselTurn.addEventListener('click', () => meshView?.turn());
+drumControls.addEventListener('click', event => {
+  if (event.target.matches('[data-band]')) meshView?.turnBand(Number(event.target.dataset.band));
+});
+drumAuto.addEventListener('click', () => {
+  const enabled = drumAuto.getAttribute('aria-pressed') !== 'true';
+  drumAuto.setAttribute('aria-pressed', String(enabled));
+  meshView?.setDrumAuto(enabled);
+});
 connectPlay(carouselPlay, () => carouselGames[selectedIndex]);
 
 carouselMotion.addEventListener('click', () => {
