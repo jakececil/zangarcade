@@ -87,9 +87,9 @@ The Blender master gives the dome an actual inner wall. The browser uses the cur
 
 ### Parasol optical assembly
 
-Use the six-view sunburst board for Parasol's bronze casting, ceramic shield, and rear photovoltaic array. Reconstruct the shell with the four horizontal views and keep the top and underside projections for the texture bake. Run `assemble-parasol.py` with that build folder to fit the shell, cut the optical chamber, and install the solid fluted lens, circuit boards, and keyed connector.
+Use the six-view luminous sunburst board for Parasol's clear outer rim, frosted face, champagne base, and rear photovoltaic array. Reconstruct the shell with the four horizontal views and keep the top and underside projections for the texture bake. The pale acrylic against the neutral studio background uses `--mask-threshold 15 --solid-silhouette` so transparent regions condition the model as solid material.
 
-The lens exports with transmission, IOR, and amber absorption. Two groups of four amber LED dies sit behind it, with short-range point lights for light spill. A cyan phosphor inlay traces the shield edge. The GLB exports the lights and emissive materials independently of the housing texture. Inspect the front, profile, and back in the browser before rendering the case preview.
+Run `assemble-parasol.py` with that build folder. The script traces the recovered outline and samples the sculpted front relief, then cuts the reconstructed casting to seat the optical assembly. It preserves the textured back and nameplate and fits the standard connector. The closed frosted face, polished clear rim, flexible LED strip, and metal pins export as separate materials. Transmission shows the strip through the edge. An emissive texture approximates light scattered through the frosted acrylic, and three short-range point lights spill onto the hardware. Inspect front, profile, and rear before rendering the case preview.
 
 ### Case and slot previews
 

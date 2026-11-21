@@ -23,6 +23,10 @@ parser.add_argument('--bottom', type=Path, help='underside projection for the re
 parser.add_argument('--resolution', type=int, default=352)
 parser.add_argument('--steps', type=int, default=12)
 parser.add_argument('--seed', type=int, default=12345)
+parser.add_argument('--mask-threshold', type=int, default=24,
+                    help='RGB contrast required to separate the cartridge from the studio background')
+parser.add_argument('--solid-silhouette', action='store_true',
+                    help='fill low-contrast areas inside a closed cartridge outline')
 args = parser.parse_args()
 reference_views = (*conditioning_views, *(view for view in ('top', 'bottom') if getattr(args, view)))
 if args.output.name == 'shell-dense.glb':
@@ -46,7 +50,8 @@ projections = {'front': 'shell-dense.projection.png', 'back': 'shell-rear.projec
 for view in reference_views:
     path = getattr(args, view)
     with Image.open(path) as image:
-        masked = foreground_rgba(image, neutral_background=True, threshold=24, keep_holes=True)
+        masked = foreground_rgba(image, neutral_background=True, threshold=args.mask_threshold,
+                                 keep_holes=not args.solid_silhouette)
     projection = masked.crop(masked.getbbox())
     projection.save(folder / projections.get(view, view + '.projection.png'))
     if view in conditioning_views:
