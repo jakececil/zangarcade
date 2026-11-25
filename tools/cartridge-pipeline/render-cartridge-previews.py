@@ -1,5 +1,6 @@
 """Render the assembled GLBs for the CSS case and slot animations."""
 import argparse
+import math
 import sys
 from pathlib import Path
 
@@ -22,6 +23,10 @@ def render(path, folder):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=str(path))
     scene = bpy.context.scene
+    for obj in scene.objects:
+        if 'sugarReel' in obj:
+            obj.rotation_euler.x += obj['sugarReel'] * math.tau / 3
+    bpy.context.view_layer.update()
     corners = [obj.matrix_world @ Vector(point) for obj in scene.objects if obj.type == 'MESH'
                for point in obj.bound_box]
     bottom, top = min(v.z for v in corners), max(v.z for v in corners)

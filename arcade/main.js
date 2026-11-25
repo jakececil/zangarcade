@@ -1,4 +1,4 @@
-import { createRoom } from './room.js';
+import { createRoom } from './room.js?v=cbbf0baca340';
 import { HOME } from './guts.js';
 
 const canvas = document.getElementById('room');
@@ -27,6 +27,9 @@ const inspectHud = document.getElementById('inspect-hud');
 const inspectTitle = document.getElementById('inspect-title');
 const inspectHint = document.getElementById('inspect-hint');
 const inspectDrums = document.getElementById('inspect-drums');
+const inspectSlots = document.getElementById('inspect-slots');
+const inspectLever = document.getElementById('inspect-pull-lever');
+const inspectSlotResult = document.getElementById('inspect-slot-result');
 const inspectDrumAuto = document.getElementById('inspect-drum-auto');
 const closeInspection = document.getElementById('close-inspection');
 const runButton = document.getElementById('run-toggle');
@@ -403,6 +406,7 @@ function exitInspection() {
 }
 closeInspection.addEventListener('click', exitInspection);
 document.getElementById('turn-cartridge').addEventListener('click', () => room.turnCartridge());
+inspectLever.addEventListener('click', () => room.pullInspectionLever());
 inspectDrums.addEventListener('click', event => {
   if (event.target.matches('[data-band]')) room.turnInspectionBand(Number(event.target.dataset.band));
 });
@@ -506,9 +510,17 @@ try {
     directory.add(new Option(game.title, game.id));
   }
   room = await createRoom({
-    onInspectionDrums(available) {
+    onInspectionDrums(available, hasSlots) {
       inspectDrums.hidden = !available;
-      inspectHint.textContent = available ? 'Drag to rotate. Tap a band to turn it.' : 'Drag to rotate.';
+      inspectSlots.hidden = !hasSlots;
+      inspectLever.disabled = false;
+      inspectSlotResult.textContent = '';
+      inspectHint.textContent = available ? 'Drag to rotate. Tap a band to turn it.' :
+        hasSlots ? 'Drag to rotate. Tap the lever to spin.' : 'Drag to rotate.';
+    },
+    onInspectionSlotsState(state) {
+      inspectLever.disabled = state === 'spinning';
+      inspectSlotResult.textContent = state === 'match' ? 'Three matching candies!' : state === 'miss' ? 'No match' : '';
     },
     canvas, games: entries, onInteract: interact, onTarget(value) { target = value; updateInteraction(); }, onScreenRect: fitScreen,
     onMouseLook(locked, error) {

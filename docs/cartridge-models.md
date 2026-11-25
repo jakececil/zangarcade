@@ -196,6 +196,12 @@ Use `--resolution 352` in `reconstruct.py` to reproduce the direct Undergrowth p
 
 This pass keeps the generated eyespots, antennae, and thorax geometry. Register the entire shell to the PCB, trim the contact foot, and reduce the tessellation. Bake the source photograph directly onto the front UVs and blend to generated vertex color around the sides. The photo makes the fine ridges and scratches legible. Its color also drives the three optical maps, including clearer, smoother windows and more solid orange structural details.
 
+### Candy reels and salvaged pinball hardware
+
+Sugar Drum uses the six-view reconstructed candy shell and a separate six-symbol strip named `reel-symbols.jpg`. Run the opaque baker with `--artifact-material candy-mechanism --projected-title --contact-seam -.110 --shell-width .492 --shell-height .415 --shell-depth .123`. The Blender pass removes the molded lever, recesses three windows, and adds the real reel and lever pivots with the embedded lamp lenses. The glTF extras `sugarReel` (indices 0–2), `sugarLever`, and `sugarLamp` bind those parts to `arcade/cartridge-slots.js` in the shelf viewer and museum inspection. Each pull selects a face independently for each reel. All three matching lights the lenses. The reduced-motion setting resolves the spin without continuous movement.
+
+Trashland Pinball uses `--artifact-material pinball-salvage --projected-title --contact-seam -.111 --shell-width .462 --shell-height .468 --shell-depth .101 --cartridge-shadows`. Keep the short connector taper below the cream sign. The finish map separates scuffed plastic and exposed metal, and the steel ball in the keeper pocket is a separate polished mesh.
+
 ## Fit and publish
 
 - Blender coordinates use **+Z up and −Y forward**. Export GLB with **+Y up** so the runtime sees +Y up and +Z forward. Keep the connector centered at X = 0. The tongue reaches Y ≈ −0.143 in the GLB. Use a tongue at most 0.316 wide and 0.062 deep at the mating end. Keep wide shoulders above the slot rails. The arcade positions the model at the shared handheld seat.

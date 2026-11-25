@@ -17,8 +17,8 @@
   </script>
   <link rel="stylesheet" href="./slot.css">
   <link rel="stylesheet" href="./cartridge.css">
-  <link rel="stylesheet" href="./shelf.css?v=21065cc06ee5">
-  <script src="./shelf.js?v=35310f825a1e" defer></script>
+  <link rel="stylesheet" href="./shelf.css?v=1dd57987e7d4">
+  <script src="./shelf.js?v=4393f5aa81eb" defer></script>
 </head>
 <body>
   <div class="clearance" id="clearance" role="dialog" aria-modal="true" aria-labelledby="clearance-title">
@@ -90,6 +90,10 @@
             <button type="button" data-band="1" aria-label="Turn body band">Body</button>
             <button type="button" data-band="2" aria-label="Turn legs band">Legs</button>
             <button type="button" id="carousel-drum-auto" aria-pressed="true">Auto shuffle</button>
+          </div>
+          <div class="carousel-drum-controls" id="carousel-slot-controls" hidden>
+            <button type="button" id="carousel-pull-lever">Pull lever</button>
+            <span class="slot-result" id="carousel-slot-result" role="status"></span>
           </div>
         </div>
       </section>

@@ -8,8 +8,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; connect-src 'self' blob:; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob: data:; frame-src 'self'">
   <title>Museum | ZANG Arcade</title>
   <link rel="icon" href="../art/brand/zang-favicon.png" type="image/png">
-  <link rel="stylesheet" href="./room.css">
-  <script type="module" src="./main.js"></script>
+  <link rel="stylesheet" href="./room.css?v=68caf48a668f">
+  <script type="module" src="./main.js?v=e89a32f614a0"></script>
 </head>
 <body data-mode="loading">
   <canvas id="room" tabindex="0" aria-label="ZANG Arcade Museum. Use arrow keys or WASD to walk, drag or press M to look, and E to interact."></canvas>
@@ -72,6 +72,10 @@
       <button type="button" data-band="1" aria-label="Turn body band">Body</button>
       <button type="button" data-band="2" aria-label="Turn legs band">Legs</button>
       <button type="button" id="inspect-drum-auto" aria-pressed="true">Auto shuffle</button>
+    </div>
+    <div class="inspect-actions" id="inspect-slots" hidden>
+      <button type="button" id="inspect-pull-lever">Pull lever</button>
+      <span class="inspect-slot-result" id="inspect-slot-result" role="status"></span>
     </div>
   </section>
 

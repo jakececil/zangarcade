@@ -66,6 +66,7 @@ p { line-height: 1.5; }
 .inspect-actions { display: flex; gap: 8px; }
 .inspect-actions button { padding-inline: 14px; pointer-events: auto; }
 #inspect-drums { justify-content: center; flex-wrap: wrap; }
+.inspect-slot-result { align-self: center; color: var(--lime); font-size: 14px; }
 #inspect-drum-auto[aria-pressed='true'] { border-color: var(--lime); }
 body[data-mode='inspect'] #room { cursor: grab; }
 body[data-mode='inspect'] #room:active { cursor: grabbing; }

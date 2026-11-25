@@ -189,6 +189,20 @@ def artifact_material(material, atlas, folder, shell_height, style):
         metal = np.maximum(.99*pins, .81*brass)
         roughness = .48+.39*plush-.18*metal
         coat = .051
+    elif style == 'candy-mechanism':
+        brass = smooth(.11,.32,r-b)*smooth(.075,.26,g-b)*smooth(.21,.58,g)
+        cherry = smooth(.055,.30,r-g)*smooth(.031,.19,b-g)
+        metal = np.maximum(.91*brass,.98*pins)
+        roughness = .41-.18*metal-.19*cherry
+        coat = .23
+    elif style == 'pinball-salvage':
+        brightness = .23*r+.63*g+.14*b
+        saturation = np.maximum.reduce((r,g,b))-np.minimum.reduce((r,g,b))
+        chrome = (1-smooth(.063,.19,saturation))*smooth(.28,.67,brightness)
+        rubber = 1-smooth(.20,.38,brightness)
+        metal = np.maximum(.99*pins,.97*chrome)
+        roughness = .51+.22*rubber-.40*chrome-.24*pins
+        coat = .093
     elif style == 'stratified-world':
         earth_band = smooth(.27,.43,level)*(1-smooth(.49,.65,level))
         gold_city = smooth(.05,.25,r-b)*smooth(.045,.20,g-b)*smooth(.40,.65,g)

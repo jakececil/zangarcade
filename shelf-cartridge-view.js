@@ -1,9 +1,10 @@
 import * as THREE from './arcade/vendor/three.module.js';
 import { loadCartridgeAsset } from './arcade/cartridge-assets.js';
 import { createCartridgeDrums } from './arcade/cartridge-drums.js';
+import { createCartridgeSlots } from './arcade/cartridge-slots.js';
 import { configureCartridgeKey, createCartridgeReflections, enableCartridgeShadows } from './arcade/cartridge-lighting.js';
 
-export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
+export function createShelfCartridgeView(canvas, { isPaused, reducedMotion, onSlotsState }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -33,6 +34,7 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
   let lastTime = 0;
   let reflections;
   let drums;
+  let slots;
   const ray = new THREE.Raycaster();
 
   function invalidate() {
@@ -46,10 +48,11 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
     if (animate && lastTime) phase += Math.min(now - lastTime, 40) * .001;
     lastTime = animate ? now : 0;
     const drumDelay = drums?.update(now, animate);
+    const spinning = slots?.update(now);
     stage.rotation.set(pitch - .085, yaw + Math.sin(phase * 1.05) * .29 - .21, 0);
     stage.position.y = Math.sin(phase * 1.42) * bounds.y * .036;
     renderer.render(scene, camera);
-    if (animate || drumDelay === 0) invalidate();
+    if (animate || drumDelay === 0 || spinning) invalidate();
   }
 
   function resize() {
@@ -82,11 +85,12 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener('pointermove', event => {
-    if (drums && !drag) {
-      canvas.classList.toggle('on-drum', hitDrum(event) >= 0);
+    if ((drums || slots) && !drag) {
+      const hit = hitPart(event);
+      canvas.classList.toggle('on-drum', Boolean(slots?.isLever(hit) || (hit && drums?.indexFor(hit) >= 0)));
     }
     if (event.pointerId !== drag?.id) return;
-    if (drums && !drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return;
+    if ((drums || slots) && !drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return;
     drag.moved = true;
     yaw += (event.clientX - drag.x) * .014;
     pitch = THREE.MathUtils.clamp(pitch + (event.clientY - drag.y) * .012, -.98, .98);
@@ -94,19 +98,20 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
     drag.y = event.clientY;
     invalidate();
   });
-  function hitDrum(event) {
+  function hitPart(event) {
     const rect = canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return -1;
+    if (!rect.width || !rect.height) return;
     ray.setFromCamera({
       x: 2 * (event.clientX - rect.left) / rect.width - 1,
       y: 1 - 2 * (event.clientY - rect.top) / rect.height
     }, camera);
-    const hit = ray.intersectObject(stage, true)[0];
-    return hit ? drums.indexFor(hit.object) : -1;
+    return ray.intersectObject(stage, true)[0]?.object;
   }
   canvas.addEventListener('pointerup', event => {
-    if (!drums || event.pointerId !== drag?.id || drag.moved) return;
-    const index = hitDrum(event);
+    if ((!drums && !slots) || event.pointerId !== drag?.id || drag.moved) return;
+    const hit = hitPart(event);
+    if (slots?.isLever(hit)) slots.pull();
+    const index = drums?.indexFor(hit) ?? -1;
     if (index >= 0) drums.turn(index);
   });
   for (const type of ['pointerup', 'lostpointercapture', 'pointercancel']) {
@@ -117,6 +122,8 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
     ++request;
     active = false;
     drums = undefined;
+    slots?.dispose();
+    slots = undefined;
     drag = undefined;
     canvas.classList.remove('on-drum');
     canvas.hidden = true;
@@ -131,6 +138,7 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
     if (version !== request) return false;
     const model = asset.clone(true);
     drums = createCartridgeDrums(model, reducedMotion);
+    slots = createCartridgeSlots(model, reducedMotion, onSlotsState);
     const shadows = enableCartridgeShadows(model);
     let usesMetalMap = false;
     let usesOpticalDisplay = false;
@@ -138,7 +146,7 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
       if (object.material?.metalnessMap && object.material.metalness > 0) usesMetalMap = true;
       if (object.userData.opticalDisplay) usesOpticalDisplay = true;
     });
-    if (usesMetalMap || usesOpticalDisplay || drums) scene.environment = reflections ??= createCartridgeReflections();
+    if (usesMetalMap || usesOpticalDisplay || drums || slots) scene.environment = reflections ??= createCartridgeReflections();
     scene.environmentIntensity = shadows ? .76 : usesOpticalDisplay ? .94 : .63;
     fill.intensity = shadows ? .88 : 2.15;
     key.intensity = shadows ? 3.15 : 1.65;
@@ -160,6 +168,8 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion }) {
   return {
     show, hide, invalidate,
     get hasDrums() { return Boolean(drums); },
+    get hasSlots() { return Boolean(slots); },
+    pullLever() { if (slots?.pull()) invalidate(); },
     turn() { drums?.resetIdle(); yaw += Math.PI; invalidate(); },
     turnBand(index) { drums?.turn(index); invalidate(); },
     setDrumAuto(value) { drums?.setAuto(value); invalidate(); }

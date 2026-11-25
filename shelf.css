@@ -329,6 +329,8 @@ html[data-clearance='open'] .clearance { display: none; }
   color: var(--accent);
   border-color: var(--accent);
 }
+.carousel-drum-controls button:disabled { opacity: .6; cursor: wait; }
+.slot-result { align-self: center; color: var(--paper); font: 700 .76rem var(--mono); }
 .cartridge-gallery[data-mesh='true'] .gallery-scene { visibility: hidden; }
 .carousel-turn {
   position: absolute;

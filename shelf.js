@@ -11,6 +11,9 @@ const galleryCartridge = document.getElementById('gallery-cartridge');
 const galleryMesh = document.getElementById('gallery-mesh');
 const carouselTurn = document.getElementById('carousel-turn');
 const drumControls = document.getElementById('carousel-drum-controls');
+const slotControls = document.getElementById('carousel-slot-controls');
+const pullLever = document.getElementById('carousel-pull-lever');
+const slotResult = document.getElementById('carousel-slot-result');
 const drumAuto = document.getElementById('carousel-drum-auto');
 const carouselMachine = document.getElementById('carousel-machine');
 const machineArt = document.getElementById('machine-art');
@@ -198,10 +201,19 @@ async function showGalleryModel(game) {
   delete gallery.dataset.mesh;
   carouselTurn.hidden = true;
   drumControls.hidden = true;
+  slotControls.hidden = true;
+  pullLever.disabled = false;
+  slotResult.textContent = '';
   if (!localAsset(game.cartridgeModel)) return;
   try {
-    meshViewer ??= import('./shelf-cartridge-view.js?v=812fc315712f').then(({ createShelfCartridgeView }) => {
-      meshView = createShelfCartridgeView(galleryMesh, { isPaused: () => gallery.dataset.paused === 'true', reducedMotion: reduceMotion });
+    meshViewer ??= import('./shelf-cartridge-view.js?v=fdd59ae88617').then(({ createShelfCartridgeView }) => {
+      meshView = createShelfCartridgeView(galleryMesh, {
+        isPaused: () => gallery.dataset.paused === 'true', reducedMotion: reduceMotion,
+        onSlotsState(state) {
+          pullLever.disabled = state === 'spinning';
+          slotResult.textContent = state === 'match' ? 'Three matching candies!' : state === 'miss' ? 'No match' : '';
+        }
+      });
       return meshView;
     });
     const view = await meshViewer;
@@ -209,6 +221,7 @@ async function showGalleryModel(game) {
     gallery.dataset.mesh = 'true';
     carouselTurn.hidden = false;
     drumControls.hidden = !view.hasDrums;
+    slotControls.hidden = !view.hasSlots;
     view.setDrumAuto(drumAuto.getAttribute('aria-pressed') === 'true');
   } catch {
     // The existing cartridge art stays in the display if WebGL or the model is unavailable.
@@ -505,6 +518,7 @@ carouselPrevious.addEventListener('click', () => selectCartridge(selectedIndex -
 carouselNext.addEventListener('click', () => selectCartridge(selectedIndex + 1));
 carouselSelect.addEventListener('change', () => selectCartridge(Number(carouselSelect.value)));
 carouselTurn.addEventListener('click', () => meshView?.turn());
+pullLever.addEventListener('click', () => meshView?.pullLever());
 drumControls.addEventListener('click', event => {
   if (event.target.matches('[data-band]')) meshView?.turnBand(Number(event.target.dataset.band));
 });

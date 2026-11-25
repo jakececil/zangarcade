@@ -28,7 +28,8 @@ finish.add_argument('--artifact-material', choices=('gilt-enamel', 'creek-stone'
                                                     'gummy-machine', 'rebound-equipment',
                                                     'molded-playset', 'tufted-course',
                                                     'cosmic-loop', 'coastal-relief',
-                                                    'flocked-brass', 'stratified-world'),
+                                                    'flocked-brass', 'stratified-world',
+                                                    'candy-mechanism', 'pinball-salvage'),
                     help='surface finish for a reconstructed artifact')
 parser.add_argument('--resin-haze', type=float, default=1, help='uniform haze strength from 0 to 1')
 parser.add_argument('--pcb', type=Path, help='standalone fitted edge-card GLB')
@@ -76,7 +77,7 @@ create_projectors(shell.data, coords, lo, span)
 # Preserve the shell's lean and asymmetry. The bottom of the recovered part
 # defines the connector center. Only the lower strip is constrained to the slot.
 relief_case = args.artifact_material in ('cosmic-loop', 'coastal-relief')
-seat_base, seat_top = (.10, .19) if relief_case else (.17, .34)
+seat_base, seat_top = (.10, .19) if relief_case or args.artifact_material == 'pinball-salvage' else (.17, .34)
 for vertex, (x, y, z) in zip(shell.data.vertices, coords):
     fraction = (z-lo.z)/span.z
     x = (x-seat_center)*args.shell_width/span.x
@@ -115,7 +116,9 @@ elif args.artifact_material:
                    'cosmic-loop': 'Hard cosmic enamel and feathered ABS',
                    'coastal-relief': 'Painted tower and molded dusk sea',
                    'flocked-brass': 'Oxidized brass and flocked cloth',
-                   'stratified-world': 'City enamel, clay strata and dusk roots'}[args.artifact_material]
+                   'stratified-world': 'City enamel, clay strata and dusk roots',
+                   'candy-mechanism': 'Champagne trim and painted candy acrylic',
+                   'pinball-salvage': 'Salvaged polymers and plated hardware'}[args.artifact_material]
 material = bpy.data.materials.new(finish_name)
 atlas = bake_reference_atlas(shell, material, folder,
                              size=1024 if args.refractive_resin else 1536, basename='shell-atlas',
@@ -177,6 +180,12 @@ water = None
 if args.artifact_material == 'stratified-world':
     from cartridge_strata import fit_water_cap
     water = fit_water_cap(shell, atlas, folder, level, args.shell_height, args.waterline)
+if args.artifact_material == 'candy-mechanism':
+    from sugar_reels import fit_sugar_slots
+    fit_sugar_slots(shell, folder)
+if args.artifact_material == 'pinball-salvage':
+    from pinball_chrome import seat_chrome_ball
+    seat_chrome_ball(shell)
 shell['Source'] = 'Hunyuan3D-2mv.' if args.native_gltf else 'TripoSR.'
 shell['Surface'] = 'Orthographic reference projections baked to the reconstructed shell.'
 frame_asset(.90)
