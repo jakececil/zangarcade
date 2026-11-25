@@ -182,6 +182,25 @@ def artifact_material(material, atlas, folder, shell_height, style):
         metal = .99*pins
         roughness = .67+.24*green-.22*teal-.42*pins
         coat = .051
+    elif style == 'flocked-brass':
+        brass = smooth(.09,.36,r-b)*smooth(.045,.22,g-b)*smooth(.14,.52,g)
+        brass *= 1-smooth(.57,.78,level)
+        plush = smooth(.48,.72,level)*smooth(-.20,.06,b-r)
+        metal = np.maximum(.99*pins, .81*brass)
+        roughness = .48+.39*plush-.18*metal
+        coat = .051
+    elif style == 'stratified-world':
+        earth_band = smooth(.27,.43,level)*(1-smooth(.49,.65,level))
+        gold_city = smooth(.05,.25,r-b)*smooth(.045,.20,g-b)*smooth(.40,.65,g)
+        metal = np.maximum(.98*pins, .45*gold_city*smooth(.41,.57,level))
+        roughness = .44+.38*earth_band-.16*metal
+        coat = .08
+        violet = smooth(.05,.23,b-g)*smooth(.04,.26,r-g)
+        deep = smooth(.10,.18,level)*(1-smooth(.27,.34,level))
+        field = (violet*deep)[...,None]*np.array([.56,.055,.88])
+        glow = map_texture(nodes, folder, 'strata-emission.jpg', 'A little Gut Punch glow', field, color=True)
+        links.new(glow.outputs['Color'], bsdf.inputs['Emission Color'])
+        bsdf.inputs['Emission Strength'].default_value = .83
     else:
         pink = smooth(.05, .24, r-g)*smooth(.018, .15, b-g)
         lime = smooth(.06, .22, g-b)*smooth(.30, .72, g)
@@ -197,6 +216,7 @@ def artifact_material(material, atlas, folder, shell_height, style):
     links.new(channels.outputs['Green'], bsdf.inputs['Roughness'])
     links.new(channels.outputs['Blue'], bsdf.inputs['Metallic'])
     bsdf.inputs['Coat Weight'].default_value = coat
+    return level
 
 
 def molded_playset_parts(shell, material, atlas, shell_height):

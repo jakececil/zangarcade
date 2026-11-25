@@ -27,7 +27,8 @@ finish.add_argument('--compacted-scrap', action='store_true', help='mixed enamel
 finish.add_argument('--artifact-material', choices=('gilt-enamel', 'creek-stone', 'aquarium-enamel',
                                                     'gummy-machine', 'rebound-equipment',
                                                     'molded-playset', 'tufted-course',
-                                                    'cosmic-loop', 'coastal-relief'),
+                                                    'cosmic-loop', 'coastal-relief',
+                                                    'flocked-brass', 'stratified-world'),
                     help='surface finish for a reconstructed artifact')
 parser.add_argument('--resin-haze', type=float, default=1, help='uniform haze strength from 0 to 1')
 parser.add_argument('--pcb', type=Path, help='standalone fitted edge-card GLB')
@@ -42,6 +43,7 @@ parser.add_argument('--label-x', type=float, default=0)
 parser.add_argument('--label-y', type=float, help='label center height in GLB coordinates')
 parser.add_argument('--contact-seam', type=float, help='replace the reconstructed contacts below this GLB height')
 parser.add_argument('--cartridge-shadows', action='store_true', help='enable self-shadowing on the shell')
+parser.add_argument('--waterline', type=float, default=.746, help='where the clear strata cap starts, as a fraction of shell height')
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 if args.pcb and not args.refractive_resin:
     parser.error('--pcb requires --refractive-resin')
@@ -111,11 +113,13 @@ elif args.artifact_material:
                    'molded-playset': 'Snap-fit molded playset',
                    'tufted-course': 'Putting turf, cork, and enamel',
                    'cosmic-loop': 'Hard cosmic enamel and feathered ABS',
-                   'coastal-relief': 'Painted tower and molded dusk sea'}[args.artifact_material]
+                   'coastal-relief': 'Painted tower and molded dusk sea',
+                   'flocked-brass': 'Oxidized brass and flocked cloth',
+                   'stratified-world': 'City enamel, clay strata and dusk roots'}[args.artifact_material]
 material = bpy.data.materials.new(finish_name)
 atlas = bake_reference_atlas(shell, material, folder,
                              size=1024 if args.refractive_resin else 1536, basename='shell-atlas',
-                             face_priority=relief_case or args.artifact_material == 'molded-playset')
+                             face_priority=relief_case or args.artifact_material in ('molded-playset','stratified-world'))
 nodes, links = material.node_tree.nodes, material.node_tree.links
 bsdf = nodes.get('Principled BSDF')
 output = nodes.get('Material Output')
@@ -136,7 +140,7 @@ elif args.artifact_material in ('cosmic-loop', 'coastal-relief'):
     coat_relief(material, atlas, folder, args.artifact_material)
 elif args.artifact_material:
     from material_zones import artifact_material
-    artifact_material(material, atlas, folder, args.shell_height, args.artifact_material)
+    level = artifact_material(material, atlas, folder, args.shell_height, args.artifact_material)
 if args.refractive_resin:
     from resin_material import refractive_resin
     absorption = refractive_resin(shell, material, atlas, folder, args.shell_height,
@@ -166,6 +170,13 @@ if args.cartridge_shadows:
 if args.artifact_material == 'tufted-course':
     from cartridge_turf import plant_turf
     plant_turf(shell, atlas)
+if args.artifact_material == 'flocked-brass':
+    from cartridge_turf import flock_clouds
+    flock_clouds(shell, atlas)
+water = None
+if args.artifact_material == 'stratified-world':
+    from cartridge_strata import fit_water_cap
+    water = fit_water_cap(shell, atlas, folder, level, args.shell_height, args.waterline)
 shell['Source'] = 'Hunyuan3D-2mv.' if args.native_gltf else 'TripoSR.'
 shell['Surface'] = 'Orthographic reference projections baked to the reconstructed shell.'
 frame_asset(.90)
@@ -173,13 +184,15 @@ bpy.ops.wm.save_as_mainfile(filepath=str(folder / (args.slug + '.blend')))
 # Projector UVs stay editable in the .blend. The runtime only needs the
 # baked atlas, and it belongs on UV0 for WebGL compatibility.
 remove_projectors(shell.data)
+if water:
+    remove_projectors(water.data)
 if args.refractive_resin:
     # Leave scattering in the editable Cycles shader. The glTF exporter
     # recognizes a direct absorption connection for KHR_materials_volume.
     links.new(absorption, output.inputs['Volume'])
 bpy.ops.export_scene.gltf(filepath=str(folder / (args.slug + '.glb')), export_format='GLB',
                          export_yup=True, export_apply=True, export_extras=True,
-                         export_vertex_color='MATERIAL' if args.artifact_material == 'tufted-course' else 'NONE',
+                         export_vertex_color='MATERIAL' if args.artifact_material in ('tufted-course','flocked-brass') else 'NONE',
                          export_cameras=False, export_lights=False)
 shell.data.calc_loop_triangles()
 print(f'{source_faces:,} generated triangles; {len(shell.data.loop_triangles):,} shell triangles exported.')

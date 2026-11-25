@@ -125,6 +125,17 @@ blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" --
 blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/lighthouse-keeper' lighthouse-keeper --native-gltf --shell-width .410 --shell-height .460 --shell-depth .108 --artifact-material coastal-relief --projected-title --contact-seam -.124 --cartridge-shadows
 ```
 
+Open that Lighthouse Keeper Blender master with `refit-lighthouse-badge.py` and pass an output folder and a bold serif font path after `--`. The script cleans the old title field, fits the back of the oval to the shell and raises the two lines of type from a planar enamel face. The plate and text export as separate meshes.
+
+### The Weather Engine and Little Company
+
+Use each game's six matched orthographic views. Weather Engine reuses the turf blade builder with shorter flock fibers restricted to the pale cloud surfaces. Brass hardware gets its own metallic finish in the material map. Little Company's water cap is a closed section cut from the reconstructed silhouette, with clear transmission up top and more haze beside the sand. The cast cap has separately modeled fragments. Below it the opaque surface moves from city enamel through rough soil to a low magenta glow in the deepest strata.
+
+```powershell
+blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/the-weather-engine' the-weather-engine --native-gltf --shell-width .502 --shell-height .402 --shell-depth .118 --artifact-material flocked-brass --projected-title --contact-seam -.110
+blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/little-company' little-company --native-gltf --shell-width .469 --shell-height .410 --shell-depth .098 --artifact-material stratified-world --waterline .749 --projected-title --contact-seam -.117 --cartridge-shadows
+```
+
 ### Case and slot previews
 
 Render previews from the finished GLBs. The renderer centers the connector, and the WebP packer preserves that horizontal center when it crops the transparent margins. Add the result as `cartridgePreview` in the catalog. The shelf uses it in the open case, during insertion and ejection, and in the player’s cartridge UI. The carousel and museum use `cartridgeModel` for interactive 3D. Regenerate the WebP after a model revision and version its URL if replacing an existing public file.
