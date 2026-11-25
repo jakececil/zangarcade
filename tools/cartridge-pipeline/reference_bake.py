@@ -59,7 +59,7 @@ def project(nodes, links, normal, image, layer, direction, previous):
 
 
 def bake_reference_atlas(obj, material, folder, *, size, basename,
-                         color=(.029, .072, .089, 1)):
+                         color=(.029, .072, .089, 1), face_priority=False):
     atlas = obj.data.uv_layers.new(name='Baked reference UV')
     obj.data.uv_layers.active = atlas
     atlas.active_render = True
@@ -83,7 +83,8 @@ def bake_reference_atlas(obj, material, folder, *, size, basename,
         base_color.outputs[0].default_value = color
     normal = nodes.new('ShaderNodeNewGeometry').outputs['Normal']
     surface = base_color.outputs[0]
-    for layer, filename, direction in VIEWS:
+    projection_order = VIEWS[2:] + VIEWS[:2] if face_priority else VIEWS
+    for layer, filename, direction in projection_order:
         path = folder / filename
         if path.is_file():
             surface = project(nodes, links, normal, path, layer, direction, surface)

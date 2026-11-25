@@ -25,7 +25,8 @@ finish.add_argument('--candy-graft-material', action='store_true', help='metal p
 finish.add_argument('--refractive-resin', action='store_true', help='cloudy cast shell with depth-dependent refraction')
 finish.add_argument('--compacted-scrap', action='store_true', help='mixed enamel, bare steel, plastic, and plated contacts')
 finish.add_argument('--artifact-material', choices=('gilt-enamel', 'creek-stone', 'aquarium-enamel',
-                                                    'gummy-machine', 'rebound-equipment'),
+                                                    'gummy-machine', 'rebound-equipment',
+                                                    'molded-playset', 'tufted-course'),
                     help='surface finish for a reconstructed artifact')
 parser.add_argument('--resin-haze', type=float, default=1, help='uniform haze strength from 0 to 1')
 parser.add_argument('--pcb', type=Path, help='standalone fitted edge-card GLB')
@@ -39,6 +40,7 @@ parser.add_argument('--label-height', type=float)
 parser.add_argument('--label-x', type=float, default=0)
 parser.add_argument('--label-y', type=float, help='label center height in GLB coordinates')
 parser.add_argument('--contact-seam', type=float, help='replace the reconstructed contacts below this GLB height')
+parser.add_argument('--cartridge-shadows', action='store_true', help='enable self-shadowing on the shell')
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 if args.pcb and not args.refractive_resin:
     parser.error('--pcb requires --refractive-resin')
@@ -102,10 +104,13 @@ elif args.artifact_material:
                    'creek-stone': 'River-worn stone, moss, and wet channel',
                    'aquarium-enamel': 'Vitreous aquarium enamel and brass',
                    'gummy-machine': 'Gummy polymer, mint plates, and rubber gasket',
-                   'rebound-equipment': 'Pebbled ball leather, rubber rail, and impact nylon'}[args.artifact_material]
+                   'rebound-equipment': 'Pebbled ball leather, rubber rail, and impact nylon',
+                   'molded-playset': 'Snap-fit molded playset',
+                   'tufted-course': 'Putting turf, cork, and enamel'}[args.artifact_material]
 material = bpy.data.materials.new(finish_name)
 atlas = bake_reference_atlas(shell, material, folder,
-                             size=1024 if args.refractive_resin else 1536, basename='shell-atlas')
+                             size=1024 if args.refractive_resin else 1536, basename='shell-atlas',
+                             face_priority=args.artifact_material == 'molded-playset')
 nodes, links = material.node_tree.nodes, material.node_tree.links
 bsdf = nodes.get('Principled BSDF')
 output = nodes.get('Material Output')
@@ -118,7 +123,10 @@ if args.candy_graft_material:
 if args.compacted_scrap:
     from material_zones import compacted_scrap_material
     compacted_scrap_material(material, atlas, folder, args.shell_height)
-if args.artifact_material:
+if args.artifact_material == 'molded-playset':
+    from material_zones import molded_playset_parts
+    molded_playset_parts(shell, material, atlas, args.shell_height)
+elif args.artifact_material:
     from material_zones import artifact_material
     artifact_material(material, atlas, folder, args.shell_height, args.artifact_material)
 if args.refractive_resin:
@@ -143,6 +151,13 @@ if board and label:
 if args.contact_seam is not None:
     from standard_contact_edge import fit_contact_edge
     fit_contact_edge(shell, args.contact_seam)
+if args.cartridge_shadows:
+    shell['cartridgeShadow'] = 'both'
+    if label:
+        label['cartridgeShadow'] = 'both'
+if args.artifact_material == 'tufted-course':
+    from cartridge_turf import plant_turf
+    plant_turf(shell, atlas)
 shell['Source'] = 'Hunyuan3D-2mv.' if args.native_gltf else 'TripoSR.'
 shell['Surface'] = 'Orthographic reference projections baked to the reconstructed shell.'
 frame_asset(.90)
@@ -156,6 +171,7 @@ if args.refractive_resin:
     links.new(absorption, output.inputs['Volume'])
 bpy.ops.export_scene.gltf(filepath=str(folder / (args.slug + '.glb')), export_format='GLB',
                          export_yup=True, export_apply=True, export_extras=True,
-                         export_vertex_color='NONE', export_cameras=False, export_lights=False)
+                         export_vertex_color='MATERIAL' if args.artifact_material == 'tufted-course' else 'NONE',
+                         export_cameras=False, export_lights=False)
 shell.data.calc_loop_triangles()
 print(f'{source_faces:,} generated triangles; {len(shell.data.loop_triangles):,} shell triangles exported.')

@@ -103,6 +103,17 @@ blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" --
 
 The material maps distinguish matte ball grain and rubber, glossier pink impact nylon, and exposed metal. The contact-edge assembly replaces the projected pads with 32 plated contacts, a recessed board, and an insulated back. The rest of the case retains the reconstructed surface.
 
+### Garden Song molded playset and Jumbo Mini Golf turf
+
+Use the matching six views from each set. Garden Song retains the molded seams in the generated relief and assigns separate plastic finishes to the colored areas. Jumbo uses the thin edge reference pair for its top and underside projections. The turf pass samples the baked green areas of the reconstructed shell and grows bent, two-sided mesh fibers with darker roots and lighter tips. This puts fibers on the front, edges and rear without planting the lettering, cup, cork or contacts.
+
+```powershell
+blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/garden-song' garden-song --native-gltf --shell-width .450 --shell-height .424 --shell-depth .121 --artifact-material molded-playset --projected-title --contact-seam -.116 --cartridge-shadows
+blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/jumbo-mini-golf' jumbo-mini-golf --native-gltf --shell-width .511 --shell-height .360 --shell-depth .127 --artifact-material tufted-course --projected-title --contact-seam -.105
+```
+
+Both export self-shadowing roles for the rotating shelf and museum inspection. Jumbo's fiber vertex colors export with the geometry. Check that the pile casts onto the green and catches the rim light under rotation.
+
 ### Case and slot previews
 
 Render previews from the finished GLBs. The renderer centers the connector, and the WebP packer preserves that horizontal center when it crops the transparent margins. Add the result as `cartridgePreview` in the catalog. The shelf uses it in the open case, during insertion and ejection, and in the player’s cartridge UI. The carousel and museum use `cartridgeModel` for interactive 3D. Regenerate the WebP after a model revision and version its URL if replacing an existing public file.

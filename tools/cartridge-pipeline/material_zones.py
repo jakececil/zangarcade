@@ -176,6 +176,12 @@ def artifact_material(material, atlas, folder, shell_height, style):
         normal.inputs['Strength'].default_value = .4
         links.new(relief.outputs['Color'], normal.inputs['Color'])
         links.new(normal.outputs['Normal'], bsdf.inputs['Normal'])
+    elif style == 'tufted-course':
+        green = smooth(.024,.13,g-r)*smooth(.026,.16,g-b)
+        teal = smooth(.034,.23,np.minimum(g,b)-r)
+        metal = .99*pins
+        roughness = .67+.24*green-.22*teal-.42*pins
+        coat = .051
     else:
         pink = smooth(.05, .24, r-g)*smooth(.018, .15, b-g)
         lime = smooth(.06, .22, g-b)*smooth(.30, .72, g)
@@ -191,3 +197,42 @@ def artifact_material(material, atlas, folder, shell_height, style):
     links.new(channels.outputs['Green'], bsdf.inputs['Roughness'])
     links.new(channels.outputs['Blue'], bsdf.inputs['Metallic'])
     bsdf.inputs['Coat Weight'].default_value = coat
+
+
+def molded_playset_parts(shell, material, atlas, shell_height):
+    """Assign discrete plastic finishes without cutting away the recovered seams."""
+    mesh = shell.data
+    uv = np.empty(len(mesh.loops)*2, dtype=np.float32)
+    mesh.uv_layers.active.data.foreach_get('uv', uv)
+    uv = uv.reshape(-1, 2)
+    centers = np.array([uv[face.loop_start:face.loop_start + face.loop_total].mean(axis=0)
+                        for face in mesh.polygons])
+    width, height = atlas.size
+    x, y = np.clip(centers*[width-1,height-1], 0, [width-1,height-1]).astype(int).T
+    r, g, b = (np.clip(pixels(atlas)[y,x,:3], 0, 1)**(1/2.2)).T
+    z = np.array([(face.center.z+.143)/shell_height for face in mesh.polygons])
+    brightness = np.maximum.reduce((r,g,b))
+    color_span = brightness-np.minimum.reduce((r,g,b))
+    zones = [
+        ('Snap-fit butter-yellow planter', .34, .24, np.ones_like(z, dtype=bool)),
+        ('Deep blue terrarium tray', .54, .12, (brightness < .32) | ((b > r+.03) & (g < .30))),
+        ('Leaf-green rail and stems', .38, .17, (g > r+.027) & (g > b+.06)),
+        ('Cyan choir bubble', .23, .34, (g > r+.10) & (b > r+.12) & (g > .32)),
+        ('Lavender caterpillar and inlays', .45, .16, (b > g+.047) & (r > g+.011) & (b > .32)),
+        ('Cherry caps and pink moldings', .29, .29, (r > g+.13) & (b > g+.037)),
+        ('Tangerine flower petals', .32, .25, (r > g+.105) & (g > b+.065) & (z > .37)),
+        ('Cream letters and eyes', .41, .11, (r > .67) & (g > .62) & (b > .50) & (color_span < .34)),
+    ]
+    assignments = np.zeros(len(centers), dtype=np.int32)
+    for index, (name, roughness, coat, mask) in enumerate(zones):
+        piece = material.copy() if index else material
+        piece.name = name
+        shader = piece.node_tree.nodes.get('Principled BSDF')
+        shader.inputs['Roughness'].default_value = roughness
+        shader.inputs['Coat Weight'].default_value = coat
+        shader.inputs['Coat Roughness'].default_value = min(.33, roughness)
+        if index:
+            mesh.materials.append(piece)
+        assignments[mask] = index
+    mesh.polygons.foreach_set('material_index', assignments)
+    shell['opticalDisplay'] = True
