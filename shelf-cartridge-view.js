@@ -1,12 +1,11 @@
 import * as THREE from './arcade/vendor/three.module.js';
 import { loadCartridgeAsset } from './arcade/cartridge-assets.js';
 import { createCartridgeDrums } from './arcade/cartridge-drums.js';
-import { createCartridgeSlots } from './arcade/cartridge-slots.js';
+import { createCartridgeSlots, pickCartridgePart } from './arcade/cartridge-slots.js?v=513bd344741e';
 import { configureCartridgeKey, createCartridgeReflections, enableCartridgeShadows } from './arcade/cartridge-lighting.js';
 
 export function createShelfCartridgeView(canvas, { isPaused, reducedMotion, onSlotsState }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#0d0d0e');
@@ -58,11 +57,12 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion, onSl
   function resize() {
     const { clientWidth: width, clientHeight: height } = canvas;
     if (!active || !width || !height) return;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5, Math.sqrt(6000000 / (width * height))));
     renderer.setSize(width, height, false);
     const aspect = width / height;
     const heightWithTilt = Math.hypot(bounds.y, bounds.z);
     const widthWithTurn = Math.hypot(bounds.x, bounds.z);
-    const halfHeight = Math.max(heightWithTilt / .85, widthWithTurn / (.87 * aspect)) * .5;
+    const halfHeight = Math.max(heightWithTilt / .83, widthWithTurn / (.94 * aspect)) * .5;
     camera.top = halfHeight;
     camera.bottom = -halfHeight;
     camera.left = -halfHeight * aspect;
@@ -81,6 +81,7 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion, onSl
   canvas.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
     drag = { x: event.clientX, y: event.clientY, id: event.pointerId, moved: false };
+    if (slots && event.pointerType === 'touch') drag.lever = slots.isLever(hitPart(event));
     drums?.resetIdle();
     canvas.setPointerCapture(event.pointerId);
   });
@@ -90,7 +91,8 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion, onSl
       canvas.classList.toggle('on-drum', Boolean(slots?.isLever(hit) || (hit && drums?.indexFor(hit) >= 0)));
     }
     if (event.pointerId !== drag?.id) return;
-    if ((drums || slots) && !drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return;
+    const tapSlop = event.pointerType === 'touch' ? 12 : 5;
+    if ((drums || slots) && !drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < tapSlop) return;
     drag.moved = true;
     yaw += (event.clientX - drag.x) * .014;
     pitch = THREE.MathUtils.clamp(pitch + (event.clientY - drag.y) * .012, -.98, .98);
@@ -99,18 +101,12 @@ export function createShelfCartridgeView(canvas, { isPaused, reducedMotion, onSl
     invalidate();
   });
   function hitPart(event) {
-    const rect = canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    ray.setFromCamera({
-      x: 2 * (event.clientX - rect.left) / rect.width - 1,
-      y: 1 - 2 * (event.clientY - rect.top) / rect.height
-    }, camera);
-    return ray.intersectObject(stage, true)[0]?.object;
+    return pickCartridgePart(ray, camera, stage, canvas.getBoundingClientRect(), event, slots);
   }
   canvas.addEventListener('pointerup', event => {
     if ((!drums && !slots) || event.pointerId !== drag?.id || drag.moved) return;
     const hit = hitPart(event);
-    if (slots?.isLever(hit)) slots.pull();
+    if (slots && (drag.lever || slots.isLever(hit))) slots.pull();
     const index = drums?.indexFor(hit) ?? -1;
     if (index >= 0) drums.turn(index);
   });

@@ -1,4 +1,4 @@
-"use strict";
+import { emulatorGamepads, watchGamepad } from "./arcade/gamepads.js?v=9bc07178600a";
 
 const player = document.getElementById("game");
 const viewport = document.getElementById("viewport");
@@ -22,6 +22,7 @@ const touchControls = document.getElementById("touch-controls");
 const shareLayout = document.getElementById("share-layout");
 const clearLayout = document.getElementById("clear-layout");
 const layoutStatus = document.getElementById("layout-status");
+const controllerStatus = document.getElementById("controller-status");
 const pageFolder = new URL("./", location.href);
 const artFolder = new URL("./art/", pageFolder);
 const playParams = new URLSearchParams(location.search);
@@ -234,6 +235,43 @@ function assignConnectedGamepads(emulator) {
   emulator.updateGamepadLabels();
 }
 
+function configureGamepadPolling(emulator) {
+  const handler = emulator.gamepad;
+  handler.getGamepads = emulatorGamepads;
+  // The first native poll can occur before the control menu finishes initializing.
+  handler.gamepads.length = 0;
+  emulator.gamepadSelection.fill("");
+  const active = () => !roomMode || roomBridge?.acceptsGamepad;
+  for (const type of ["buttondown", "buttonup", "axischanged"]) {
+    const dispatch = handler.listeners[type];
+    handler.on(type, event => { if (active()) dispatch(event); });
+  }
+  const disconnect = handler.listeners.disconnected;
+  handler.on("disconnected", event => {
+    if (emulator.started && active()) {
+      const pad = handler.gamepads.find(item => item.index === event.gamepadIndex);
+      for (const [index, button] of Object.entries(pad?.buttons ?? {})) {
+        if (button?.pressed) emulator.gamepadEvent({ type: "buttonup", index: Number(index),
+          label: handler.getButtonLabel(Number(index)), gamepadIndex: pad.index });
+      }
+      for (const [index, axis] of ["LEFT_STICK_X","LEFT_STICK_Y","RIGHT_STICK_X","RIGHT_STICK_Y"].entries()) {
+        if (pad?.axes[index]) emulator.gamepadEvent({ type: "axischanged", axis, value: 0, gamepadIndex: pad.index });
+      }
+    }
+    disconnect(event);
+  });
+}
+
+if (!roomMode) watchGamepad((pad, _down, edge) => {
+  const detected = pad?.id || "";
+  if (controllerStatus.dataset.device !== detected) {
+    controllerStatus.dataset.device = detected;
+    controllerStatus.hidden = !detected;
+    controllerStatus.textContent = detected ? `Detected ${detected}` : "";
+  }
+  if (document.body.dataset.playState === "ready" && (edge(0) || edge(9))) player.querySelector(".ejs_start_button")?.click();
+});
+
 function setTouchControls(enabled, startup = false) {
   const emulator = window.EJS_emulator;
   emulator.changeSettingOption("virtual-gamepad", enabled ? "enabled" : "disabled", startup);
@@ -300,6 +338,7 @@ function startPlayer(game, romUrl, emulatorColor) {
     EJS_ready() {
       if (document.body.dataset.playState !== "loading") return;
       configureKeyboardDefaults(window.EJS_emulator);
+      configureGamepadPolling(window.EJS_emulator);
       clearTimeout(bootTimer);
       standby.hidden = true;
       setState("ready", "Ready to start");
@@ -388,7 +427,7 @@ async function loadCartridge() {
   document.getElementById("core-name").hidden = false;
   controls.hidden = false;
   if (roomMode) {
-    const { createPlayerBridge } = await import("./arcade/player-bridge.js");
+    const { createPlayerBridge } = await import("./arcade/player-bridge.js?v=eaaaa2ba45de");
     roomBridge = createPlayerBridge(player, game.id, roomId);
     document.body.classList.add("room-player");
     const style = document.createElement("link");

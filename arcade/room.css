@@ -19,6 +19,10 @@ button:focus-visible, a:focus-visible, canvas:focus-visible { outline: 3px solid
 a { color: var(--teal); }
 
 #room { display: block; width: 100%; height: 100%; outline-offset: -4px; }
+.gamepad-help { display: none; }
+body[data-gamepad] .gamepad-help { display: block; }
+body[data-gamepad] :is(.instructions,.walk-help,.play-keyboard).desktop-help { display: none; }
+#inspect-pull-lever { min-height: 44px; }
 .room-header { position: fixed; inset: max(14px, env(safe-area-inset-top)) 20px auto; z-index: 4; display: flex; justify-content: space-between; align-items: center; gap: 16px; pointer-events: none; }
 .room-identity { display: flex; gap: 12px; align-items: center; text-shadow: 0 2px 4px #000; font-weight: 700; }
 .room-identity img { object-fit: contain; }

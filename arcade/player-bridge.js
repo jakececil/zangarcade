@@ -128,6 +128,7 @@ export function createPlayerBridge(player, game = "kingfisher", room = "kingfish
     if (event.source !== window.parent || event.origin !== location.origin || event.data?.type !== "zang-room-command") return;
     const command = event.data;
     if (command.action === "lower") lower();
+    else if (command.action === "start" && document.body.dataset.playState === "ready") player.querySelector(".ejs_start_button")?.click();
     else if (command.action === "resume" && emulator?.started && !lowering) {
       emulator.play();
       emulator.setVolume(emulator.muted ? 0 : emulator.volume);
@@ -152,6 +153,7 @@ export function createPlayerBridge(player, game = "kingfisher", room = "kingfish
   window.addEventListener("pagehide", () => clearInterval(timer), { once: true });
 
   return {
+    get acceptsGamepad() { return playing && !lowering; },
     ready(instance) {
       emulator = instance;
       const managerPrototype = window.EJS_GameManager.prototype;

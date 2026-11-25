@@ -8,8 +8,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; connect-src 'self' blob:; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob: data:; frame-src 'self'">
   <title>Museum | ZANG Arcade</title>
   <link rel="icon" href="../art/brand/zang-favicon.png" type="image/png">
-  <link rel="stylesheet" href="./room.css?v=68caf48a668f">
-  <script type="module" src="./main.js?v=e89a32f614a0"></script>
+  <link rel="stylesheet" href="./room.css?v=82a00761cbbc">
+  <script type="module" src="./main.js?v=d877f7fc8a5d"></script>
 </head>
 <body data-mode="loading">
   <canvas id="room" tabindex="0" aria-label="ZANG Arcade Museum. Use arrow keys or WASD to walk, drag or press M to look, and E to interact."></canvas>
@@ -25,6 +25,7 @@
       <p>Find cartridges in the guts of ZANG. Play anywhere, then bring them home to the shelf.</p>
       <p class="instructions desktop-help">Walk with WASD or arrows. Hold Shift to run. Press I for inventory or H for the handheld.</p>
       <p class="instructions touch-help">Use the walking pad. Drag the room to look. Tap to interact.</p>
+      <p class="instructions gamepad-help">Press Cross / A to enter. Left stick walks, right stick looks.</p>
       <button id="enter-room" class="primary" type="button" disabled>Loading room…</button>
       <p class="save-note">Museum cartridges have their own saves.</p>
     </div>
@@ -49,6 +50,7 @@
       <button id="interact" class="interaction" type="button" disabled>Walk to the cartridge</button>
     </div>
     <div class="walk-help desktop-help">WASD / arrows move · Shift runs · M toggles mouse look · E interacts</div>
+    <div class="walk-help gamepad-help">Sticks move and look · L3 runs · Cross / A interacts · Triangle / Y raises the handheld · Create / View opens inventory</div>
   </main>
 
   <dialog id="inventory-dialog" aria-labelledby="inventory-title">
@@ -85,6 +87,7 @@
       <button id="lower-handheld" type="button">Lower handheld <kbd>Esc</kbd></button>
     </div>
     <div class="play-keyboard desktop-help">Arrows move · A / D are A / B · Q / E are L / R · Shift selects · Enter starts</div>
+    <div class="play-keyboard gamepad-help">Click both sticks to lower the handheld</div>
     <div id="touch-gamepad" class="touch-gamepad" aria-label="Game touch controls">
       <div class="game-dpad">
         <button data-input="4" class="pad-up" aria-label="Game up">▲</button>

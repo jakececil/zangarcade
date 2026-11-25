@@ -3,6 +3,26 @@ const stopTimes = [690, 1010, 1350];
 const spinStart = 205;
 const winPulse = 1320;
 
+export function pickCartridgePart(ray, camera, model, rect, event, slots) {
+  if (!rect.width || !rect.height) return;
+  const pick = (offsetX, offsetY) => {
+    ray.setFromCamera({
+      x: 2 * (event.clientX + offsetX - rect.left) / rect.width - 1,
+      y: 1 - 2 * (event.clientY + offsetY - rect.top) / rect.height
+    }, camera);
+    return ray.intersectObject(model, true)[0]?.object;
+  };
+  const exact = pick(0, 0);
+  if (!slots || event.pointerType !== 'touch' || slots.isLever(exact)) return exact;
+  // Pad the narrow handle without changing where mouse clicks or rotation land.
+  for (let i = 0; i < 8; i++) {
+    const angle = i * Math.PI / 4;
+    const nearby = pick(12 * Math.cos(angle), 12 * Math.sin(angle));
+    if (slots.isLever(nearby)) return nearby;
+  }
+  return exact;
+}
+
 export function createCartridgeSlots(model, reducedMotion, onState) {
   let lever;
   const reelNodes = [];

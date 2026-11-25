@@ -183,6 +183,8 @@ if args.artifact_material == 'stratified-world':
 if args.artifact_material == 'candy-mechanism':
     from sugar_reels import fit_sugar_slots
     fit_sugar_slots(shell, folder)
+    from sugar_drum_detail import fit_title_and_gems
+    fit_title_and_gems(shell, folder, args.shell_width, args.shell_height, (seat_center-lo.x)/span.x)
 if args.artifact_material == 'pinball-salvage':
     from pinball_chrome import seat_chrome_ball
     seat_chrome_ball(shell)

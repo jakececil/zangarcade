@@ -1,5 +1,6 @@
-import { createRoom } from './room.js?v=cbbf0baca340';
+import { createRoom } from './room.js?v=27a5b2879f72';
 import { HOME } from './guts.js';
+import { stick, watchGamepad } from './gamepads.js?v=9bc07178600a';
 
 const canvas = document.getElementById('room');
 const entrance = document.getElementById('entrance');
@@ -51,6 +52,7 @@ let mode = 'loading';
 let cartState = 'on-desk';
 let target;
 let gameRunning = false;
+let gameReady = false;
 let lowerTimer;
 let audio;
 let running = false;
@@ -274,6 +276,7 @@ async function raiseHandheld() {
   if (playerGame !== cartridge) {
     playerGame = cartridge;
     gameRunning = false;
+    gameReady = false;
     const url = new URL('../play.html', location.href);
     url.searchParams.set('game', playerGame.id);
     url.searchParams.set('room', playerRoom());
@@ -363,7 +366,7 @@ window.addEventListener('message', event => {
   const message = event.data;
   if (message?.type !== 'zang-room-player' || message.room !== playerRoom() || message.game !== playerGame?.id) return;
   if (message.save && playerGame.id === 'kingfisher') acceptSave(message.save);
-  if (message.event === 'ready') updatePlayerLabel();
+  if (message.event === 'ready') { gameReady = true; updatePlayerLabel(); }
   if (message.event === 'running') { gameRunning = true; updatePlayerLabel(); }
   if (message.event === 'request-lower') lowerHandheld();
   if (message.event === 'lowered' && mode === 'saving') returnToRoom(message.error || '');
@@ -442,6 +445,46 @@ window.addEventListener('keydown', event => {
   if (event.repeat || mode !== 'room' || event.target === directory) return;
   if (event.code === 'KeyI') { event.preventDefault(); toggleInventory(); }
   if (event.code === 'KeyH' && !inventoryDialog.open) { event.preventDefault(); raiseHandheld(); }
+});
+
+watchGamepad((pad, down, edge, delta) => {
+  const connected = Boolean(pad);
+  const body = document.body;
+  if (body.hasAttribute('data-gamepad') !== connected) body.toggleAttribute('data-gamepad', connected);
+  if (!room) return;
+  if (!pad) { room.moveGamepad(0, 0, false); return; }
+  if (mode === 'intro' && (edge(0) || edge(9))) { enterButton.click(); return; }
+  if (mode === 'play') {
+    if (down(10) && down(11) && (edge(10) || edge(11))) lowerHandheld();
+    else if (gameReady && !gameRunning && (edge(0) || edge(9))) send('start');
+    return;
+  }
+  if (inventoryDialog.open) {
+    if (edge(1) || edge(8)) { inventoryDialog.close(); return; }
+    const items = Array.from(inventoryList.querySelectorAll('button'));
+    if (!items.length) return;
+    const current = Math.max(0, items.indexOf(document.activeElement));
+    if (edge(12) || edge(14)) items[(current+items.length-1)%items.length].focus();
+    else if (edge(13) || edge(15)) items[(current+1)%items.length].focus();
+    else if (edge(0)) items[current].click();
+    return;
+  }
+  const [lookX, lookY] = stick(pad.axes[2],pad.axes[3]);
+  if (mode === 'inspect') {
+    if (lookX || lookY) room.look(lookX*145*delta, lookY*145*delta);
+    if (edge(1)) exitInspection();
+    else if (edge(0) && !inspectSlots.hidden) room.pullInspectionLever();
+    else if (edge(4) || edge(5)) room.turnCartridge();
+    return;
+  }
+  if (mode !== 'room') return;
+  const [x, y] = stick(pad.axes[0],pad.axes[1]);
+  room.moveGamepad(x || Number(down(15))-Number(down(14)), -y || Number(down(12))-Number(down(13)), down(10));
+  if (lookX || lookY) room.look(lookX*680*delta, lookY*540*delta);
+  if (edge(0)) room.interact();
+  else if (edge(3)) raiseHandheld();
+  else if (edge(2)) openInspection(inspectionChoice());
+  else if (edge(8)) toggleInventory();
 });
 
 function moveFromPointer(event) {

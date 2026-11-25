@@ -3,8 +3,9 @@ import { ENTRY_Z, museumGeometry } from './museum-geometry.js';
 import { HOME, buildGuts, mazeWalls, roomProfile } from './guts.js';
 import { loadCartridgeAsset } from './cartridge-assets.js';
 import { createCartridgeDrums } from './cartridge-drums.js';
-import { createCartridgeSlots } from './cartridge-slots.js';
+import { createCartridgeSlots, pickCartridgePart } from './cartridge-slots.js?v=513bd344741e';
 import { configureCartridgeKey, createCartridgeReflections, enableCartridgeShadows } from './cartridge-lighting.js';
+import { buildCabinetAlcove, mountCabinet } from './cabinet-alcove.js?v=ac1f5dcbce49';
 
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
@@ -60,6 +61,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   let target = null;
   let frameRequest = 0;
   let previousTime = 0;
+  let cabinetLoading;
   let savedPose;
   let dockPromise;
   let renderedFrames = 0;
@@ -347,12 +349,13 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   const hallProps = guts.props(museum.hall);
   hallProps.vending.position.set(-2.36, 0, 2.7);
   hallProps.vending.rotation.y = .92;
-  hallProps.cabinet.position.set(2.34, 0, -18.1);
-  hallProps.cabinet.rotation.y = -.75;
+  hallProps.cabinet.position.set(2.39, .03, -2.08);
+  hallProps.cabinet.rotation.y = -.95;
   const homeProps = guts.props(guts.home);
   homeProps.vending.visible = false;
   homeProps.cabinet.position.set(3.1, 0, -2.47);
   homeProps.cabinet.rotation.y = -.18;
+  buildCabinetAlcove({ parent: museum.hall, texture, material, geometry: geometries, box, cylinder });
   const ductMaterial = material('#913850', { map: guts.materialTile, bumpMap: guts.materialTile, bumpScale: .05, roughness: .35, metalness: .27 });
   const ductPoints = Array.from({ length: 25 }, (_, index) => new THREE.Vector3(-1.4 + Math.sin(index * .73) * .64, 2.81 + Math.sin(index * 1.37) * .18, 4 - index * 1.88));
   const duct = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ductPoints), 68, .16, 8, false);
@@ -394,7 +397,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   const homeObstacles = [
     { x: -2.38, z: .72, w: 2.14, d: .82 },
     { x: 2.01, z: .34, w: 1.07, d: .73 },
-    { x: 0, z: -3.45, w: 4.78, d: .55 }
+    { x: 0, z: -3.45, w: 4.78, d: .55 },
+    { x: 3.1, z: -2.47, w: .92, d: .92 }
   ];
 
   function setCollection(discovered, shelved) {
@@ -410,6 +414,11 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (docked || transitioning) return;
     if (currentGame) exitDoor = museum.doors.find(door => door.game === currentGame);
     currentGame = game || undefined;
+    if ((!game || game === HOME) && !cabinetLoading) {
+      // Leave the simple prop in place on a network error, then retry on return.
+      cabinetLoading = mountCabinet([hallProps.cabinet, homeProps.cabinet], requestRender)
+        .catch(() => { cabinetLoading = undefined; });
+    }
     profile = roomProfile(game?.id, games.indexOf(game));
     scene.fog.near = game ? Math.max(6, profile.depth * .62) : 5;
     scene.fog.far = game ? Math.max(16, profile.depth * 1.54) : 15;
@@ -498,7 +507,11 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   function canStand(x, z) {
-    if (!currentGame) return Math.abs(x) < 2.95 && z > ENTRY_Z + 2.3 - museum.length && z < ENTRY_Z + 1.7;
+    if (!currentGame) {
+      const cabinet = hallProps.cabinet.position;
+      if (Math.abs(x-cabinet.x) < .72 && Math.abs(z-cabinet.z) < .72) return false;
+      return Math.abs(x) < 2.95 && z > ENTRY_Z + 2.3 - museum.length && z < ENTRY_Z + 1.7;
+    }
     if (Math.abs(x) >= profile.width / 2 - .29 || Math.abs(z) >= profile.depth / 2 - .33) return false;
     const blockers = currentGame === HOME ? homeObstacles : currentGame.id === 'zonk' ? mazeWalls : [];
     if (pedestal.visible && Math.abs(x - CART_HOME.x) < .55 && Math.abs(z - CART_HOME.z) < .49) return false;
@@ -507,13 +520,13 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   function updateMovement(delta) {
     if (!inputEnabled || docked || transitioning || inspecting) return;
-    let x = externalMove.x + Number(keys.has('KeyD') || keys.has('ArrowRight')) - Number(keys.has('KeyA') || keys.has('ArrowLeft'));
-    let z = externalMove.z + Number(keys.has('KeyW') || keys.has('ArrowUp')) - Number(keys.has('KeyS') || keys.has('ArrowDown'));
+    let x = externalMove.x + gamepadMove.x + Number(keys.has('KeyD') || keys.has('ArrowRight')) - Number(keys.has('KeyA') || keys.has('ArrowLeft'));
+    let z = externalMove.z + gamepadMove.z + Number(keys.has('KeyW') || keys.has('ArrowUp')) - Number(keys.has('KeyS') || keys.has('ArrowDown'));
     const length = Math.hypot(x, z);
     if (!length) return;
     x /= Math.max(1, length);
     z /= Math.max(1, length);
-    const sprinting = run || keys.has('ShiftLeft') || keys.has('ShiftRight');
+    const sprinting = run || gamepadMove.sprint || keys.has('ShiftLeft') || keys.has('ShiftRight');
     const distance = delta * (currentGame ? 2.15 : 4.1) * (sprinting ? 1.85 : 1);
     const nextX = camera.position.x + (Math.cos(yaw) * x - Math.sin(yaw) * z) * distance;
     const nextZ = camera.position.z + (-Math.sin(yaw) * x - Math.cos(yaw) * z) * distance;
@@ -653,9 +666,11 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     requestRender();
   }
 
+  let gamepadMove = { x: 0, z: 0, sprint: false };
   function clearInput() {
     keys.clear();
     externalMove = { x: 0, z: 0 };
+    gamepadMove = { x: 0, z: 0, sprint: false };
     run = false;
   }
 
@@ -874,6 +889,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function pointerdown(event) {
     if (!inputEnabled || docked || transitioning || event.button !== 0 || document.pointerLockElement === canvas) return;
     drag = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+    if (inspectionSlots && event.pointerType === 'touch') drag.lever = inspectionSlots.isLever(hitInspection(event));
     if (inspectionDrums) {
       inspectionDrums.resetIdle();
       requestRender();
@@ -882,24 +898,23 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
   function pointermove(event) {
     if (!drag || event.pointerId !== drag.id) return;
-    if ((inspectionDrums || inspectionSlots) && !drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return;
+    const tapSlop = event.pointerType === 'touch' ? 12 : 5;
+    if ((inspectionDrums || inspectionSlots) && !drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < tapSlop) return;
     drag.moved = true;
     look(event.clientX - drag.x, event.clientY - drag.y);
     drag.x = event.clientX;
     drag.y = event.clientY;
   }
+  function hitInspection(event) {
+    inspectionRay.layers.mask = inspectedModel.layers.mask;
+    return pickCartridgePart(inspectionRay, camera, inspectionCart.asset, canvas.getBoundingClientRect(), event, inspectionSlots);
+  }
   function pointerup(event) {
     if (event.pointerId !== drag?.id) return;
     if ((inspectionDrums || inspectionSlots) && !drag.moved && event.type === 'pointerup') {
-      const rect = canvas.getBoundingClientRect();
-      inspectionRay.layers.mask = inspectedModel.layers.mask;
-      inspectionRay.setFromCamera({
-        x: 2 * (event.clientX - rect.left) / rect.width - 1,
-        y: 1 - 2 * (event.clientY - rect.top) / rect.height
-      }, camera);
-      const hit = inspectionRay.intersectObject(inspectionCart.asset, true)[0];
-      if (inspectionSlots?.isLever(hit?.object)) inspectionSlots.pull();
-      const index = hit ? inspectionDrums?.indexFor(hit.object) ?? -1 : -1;
+      const hit = hitInspection(event);
+      if (inspectionSlots && (drag.lever || inspectionSlots.isLever(hit))) inspectionSlots.pull();
+      const index = hit ? inspectionDrums?.indexFor(hit) ?? -1 : -1;
       if (index >= 0) inspectionDrums.turn(index);
     }
     if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
@@ -974,6 +989,9 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     move(x, z) {
       externalMove = { x: THREE.MathUtils.clamp(Number(x) || 0, -1, 1), z: THREE.MathUtils.clamp(Number(z) || 0, -1, 1) };
       requestRender();
+    },
+    moveGamepad(x, z, sprint) {
+      gamepadMove = { x, z, sprint };
     },
     look,
     getState() {

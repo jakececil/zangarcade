@@ -16,7 +16,6 @@ const pullLever = document.getElementById('carousel-pull-lever');
 const slotResult = document.getElementById('carousel-slot-result');
 const drumAuto = document.getElementById('carousel-drum-auto');
 const carouselMachine = document.getElementById('carousel-machine');
-const machineArt = document.getElementById('machine-art');
 const carouselSelect = document.getElementById('carousel-select');
 const carouselPrevious = document.getElementById('carousel-prev');
 const carouselNext = document.getElementById('carousel-next');
@@ -206,7 +205,7 @@ async function showGalleryModel(game) {
   slotResult.textContent = '';
   if (!localAsset(game.cartridgeModel)) return;
   try {
-    meshViewer ??= import('./shelf-cartridge-view.js?v=fdd59ae88617').then(({ createShelfCartridgeView }) => {
+    meshViewer ??= import('./shelf-cartridge-view.js?v=d984d7d5b65a').then(({ createShelfCartridgeView }) => {
       meshView = createShelfCartridgeView(galleryMesh, {
         isPaused: () => gallery.dataset.paused === 'true', reducedMotion: reduceMotion,
         onSlotsState(state) {
@@ -562,11 +561,6 @@ document.addEventListener('keydown', (event) => {
 for (const element of document.querySelectorAll('[data-image-fallback]')) {
   watchImage(element.querySelector('img'), (loaded) => element.classList.toggle('has-image', loaded));
 }
-
-watchImage(machineArt, (loaded) => {
-  carouselMachine.classList.toggle('has-machine-image', loaded);
-  if (loaded) carouselMachine.style.setProperty('--frame-aspect', machineArt.naturalWidth + ' / ' + machineArt.naturalHeight);
-});
 
 async function loadShelf() {
   try {

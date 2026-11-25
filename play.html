@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" href="./art/brand/zang-favicon.png">
   <link rel="stylesheet" href="./slot.css">
   <link rel="stylesheet" href="./player.css">
-  <script src="./player.js" defer></script>
+  <script type="module" src="./player.js?v=b2f985b14c12"></script>
 </head>
 <body data-play-state="loading">
   <div class="world" aria-hidden="true">
@@ -95,7 +95,8 @@
         </dl>
       </div>
       <div class="controls-actions">
-        <p>Click the game to focus the keyboard. Press a button on a connected controller to activate it. Tap Start Game to play with touch controls on a phone.</p>
+        <p>Click the game to focus the keyboard. Press Cross or A on a connected controller to start. Tap Start Game to play with touch controls.</p>
+        <p id="controller-status" class="help" hidden></p>
         <div class="button-row keyboard-presets">
           <label for="keyboard-profile">Keyboard preset</label>
           <select class="action" id="keyboard-profile" disabled>
