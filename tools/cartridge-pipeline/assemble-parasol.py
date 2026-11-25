@@ -102,6 +102,13 @@ def trace_front(x, z):
     return bvh.ray_cast(Vector((x, -.24, z)), Vector((0, 1, 0)), .58)[0]
 
 
+plate_samples = [trace_front(x, split_z - .014) for x in [-.09, -.05, 0, .05, .09]]
+plate_depths = [hit.y for hit in plate_samples if hit is not None]
+if len(plate_depths) < 3:
+    raise ValueError('Could not locate the front nameplate plane')
+face_plane = float(np.median(plate_depths))
+
+
 # Record each ray of the reconstruction before cutting the front tray away.
 # The diffuser inherits both the original outline and the sculpted face relief.
 silhouette = []
@@ -275,17 +282,17 @@ emission_map(rim, .15+.16*spokes+.21*soft_arc, np.array([1,.53,.21]),
 
 
 def front_surface(ring):
-    # The first release's lens was a torus. This version carries the
-    # actual reconstructed front relief through the entire optical face.
-    return lambda index: -.048+.78*relief[ring][index]+.004*(ring/rings)**2
+    # Register the face to the front of the nameplate. Keep the pattern
+    # in shallow relief so the glass seats below the polished lip.
+    return lambda index: face_plane + .00065 + .026*(relief[ring][index]+.025)
 
 
 profile = [(.932*ring/rings,front_surface(ring)) for ring in range(rings+1)]
 profile += [(.932,-.025),(.74,-.017),(.20,-.017),(0,-.018)]
 optical_mesh('Frosted face · remeshed from Hunyuan relief', profile, frost)
 optical_mesh('Polished clear rim · traced Hunyuan silhouette',
-             [(.928,front_surface(rings)),(.965,lambda i:front_surface(rings)(i)+.0007),
-              (1.003,-.028),(1.008,.010),(.986,.026),(.956,.023),
+             [(.928,face_plane+.00055),(.965,face_plane-.00135),
+              (1.003,face_plane+.003),(1.008,.010),(.986,.026),(.956,.023),
               (.929,.011),(.922,-.017)], rim)
 
 pcb = material('Heat-resistant burgundy circuit board', (.095,.032,.020), .56,.04)
@@ -331,7 +338,7 @@ for x, z, energy in [(0,.037,.00043),(-.083,.029,.00020),(.083,.029,.00020)]:
     light.cutoff_distance = .17
     lamp = bpy.data.objects.new(light.name, light)
     bpy.context.collection.objects.link(lamp)
-    lamp.location = (x,-.054,z)
+    lamp.location = (x,-.022,z)
 block('Keyed socket shoulder', (0,.001,-.108), (.310,.058,.017), liner, .0035)
 block('Insulated plug backing', (0,.007,-.128), (.297,.038,.030), insulator, .0028)
 block('Contact substrate', (0,-.015,-.128), (.279,.009,.029), pcb)

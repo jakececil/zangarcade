@@ -154,6 +154,28 @@ def artifact_material(material, atlas, folder, shell_height, style):
         metal = np.maximum(.99*pins, .80*brass)
         roughness = .37 - .19*vitreous - .10*brass + .13*coral
         coat = .23
+    elif style == 'rebound-equipment':
+        orange_leather = (smooth(.12, .36, r-b)*smooth(.025, .18, g-b)
+                          * smooth(.36, .61, level))
+        turquoise_rubber = smooth(.038, .22, np.maximum(g,b)-r)
+        pink_nylon = smooth(.065, .24, r-g)*smooth(.026, .21, b-g)
+        brightness = .25*r + .60*g + .15*b
+        saturation = np.maximum.reduce((r,g,b))-np.minimum.reduce((r,g,b))
+        exposed_metal = (1-smooth(.07,.22,saturation))*smooth(.48,.75,brightness)
+        metal = np.maximum(.99*pins, .59*exposed_metal)
+        roughness = (.50+.28*orange_leather+.22*turquoise_rubber
+                     -.23*pink_nylon-.27*metal)
+        coat = .085
+        grain = np.random.default_rng(713).normal(0, .16, level.shape).astype(np.float32)
+        strength = .12+.58*orange_leather+.16*turquoise_rubber
+        dx = (np.roll(grain,1,axis=1)-grain)*strength
+        dy = (np.roll(grain,1,axis=0)-grain)*strength
+        relief = map_texture(nodes, folder, 'rebound-grain.png', 'Pebbled leather and rubber grain',
+                             np.stack((.5+dx,.5+dy,np.ones_like(dx)), axis=-1))
+        normal = nodes.new('ShaderNodeNormalMap')
+        normal.inputs['Strength'].default_value = .4
+        links.new(relief.outputs['Color'], normal.inputs['Color'])
+        links.new(normal.outputs['Normal'], bsdf.inputs['Normal'])
     else:
         pink = smooth(.05, .24, r-g)*smooth(.018, .15, b-g)
         lime = smooth(.06, .22, g-b)*smooth(.30, .72, g)

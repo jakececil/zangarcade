@@ -91,6 +91,18 @@ Use the six-view luminous sunburst board for Parasol's clear outer rim, frosted 
 
 Run `assemble-parasol.py` with that build folder. The script traces the recovered outline and samples the sculpted front relief, then cuts the reconstructed casting to seat the optical assembly. It preserves the textured back and nameplate and fits the standard connector. The closed frosted face, polished clear rim, flexible LED strip, and metal pins export as separate materials. Transmission shows the strip through the edge. An emissive texture approximates light scattered through the frosted acrylic, and three short-range point lights spill onto the hardware. Inspect front, profile, and rear before rendering the case preview.
 
+The diffuser mounts slightly behind the nameplate plane sampled from the casting. It sits below the clear lip. Check that fit along the X axis in Blender's orthographic view.
+
+### Blamball rebound equipment
+
+Build the six-view reference around the ball, the diagonal rubber rail, and the rear half-court graphic. The four horizontal views condition the mesh. Bake all six views, keeping the case wordmark in the projected artwork.
+
+```powershell
+blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/blamball' blamball --native-gltf --shell-width .490 --shell-height .354 --shell-depth .090 --artifact-material rebound-equipment --projected-title --contact-seam -.112
+```
+
+The material maps distinguish matte ball grain and rubber, glossier pink impact nylon, and exposed metal. The contact-edge assembly replaces the projected pads with 32 plated contacts, a recessed board, and an insulated back. The rest of the case retains the reconstructed surface.
+
 ### Case and slot previews
 
 Render previews from the finished GLBs. The renderer centers the connector, and the WebP packer preserves that horizontal center when it crops the transparent margins. Add the result as `cartridgePreview` in the catalog. The shelf uses it in the open case, during insertion and ejection, and in the player’s cartridge UI. The carousel and museum use `cartridgeModel` for interactive 3D. Regenerate the WebP after a model revision and version its URL if replacing an existing public file.

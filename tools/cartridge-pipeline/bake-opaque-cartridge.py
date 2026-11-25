@@ -24,7 +24,8 @@ finish = parser.add_mutually_exclusive_group()
 finish.add_argument('--candy-graft-material', action='store_true', help='metal pins and localized roughness for candy graft shells')
 finish.add_argument('--refractive-resin', action='store_true', help='cloudy cast shell with depth-dependent refraction')
 finish.add_argument('--compacted-scrap', action='store_true', help='mixed enamel, bare steel, plastic, and plated contacts')
-finish.add_argument('--artifact-material', choices=('gilt-enamel', 'creek-stone', 'aquarium-enamel', 'gummy-machine'),
+finish.add_argument('--artifact-material', choices=('gilt-enamel', 'creek-stone', 'aquarium-enamel',
+                                                    'gummy-machine', 'rebound-equipment'),
                     help='surface finish for a reconstructed artifact')
 parser.add_argument('--resin-haze', type=float, default=1, help='uniform haze strength from 0 to 1')
 parser.add_argument('--pcb', type=Path, help='standalone fitted edge-card GLB')
@@ -32,17 +33,23 @@ parser.add_argument('--pcb-window-top', type=float, default=-.105, help='top of 
 title_style = parser.add_mutually_exclusive_group()
 title_style.add_argument('--tile-title', choices=('LANDFILL',), help='fit solid title tiles into the face')
 title_style.add_argument('--ink-title', action='store_true', help='fit the opaque lettering from alpha in label.png')
-parser.add_argument('--label-width', type=float, required=True)
+title_style.add_argument('--projected-title', action='store_true', help='retain title artwork from the baked reference')
+parser.add_argument('--label-width', type=float)
 parser.add_argument('--label-height', type=float)
 parser.add_argument('--label-x', type=float, default=0)
-parser.add_argument('--label-y', type=float, required=True, help='label center height in GLB coordinates')
+parser.add_argument('--label-y', type=float, help='label center height in GLB coordinates')
+parser.add_argument('--contact-seam', type=float, help='replace the reconstructed contacts below this GLB height')
 args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
 if args.pcb and not args.refractive_resin:
     parser.error('--pcb requires --refractive-resin')
 if not 0 <= args.resin_haze <= 1:
     parser.error('--resin-haze must be between 0 and 1')
-if not args.tile_title and args.label_height is None:
+if not args.projected_title and (args.label_width is None or args.label_y is None):
+    parser.error('--label-width and --label-y are required for a separate title')
+if not (args.tile_title or args.projected_title) and args.label_height is None:
     parser.error('--label-height is required for a printed label')
+if args.contact_seam is not None and (args.refractive_resin or not -.130 < args.contact_seam < -.086):
+    parser.error('--contact-seam is for opaque shells and must be between -.130 and -.086')
 folder = args.folder.resolve()
 
 bpy.ops.object.select_all(action='SELECT')
@@ -94,7 +101,8 @@ elif args.artifact_material:
     finish_name = {'gilt-enamel': 'Gilt brass and indigo enamel',
                    'creek-stone': 'River-worn stone, moss, and wet channel',
                    'aquarium-enamel': 'Vitreous aquarium enamel and brass',
-                   'gummy-machine': 'Gummy polymer, mint plates, and rubber gasket'}[args.artifact_material]
+                   'gummy-machine': 'Gummy polymer, mint plates, and rubber gasket',
+                   'rebound-equipment': 'Pebbled ball leather, rubber rail, and impact nylon'}[args.artifact_material]
 material = bpy.data.materials.new(finish_name)
 atlas = bake_reference_atlas(shell, material, folder,
                              size=1024 if args.refractive_resin else 1536, basename='shell-atlas')
@@ -119,18 +127,22 @@ if args.refractive_resin:
                                   board=board, haze=args.resin_haze)
     shell['opticalDisplay'] = True
 
+label = None
 if args.tile_title:
     from tile_title import fit_tile_title
     label = fit_tile_title(shell, args.tile_title, width=args.label_width, x=args.label_x, z=args.label_y)
     label['cartridgeShadow'] = 'cast'
     shell['cartridgeShadow'] = 'receive'
-else:
+elif not args.projected_title:
     label = fit_label(shell, folder / ('label.png' if args.ink_title else 'label.jpg'),
                       width=args.label_width, height=args.label_height, z=args.label_y,
                       x=args.label_x, radius=.006, bulge=0 if args.ink_title else .0014, ink_only=args.ink_title)
-if board:
+if board and label:
     label['cartridgeShadow'] = 'cast'
     board['cartridgeShadow'] = 'receive'
+if args.contact_seam is not None:
+    from standard_contact_edge import fit_contact_edge
+    fit_contact_edge(shell, args.contact_seam)
 shell['Source'] = 'Hunyuan3D-2mv.' if args.native_gltf else 'TripoSR.'
 shell['Surface'] = 'Orthographic reference projections baked to the reconstructed shell.'
 frame_asset(.90)
