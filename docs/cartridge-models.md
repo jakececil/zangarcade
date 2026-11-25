@@ -114,6 +114,17 @@ blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" --
 
 Both export self-shadowing roles for the rotating shelf and museum inspection. Jumbo's fiber vertex colors export with the geometry. Check that the pile casts onto the green and catches the rim light under rotation.
 
+### Cosmic Jumbo and Lighthouse Keeper
+
+The cosmic Jumbo uses a fresh reconstruction of the Earth-ball relief and loop track. Keep the small badge as a separate label fitted inside the dedicated recess. Lighthouse Keeper preserves the sculpted foam, tower and lantern relief on the front, with a sea-chart back.
+
+The finish pass reads `relief.json` in the build folder. Set Jumbo's `center` and `radius` as normalized front-view coordinates for the black-hole well. Set Lighthouse Keeper's `lantern`, `beam_end`, and `beam_width` in the same coordinate system. The origin is the lower left. The masks use the front projection and face normals, so the lit contours stay on the front through a full turn. A roughness and specular map soften reflections progressively inside the well. The corona and beam use emissive textures.
+
+```powershell
+blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/jumbo-cosmic' jumbo-mini-golf --native-gltf --shell-width .473 --shell-height .429 --shell-depth .124 --artifact-material cosmic-loop --label-width .148 --label-height .031 --label-y -.082 --contact-seam -.112 --cartridge-shadows
+blender -b --python-exit-code 1 --python "$pipeline/bake-opaque-cartridge.py" -- 'build/lighthouse-keeper' lighthouse-keeper --native-gltf --shell-width .410 --shell-height .460 --shell-depth .108 --artifact-material coastal-relief --projected-title --contact-seam -.124 --cartridge-shadows
+```
+
 ### Case and slot previews
 
 Render previews from the finished GLBs. The renderer centers the connector, and the WebP packer preserves that horizontal center when it crops the transparent margins. Add the result as `cartridgePreview` in the catalog. The shelf uses it in the open case, during insertion and ejection, and in the player’s cartridge UI. The carousel and museum use `cartridgeModel` for interactive 3D. Regenerate the WebP after a model revision and version its URL if replacing an existing public file.

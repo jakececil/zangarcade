@@ -26,7 +26,8 @@ finish.add_argument('--refractive-resin', action='store_true', help='cloudy cast
 finish.add_argument('--compacted-scrap', action='store_true', help='mixed enamel, bare steel, plastic, and plated contacts')
 finish.add_argument('--artifact-material', choices=('gilt-enamel', 'creek-stone', 'aquarium-enamel',
                                                     'gummy-machine', 'rebound-equipment',
-                                                    'molded-playset', 'tufted-course'),
+                                                    'molded-playset', 'tufted-course',
+                                                    'cosmic-loop', 'coastal-relief'),
                     help='surface finish for a reconstructed artifact')
 parser.add_argument('--resin-haze', type=float, default=1, help='uniform haze strength from 0 to 1')
 parser.add_argument('--pcb', type=Path, help='standalone fitted edge-card GLB')
@@ -72,12 +73,14 @@ create_projectors(shell.data, coords, lo, span)
 
 # Preserve the shell's lean and asymmetry. The bottom of the recovered part
 # defines the connector center. Only the lower strip is constrained to the slot.
+relief_case = args.artifact_material in ('cosmic-loop', 'coastal-relief')
+seat_base, seat_top = (.10, .19) if relief_case else (.17, .34)
 for vertex, (x, y, z) in zip(shell.data.vertices, coords):
     fraction = (z-lo.z)/span.z
     x = (x-seat_center)*args.shell_width/span.x
     y = (y-center.y)*args.shell_depth/span.y
     z = -.143 + fraction*args.shell_height
-    seat = 1-smoothstep(.17, .34, fraction)
+    seat = 1-smoothstep(seat_base, seat_top, fraction)
     x += (min(.157, max(-.157, x))-x)*seat
     y += (min(.030, max(-.030, y))-y)*seat
     vertex.co = (x, y, z)
@@ -106,11 +109,13 @@ elif args.artifact_material:
                    'gummy-machine': 'Gummy polymer, mint plates, and rubber gasket',
                    'rebound-equipment': 'Pebbled ball leather, rubber rail, and impact nylon',
                    'molded-playset': 'Snap-fit molded playset',
-                   'tufted-course': 'Putting turf, cork, and enamel'}[args.artifact_material]
+                   'tufted-course': 'Putting turf, cork, and enamel',
+                   'cosmic-loop': 'Hard cosmic enamel and feathered ABS',
+                   'coastal-relief': 'Painted tower and molded dusk sea'}[args.artifact_material]
 material = bpy.data.materials.new(finish_name)
 atlas = bake_reference_atlas(shell, material, folder,
                              size=1024 if args.refractive_resin else 1536, basename='shell-atlas',
-                             face_priority=args.artifact_material == 'molded-playset')
+                             face_priority=relief_case or args.artifact_material == 'molded-playset')
 nodes, links = material.node_tree.nodes, material.node_tree.links
 bsdf = nodes.get('Principled BSDF')
 output = nodes.get('Material Output')
@@ -126,6 +131,9 @@ if args.compacted_scrap:
 if args.artifact_material == 'molded-playset':
     from material_zones import molded_playset_parts
     molded_playset_parts(shell, material, atlas, args.shell_height)
+elif args.artifact_material in ('cosmic-loop', 'coastal-relief'):
+    from relief_lighting import coat_relief
+    coat_relief(material, atlas, folder, args.artifact_material)
 elif args.artifact_material:
     from material_zones import artifact_material
     artifact_material(material, atlas, folder, args.shell_height, args.artifact_material)
