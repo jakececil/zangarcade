@@ -1,7 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import { mergeGeometries } from './vendor/BufferGeometryUtils.js';
 import { Reflector } from './vendor/Reflector.js';
-import { landfillLayout, landfillLevel, lanes, sortZ, waterLevel } from './landfill-layout.js?v=cb7e86a36875';
+import { landfillLayout, landfillLevel, lanes, sortZ, waterLevel } from './landfill-layout.js?v=ef24f81ed5d1';
 
 const cycle = 5.8;
 const motionPhase = [0, 3.82, 1.91];
@@ -29,14 +29,15 @@ const waterShader = {
     varying vec3 world;
     void main() {
       vec3 eye = normalize(cameraPosition - world);
-      float a = world.z * 4.7 + world.x * .65 - time * 1.92 + .9 * cos(world.x * .76 - time * .3);
-      float b = world.z * 8.2 - world.x * 1.73 + time * 2.13;
-      float c = world.x * 3.4 + world.z * 2.6 - time * 1.72 + sin(world.z * .9);
-      vec3 n = normalize(vec3(.045 * cos(c) + .016 * cos(b), 1.0, .089 * cos(a) + .042 * cos(b)));
+      float a = world.z * 3.75 + world.x * .71 - time * 1.92 + 1.26 * cos(world.x * .68 - time * .3);
+      float b = world.z * 6.9 - world.x * 2.6 + time * 2.13 + .89 * sin(world.z * .91);
+      float c = world.x * 2.7 + world.z * 2.1 - time * 1.72 + .91 * sin(world.z * .68 + world.x * .52);
+      float surf = .65 + .35 * sin(world.x * .36 + world.z * .83 + time * .68);
+      vec3 n = normalize(vec3(.057 * cos(c) + .026 * cos(b), 1.0, (.077 * cos(a) + .058 * cos(b)) * surf));
       float fresnel = .22 + .55 * pow(1.0 - clamp(dot(eye, n), 0.0, 1.0), 2.15);
       vec2 region = reflectedUV.xy / reflectedUV.w;
       float distanceFade = 1.0 - smoothstep(9.0, 99.0, distance(cameraPosition, world));
-      vec2 ripple = vec2(.009 * (sin(a) + .57 * sin(c)), .016 * (sin(a) + .67 * sin(b))) * distanceFade;
+      vec2 ripple = vec2(.013 * (sin(c) + .57 * sin(b)), .019 * (sin(a) * surf + .67 * sin(b))) * distanceFade;
       vec3 sky = texture2D(tDiffuse, clamp(region + ripple, .002, .998)).rgb * vec3(.59, .65, .78);
       vec3 base = vec3(.008, .037, .060) * (.82 + .18 * sin(b - c));
       vec3 lightDir = normalize(vec3(-.081, .087, -1.0));
@@ -126,14 +127,22 @@ function baleGeometry([width, height, depth], seed) {
   return geometry;
 }
 
-export function buildLandfill({ material, texture, requestRender, touch }) {
+export function buildLandfill({ material, texture, requestRender, renderer, touch }) {
   const group = new THREE.Group();
+  const fallback = new THREE.Group();
+  const coastGround = new THREE.Group();
+  group.add(fallback, coastGround);
   const owned = [];
   const matrices = new Map();
   const temporaries = [];
   let clock = 0;
   let lastTime;
   let active = false;
+  let decorated = false;
+  let dressing;
+  let spark;
+  let coastalSplats;
+  let disposed = false;
   const scratch = new THREE.Object3D();
   const load = (file, repeat = 1) => texture(`./art/landfill/${file}.webp`, repeat);
   const worn = load('iron');
@@ -191,7 +200,7 @@ export function buildLandfill({ material, texture, requestRender, touch }) {
     return mesh;
   }
 
-  function sign(lines, opts, w, h, x, y, z, yaw = 0) {
+  function sign(lines, opts, w, h, x, y, z, yaw = 0, parent = group) {
     const texture = paintSign(lines, 1024, opts.height, opts);
     const surface = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
     const geometry = new THREE.PlaneGeometry(w, h);
@@ -199,28 +208,33 @@ export function buildLandfill({ material, texture, requestRender, touch }) {
     const mesh = new THREE.Mesh(geometry, surface);
     mesh.position.set(x, y, z);
     mesh.rotation.y = yaw;
-    group.add(mesh);
+    parent.add(mesh);
   }
 
   landfillLayout(part => {
     const surface = mats[part.surface];
-    if (!matrices.has(surface)) matrices.set(surface, []);
+    if (!matrices.has(part.zone)) matrices.set(part.zone, new Map());
+    const shapesByMaterial = matrices.get(part.zone);
+    if (!shapesByMaterial.has(surface)) shapesByMaterial.set(surface, []);
     const geometry = part.surface.startsWith('bale') ? baleGeometry(part.size, part.x + part.z)
       : part.shape === 'box' ? new THREE.BoxGeometry(...part.size) : new THREE.CylinderGeometry(...part.size);
     scratch.position.set(part.x, part.y, part.z);
     scratch.rotation.set(part.rx, part.ry, part.rz);
     scratch.updateMatrix();
     geometry.applyMatrix4(scratch.matrix);
-    matrices.get(surface).push(geometry);
+    shapesByMaterial.get(surface).push(geometry);
     temporaries.push(geometry);
   });
-  for (const [surface, shapes] of matrices) {
-    const geometry = mergeGeometries(shapes);
-    owned.push(geometry);
-    const mesh = new THREE.Mesh(geometry, surface);
-    mesh.castShadow = surface !== mats.lamp && surface !== mats.hot;
-    mesh.receiveShadow = true;
-    group.add(mesh);
+  for (const [zone, shapesByMaterial] of matrices) {
+    const parent = zone === 'coast' ? fallback : zone === 'coast-ground' ? coastGround : group;
+    for (const [surface, shapes] of shapesByMaterial) {
+      const geometry = mergeGeometries(shapes);
+      owned.push(geometry);
+      const mesh = new THREE.Mesh(geometry, surface);
+      mesh.castShadow = surface !== mats.lamp && surface !== mats.hot;
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+    }
   }
   for (const geometry of temporaries) geometry.dispose();
 
@@ -232,27 +246,27 @@ export function buildLandfill({ material, texture, requestRender, touch }) {
   }, 2.68, .44, 0, 2.75, 10.19);
   sign([['THE LAST BITE', 138, .43], ['HOT FOOD · END OF THE LINE', 37, .81]], {
     height: 215, background: '#392525', border: '#ffaf58'
-  }, 3.01, .48, 8.47, 1.73, -11.58);
+  }, 3.01, .48, 8.47, 1.73, -11.58, 0, fallback);
   sign([['BACK TO ZANG', 128, .5]], {
     height: 185, background: '#3f3130'
   }, 1.79, .30, 0, 2.13, 20.793, Math.PI);
   for (let i = 0; i < 8; i++) {
     const x = 7.3 + i * .21;
     const height = .13 + i % 3 * .055;
-    box(.085, height, .088, i % 2 ? mats.rust : mats.stripe, x, -.20 + height / 2, -11.76);
-    box(.045, .048, .052, mats.counter, x, -.18 + height, -11.76);
+    box(.085, height, .088, i % 2 ? mats.rust : mats.stripe, x, -.20 + height / 2, -11.76, fallback);
+    box(.045, .048, .052, mats.counter, x, -.18 + height, -11.76, fallback);
   }
-  box(1.67, .085, .24, mats.counter, 8.035, -.236, -11.74);
+  box(1.67, .085, .24, mats.counter, 8.035, -.236, -11.74, fallback);
   const menu = {
     height: 500, background: '#193033', fg: '#ffdc9b', border: '#ef9f57'
   };
-  sign([['TODAY', 145, .23], ['BALE FRIES', 89, .50], ['SOFT WRECK', 73, .73]], menu, .61, .41, 9.64, .22, -11.934);
-  for (const x of [7.0, 9.9]) box(.056, 1.14, .07, mats.iron, x, .38, -11.49);
+  sign([['TODAY', 145, .23], ['BALE FRIES', 89, .50], ['SOFT WRECK', 73, .73]], menu, .61, .41, 9.64, .22, -11.934, 0, fallback);
+  for (const x of [7.0, 9.9]) box(.056, 1.14, .07, mats.iron, x, .38, -11.49, fallback);
   const vendorCoat = material('#a56e42', { roughness: .93, map: oxide });
   const vendorSkin = material('#7d927e', { roughness: .85 });
   const cook = new THREE.Group();
   cook.position.set(8.55, -.04, -11.87);
-  group.add(cook);
+  fallback.add(cook);
   function oval(w, h, d, surface, x, y, z) {
     const geometry = new THREE.SphereGeometry(1, 16, 10);
     owned.push(geometry);
@@ -283,10 +297,10 @@ export function buildLandfill({ material, texture, requestRender, touch }) {
     }
   }
   for (let i = 0; i < 7; i++) {
-    box(.042, .04, 1.21, mats.counter, 5.13, -.38 + i * .065, -12.68);
+    box(.042, .04, 1.21, mats.counter, 5.13, -.38 + i * .065, -12.68, fallback);
   }
-  box(.055, .13, .42, mats.rust, 5.11, -.53, -12.68);
-  box(.098, .15, .11, mats.lamp, 7.3, 1.22, -11.69);
+  box(.055, .13, .42, mats.rust, 5.11, -.53, -12.68, fallback);
+  box(.098, .15, .11, mats.lamp, 7.3, 1.22, -11.69, fallback);
 
   const sky = makeSky(map);
   owned.push(sky.geometry, sky.material);
@@ -376,7 +390,11 @@ export function buildLandfill({ material, texture, requestRender, touch }) {
     // A walk-through can see the sunset and the pier reflected in the same pass.
     // Disable that second scene draw while the handheld is the focus.
     if (active && !resting) {
-      reflectScene.call(this, render, scene, camera, ...args);
+      // Spark sorts for the walking camera. Keep that sort through this
+      // nested view of the live sky and water.
+      if (spark) spark.visible = false;
+      try { reflectScene.call(this, render, scene, camera, ...args); }
+      finally { if (spark) spark.visible = true; }
     }
   };
   let resting = false;
@@ -422,13 +440,41 @@ export function buildLandfill({ material, texture, requestRender, touch }) {
     }
   }
 
+  async function dressCoast() {
+    const { SparkRenderer, SplatMesh } = await import('./landfill-atlas/spark.module.js?v=6cb0f92609a4');
+    if (disposed) return;
+    const mesh = new SplatMesh({
+      url: new URL('./art/landfill/coast.spz?v=d51985b744c5', import.meta.url).href,
+      raycastable: false
+    });
+    try {
+      await mesh.initialized;
+      if (disposed) { mesh.dispose(); return; }
+      spark = new SparkRenderer({ renderer, onDirty: requestRender, minPixelRadius: .38 });
+      spark.renderOrder = 3;
+      coastalSplats = mesh;
+      group.add(spark, mesh);
+      coastGround.position.y = -.17;
+      fallback.visible = false;
+      decorated = true;
+      requestRender();
+    } catch (error) {
+      mesh.dispose();
+      throw error;
+    }
+  }
+
   return {
     group,
     tick,
+    get scenery() { return decorated ? 'atlas' : 'geometry'; },
     setActive(value) {
       group.visible = active = value;
       lastTime = undefined;
-      if (value) requestRender();
+      if (value) {
+        dressing ??= dressCoast().catch(() => { dressing = undefined; });
+        requestRender();
+      }
     },
     hit(x, z) {
       return Math.abs(z - sortZ) < 1.41 && this.signal(x) === 'red';
@@ -437,6 +483,9 @@ export function buildLandfill({ material, texture, requestRender, touch }) {
       return chutes.reduce((nearest, chute) => Math.abs(x - chute.x) < Math.abs(x - nearest.x) ? chute : nearest).signal;
     },
     dispose() {
+      disposed = true;
+      coastalSplats?.dispose();
+      spark?.dispose();
       group.removeFromParent();
       for (const item of owned) item.dispose();
       for (const { sparks } of chutes) sparks.dispose();

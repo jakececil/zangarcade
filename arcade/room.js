@@ -7,8 +7,8 @@ import { createCartridgeDrums } from './cartridge-drums.js';
 import { createCartridgeSlots, pickCartridgePart } from './cartridge-slots.js?v=513bd344741e';
 import { configureCartridgeKey, createCartridgeReflections, enableCartridgeShadows } from './cartridge-lighting.js';
 import { buildCabinetAlcove, mountCabinet } from './cabinet-alcove.js?v=c55b6869ebf5';
-import { buildLandfill } from './landfill.js?v=3547d11d33a5';
-import { canWalkLandfill, landfillLevel, landfillProfile, serviceWindow, sortApproach, sortZ } from './landfill-layout.js?v=cb7e86a36875';
+import { buildLandfill } from './landfill.js?v=494488bcd3e4';
+import { canWalkLandfill, landfillLevel, landfillProfile, serviceWindow, sortApproach, sortZ } from './landfill-layout.js?v=ef24f81ed5d1';
 
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
@@ -410,7 +410,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     }
     const sortingYard = game?.id === 'landfill';
     if (sortingYard && !landfill) {
-      landfill = buildLandfill({ material, texture, requestRender, touch: matchMedia('(pointer: coarse)').matches });
+      landfill = buildLandfill({ material, texture, requestRender, renderer, touch: matchMedia('(pointer: coarse)').matches });
       exhibit.add(landfill.group);
     }
     landfill?.setActive(sortingYard);
@@ -1023,8 +1023,10 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     },
     look,
     getState() {
-      const lane = currentGame?.id === 'landfill' ? landfill.signal(camera.position.x) : undefined;
-      return { cartState, location: currentGame?.id || 'corridor', area, carried: carriedGame?.id, dimensions: currentGame ? [profile.width, profile.height, profile.depth] : null, docked, inputEnabled, grateOpen, transitioning, target, renderedFrames, screenRect: lastScreenRect, lane, camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw, pitch } };
+      const sortingYard = currentGame?.id === 'landfill' ? landfill : undefined;
+      const lane = sortingYard?.signal(camera.position.x);
+      const scenery = sortingYard?.scenery;
+      return { cartState, location: currentGame?.id || 'corridor', area, carried: carriedGame?.id, dimensions: currentGame ? [profile.width, profile.height, profile.depth] : null, docked, inputEnabled, grateOpen, transitioning, target, renderedFrames, screenRect: lastScreenRect, lane, scenery, camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw, pitch } };
     },
     dispose() {
       disposed = true;

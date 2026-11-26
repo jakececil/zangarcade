@@ -1,6 +1,6 @@
-import * as THREE from "three";
-import { Color, FileLoader, Loader, Matrix4, Quaternion, Vector3 } from "three";
-import { FullScreenQuad } from "three/addons/postprocessing/Pass.js";
+import * as THREE from "../vendor/three.module.js";
+import { Color, FileLoader, Loader, Matrix4, Quaternion, Vector3 } from "../vendor/three.module.js";
+import { FullScreenQuad } from "./Pass.js?v=7ee897b7399e";
 //#region \0rolldown/runtime.js
 var __defProp = Object.defineProperty;
 var __exportAll = (all, no_symbols) => {

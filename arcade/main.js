@@ -1,4 +1,4 @@
-import { createRoom } from './room.js?v=f2ae597344da';
+import { createRoom } from './room.js?v=f29f43333981';
 import { HOME } from './guts.js?v=5261e0e93b27';
 import { stick, watchGamepad } from './gamepads.js?v=1d5b5f6c507d';
 

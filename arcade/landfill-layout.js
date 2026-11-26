@@ -14,7 +14,8 @@ export function canWalkLandfill(x, z) {
   if (z < coastEdge + .32 || Math.abs(x) > 10.95) return false;
   if (z > -8 && Math.abs(x) > 7.2) return false;
   if (z > .95 && z < 10.65 && Math.abs(x) > 4.98) return false;
-  if (z < -9.7 && z > -14.1 && x > 5.25 && x < 10.65) return false;
+  if (z < -10.9 && z > -14.25 && x > 4.9 && x < 10.65) return false;
+  if (Math.hypot(x - 5.18, z + 15.83) < .3) return false;
   return true;
 }
 
@@ -26,14 +27,17 @@ export function landfillLayout(add) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed / 4294967296;
   }
+  let zone = 'yard';
   const slab = (w, h, d, surface, x, y, z, ry = 0, rx = 0, rz = 0) =>
-    add({ shape: 'box', size: [w, h, d], surface, x, y, z, rx, ry, rz });
+    add({ shape: 'box', size: [w, h, d], surface, zone, x, y, z, rx, ry, rz });
   const round = (top, bottom, h, surface, x, y, z, rx = 0, rz = 0, segments = 16) =>
-    add({ shape: 'round', size: [top, bottom, h, segments], surface, x, y, z, rx, ry: 0, rz });
+    add({ shape: 'round', size: [top, bottom, h, segments], surface, zone, x, y, z, rx, ry: 0, rz });
 
   slab(23.5, .7, 26, 'concrete', 0, -.36, 8);
+  zone = 'coast-ground';
   slab(23.5, .73, 8.13, 'concrete', 0, -1.09, -9, 0, -Math.atan(.18));
   slab(23.5, .81, 4.5, 'concrete', 0, -1.845, -15.25);
+  zone = 'coast';
   slab(23.5, .55, .4, 'iron', 0, -1.57, -17.64);
   for (let i = -4; i <= 4; i++) {
     slab(.42, 2.7, .53, 'iron', i * 2.57, -2.31, -17.54);
@@ -41,6 +45,7 @@ export function landfillLayout(add) {
   }
   slab(23, .085, .1, 'stripe', 0, -.54, -17.36);
   slab(23, .065, .08, 'iron', 0, -.84, -17.36);
+  zone = 'yard';
   for (let z = -3; z < 20; z += 1.9) {
     for (const x of [-4.88, 4.88]) slab(.15, .018, .96, 'stripe', x, .003, z);
   }
@@ -129,8 +134,10 @@ export function landfillLayout(add) {
       const z = -4.4 - i * 1.27;
       if (sign > 0 && z < -9) continue;
       const y = landfillLevel(z);
+      zone = z < -5.5 ? 'coast' : 'yard';
       slab(1.1, .56, 1.1, 'bale' + (i % 4), x, y + .27, z, roll());
     }
+    zone = 'yard';
     slab(4.8, 4, .55, 'concrete', sign * 3.52, 2.0, 20.92);
     slab(.33, 2.82, .47, 'rust', sign * 1.04, 1.41, 20.58);
   }
@@ -140,6 +147,7 @@ export function landfillLayout(add) {
 
   // Food truck pieced together from an old sorting van, including a real
   // recess behind the open serving hatch and an angled canopy.
+  zone = 'coast';
   const tx = 7.86;
   const tz = -12.68;
   const ty = -1.44;
@@ -180,6 +188,7 @@ export function landfillLayout(add) {
     const z = 22.5 - roll() * 41;
     const radius = 1.06 + roll() * 3.32;
     const height = radius * (.79 + roll() * 1.26);
+    zone = z < -5.5 ? 'coast' : 'yard';
     round(radius * (.11 + roll() * .18), radius, height, 'rubble' + (i % 3),
       x, height * .32 - .65, z, (roll() - .5) * .4, (roll() - .5) * .42, 5 + (i % 3));
   }
