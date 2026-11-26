@@ -38,7 +38,8 @@ p { line-height: 1.5; }
 .save-note { color: #aac1b5; font-size: 14px; text-align: center; margin: 18px 0 0; }
 
 .museum-tools { position: fixed; top: calc(max(14px, env(safe-area-inset-top)) + 54px); inset-inline: 20px; display: flex; flex-wrap: wrap; gap: 7px; pointer-events: none; z-index: 1; }
-.museum-tools :is(button, select) { pointer-events: auto; min-height: 42px; padding: 0 12px; border: 1px solid #93b1a366; border-radius: 5px; background: #112420f4; color: inherit; font: 650 14px system-ui, sans-serif; }
+.museum-tools :is(button, select, .atlas-link) { pointer-events: auto; min-height: 42px; padding: 0 12px; border: 1px solid #93b1a366; border-radius: 5px; background: #112420f4; color: inherit; font: 650 14px system-ui, sans-serif; }
+.atlas-link { display: inline-flex; align-items: center; text-decoration: none; }
 .museum-tools select { max-width: min(100%, 17rem); }
 .museum-tools button[aria-pressed='true'] { border-color: var(--lime); color: var(--lime); }
 .progress { flex-basis: 100%; display: grid; gap: 8px; font-size: 14px; line-height: 1.45; text-shadow: 0 2px 4px #000; pointer-events: none; }

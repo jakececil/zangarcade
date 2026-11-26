@@ -8,8 +8,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; connect-src 'self' blob:; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob: data:; frame-src 'self'">
   <title>Museum | ZANG Arcade</title>
   <link rel="icon" href="../art/brand/zang-favicon.png" type="image/png">
-  <link rel="stylesheet" href="./room.css?v=23c1e7d1bd84">
-  <script type="module" src="./main.js?v=a226b78f8319"></script>
+  <link rel="stylesheet" href="./room.css?v=f6e6e850138a">
+  <script type="module" src="./main.js?v=c59778d4fbf5"></script>
 </head>
 <body data-mode="loading">
   <canvas id="room" tabindex="0" aria-label="ZANG Arcade Museum. Use arrow keys or WASD to walk, drag or press M to look, and E to interact."></canvas>
@@ -40,6 +40,7 @@
       <button id="raise-handheld" type="button" disabled>Handheld <kbd>H</kbd></button>
       <button id="inspect-cartridge" type="button" hidden>Inspect cartridge</button>
       <button id="run-toggle" type="button" aria-pressed="false">Run</button>
+      <a id="landfill-atlas" class="atlas-link" href="./landfill-atlas/" hidden>Atlas draft</a>
       <div class="progress" aria-live="polite"><span id="progress-label"></span><span id="save-warning" hidden></span></div>
     </div>
     <span class="reticle" aria-hidden="true"></span>

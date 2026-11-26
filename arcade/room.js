@@ -7,6 +7,8 @@ import { createCartridgeDrums } from './cartridge-drums.js';
 import { createCartridgeSlots, pickCartridgePart } from './cartridge-slots.js?v=513bd344741e';
 import { configureCartridgeKey, createCartridgeReflections, enableCartridgeShadows } from './cartridge-lighting.js';
 import { buildCabinetAlcove, mountCabinet } from './cabinet-alcove.js?v=c55b6869ebf5';
+import { buildLandfill } from './landfill.js?v=3547d11d33a5';
+import { canWalkLandfill, landfillLevel, landfillProfile, serviceWindow, sortApproach, sortZ } from './landfill-layout.js?v=cb7e86a36875';
 
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
@@ -21,7 +23,7 @@ const UNDERSHELL = 'undergrowth-advance';
 const INSPECTION_BACKGROUND = new THREE.Color('#252922');
 
 export async function createRoom({ canvas, games, onInteract = () => {}, onTarget = () => {}, onScreenRect = () => {}, onMouseLook = () => {},
-  onInspectionDrums = () => {}, onInspectionSlotsState = () => {}, onArea = () => {} }) {
+  onInspectionDrums = () => {}, onInspectionSlotsState = () => {}, onArea = () => {}, onHazard = () => {} }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -62,6 +64,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   let frameRequest = 0;
   let previousTime = 0;
   let cabinetLoading;
+  let landfill;
   let area;
   let gamepadMove = { x: 0, z: 0 };
   const insideSky = new THREE.Color('#131b1a');
@@ -165,7 +168,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   const lime = material('#d9f57b', { emissive: '#799f26', emissiveIntensity: .3 });
   const rainbow = ['#e7618c', '#e0aa58', '#d9e776', '#74bea0', '#70b9d6', '#927cbb'].map(color => material(color));
 
-  scene.add(new THREE.HemisphereLight('#dae8d5', '#2d3027', 2.05));
+  const fillLight = new THREE.HemisphereLight('#dae8d5', '#2d3027', 2.05);
+  scene.add(fillLight);
   const keyLight = new THREE.DirectionalLight('#ffe7bf', 2.15);
   keyLight.position.set(-2.3, 3.05, 1.3);
   scene.add(keyLight);
@@ -363,10 +367,12 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   homeProps.cabinet.position.set(3.1, 0, -2.47);
   homeProps.cabinet.rotation.y = -.18;
   buildCabinetAlcove({ parent: museum.hall, texture, material, geometry: geometries, box, cylinder, x:-4.18, z:-6.96 });
-  box(.95, .09, .3, darkMetal, exhibit, -2.4, 2.83, -.7);
-  box(.64, .025, .18, amber, exhibit, -2.4, 2.77, -.69);
-  box(.95, .09, .3, darkMetal, exhibit, 2.35, 2.83, -2.45);
-  box(.64, .025, .18, amber, exhibit, 2.35, 2.77, -2.44);
+  const exhibitLamps = new THREE.Group();
+  exhibit.add(exhibitLamps);
+  box(.95, .09, .3, darkMetal, exhibitLamps, -2.4, 2.83, -.7);
+  box(.64, .025, .18, amber, exhibitLamps, -2.4, 2.77, -.69);
+  box(.95, .09, .3, darkMetal, exhibitLamps, 2.35, 2.83, -2.45);
+  box(.64, .025, .18, amber, exhibitLamps, 2.35, 2.77, -2.44);
   scene.traverse(object => { if (object.isLight) object.layers.enable(1); });
   const inspectionKey = new THREE.DirectionalLight('#fff5df', 3.15);
   configureCartridgeKey(inspectionKey);
@@ -402,14 +408,27 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       cabinetLoading = mountCabinet([hallProps.cabinet, homeProps.cabinet], requestRender)
         .catch(() => { cabinetLoading = undefined; });
     }
-    profile = roomProfile(game?.id, games.indexOf(game));
+    const sortingYard = game?.id === 'landfill';
+    if (sortingYard && !landfill) {
+      landfill = buildLandfill({ material, texture, requestRender, touch: matchMedia('(pointer: coarse)').matches });
+      exhibit.add(landfill.group);
+    }
+    landfill?.setActive(sortingYard);
+    profile = sortingYard ? landfillProfile : roomProfile(game?.id, games.indexOf(game));
+    camera.far = sortingYard ? 205 : 93;
+    camera.updateProjectionMatrix();
+    for (const light of [keyLight, fillLight, roomLight]) {
+      if (sortingYard) light.layers.disable(0);
+      else light.layers.enable(0);
+    }
     scene.fog.near = game ? Math.max(6, profile.depth * .62) : 5;
     scene.fog.far = game ? Math.max(16, profile.depth * 1.54) : 15;
     museum.hall.visible = !game;
     exhibit.visible = Boolean(game);
+    architecture.visible = exhibitLamps.visible = !sortingYard;
     guts.home.visible = game === HOME;
     guts.maze.visible = game?.id === 'zonk';
-    museum.installation.visible = Boolean(game && game !== HOME);
+    museum.installation.visible = Boolean(game && game !== HOME && !sortingYard);
     pedestal.visible = Boolean(game && game !== HOME);
     displayCart.model.visible = pedestal.visible && !found.has(game.id);
     grateObjects.visible = game?.id === 'kingfisher';
@@ -418,17 +437,18 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       architecture.scale.set(profile.width / 6.5, profile.height / 3.2, profile.depth / 7.7);
       museum.installation.scale.set(profile.width / 6.5, 1, profile.depth / 7.7);
       if (game !== HOME) {
-        museum.setExhibit(game);
+        if (!sortingYard) museum.setExhibit(game);
         skinCartridge(displayCart, game);
-        pedestal.position.set(profile.cart[0], 0, profile.cart[1]);
-        CART_HOME.set(profile.cart[0], 1.20, profile.cart[1]);
+        const height = sortingYard ? landfillLevel(profile.cart[1]) : 0;
+        pedestal.position.set(profile.cart[0], height, profile.cart[1]);
+        CART_HOME.set(profile.cart[0], height + 1.20, profile.cart[1]);
       }
       wall.color.set(game.shellColors?.plastic || '#c08e74').lerp(new THREE.Color('#686567'), .52);
       roomLight.color.set(game.shellColors?.top || '#f6be92');
       roomLight.position.set(.65, Math.min(profile.height - .5, 4.3), -.8);
       camera.position.set(0, 1.62, profile.depth / 2 - .77);
       yaw = 0;
-      pitch = -.17;
+      pitch = sortingYard ? .07 : -.17;
     } else {
       const portal = exitDoor?.arrival;
       const [x,z,heading] = Object.hasOwn(arrivals,arrival) ? arrivals[arrival]
@@ -451,6 +471,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function updateCamera() {
     const district = !currentGame ? cellAt(camera.position.x,camera.position.z) : null;
     if (district) camera.position.y = levelAt(district,camera.position.z)+1.62;
+    if (currentGame?.id === 'landfill') camera.position.y = landfillLevel(camera.position.z) + 1.62;
     const outdoor = district?.style === 'outside';
     scene.background = outdoor ? outsideSky : insideSky;
     scene.fog.color.copy(outdoor ? outsideFog : insideFog);
@@ -491,6 +512,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       }
     }
     if (currentGame?.id === 'zonk') candidates.push({ id: 'guide', point: new THREE.Vector3(-3.75, .94, 3.15), label: 'Talk to the maze keeper' });
+    if (currentGame?.id === 'landfill') candidates.push({ id: 'food-truck', point: new THREE.Vector3(...serviceWindow), label: 'Talk to the cook' });
     if (currentGame?.id === 'kingfisher') candidates.push({ id: 'grate', point: GRATE_HOME, label: grateOpen ? 'Inspect open grate' : 'Inspect locked grate' });
     if (displayCart.model.visible) candidates.push({ id: 'cart', point: CART_HOME, label: `Pick up ${currentGame.title}` });
     else if (pedestal.visible && currentGame.cartridgeModel) candidates.push({ id: 'inspect-cart', point: CART_HOME, label: `Inspect ${currentGame.title}` });
@@ -513,6 +535,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function canStand(x, z) {
     if (!currentGame) return canWalkDistrict(x,z);
     if (Math.abs(x) >= profile.width / 2 - .29 || Math.abs(z) >= profile.depth / 2 - .33) return false;
+    if (currentGame.id === 'landfill' && !canWalkLandfill(x, z)) return false;
     const blockers = currentGame === HOME ? homeObstacles : currentGame.id === 'zonk' ? mazeWalls : [];
     if (pedestal.visible && Math.abs(x - CART_HOME.x) < .55 && Math.abs(z - CART_HOME.z) < .49) return false;
     return !blockers.some(item => Math.abs(x - item.x) < item.w / 2 + .21 && Math.abs(z - item.z) < item.d / 2 + .21);
@@ -575,6 +598,15 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     const delta = previousTime ? Math.min((time - previousTime) / 1000, .05) : 0;
     previousTime = time;
     updateMovement(delta);
+    const sortingYard = currentGame?.id === 'landfill';
+    if (sortingYard) {
+      const paused = !inputEnabled || docked || transitioning || inspecting;
+      landfill.tick(time, paused, reduceMotion.matches);
+      if (!paused && landfill.hit(camera.position.x, camera.position.z)) {
+        camera.position.z = camera.position.z > sortZ ? sortApproach : 1.35;
+        onHazard();
+      }
+    }
     updateCamera();
     for (const tween of tweens) tween.update(time);
     updateTarget();
@@ -593,6 +625,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (inspecting) {
       scene.background = INSPECTION_BACKGROUND;
     } else {
+      renderer.shadowMap.enabled = sortingYard;
       renderer.render(scene, camera);
       renderer.clearDepth();
       scene.background = null;
@@ -990,11 +1023,13 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     },
     look,
     getState() {
-      return { cartState, location: currentGame?.id || 'corridor', area, carried: carriedGame?.id, dimensions: currentGame ? [profile.width, profile.height, profile.depth] : null, docked, inputEnabled, grateOpen, transitioning, target, renderedFrames, screenRect: lastScreenRect, camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw, pitch } };
+      const lane = currentGame?.id === 'landfill' ? landfill.signal(camera.position.x) : undefined;
+      return { cartState, location: currentGame?.id || 'corridor', area, carried: carriedGame?.id, dimensions: currentGame ? [profile.width, profile.height, profile.depth] : null, docked, inputEnabled, grateOpen, transitioning, target, renderedFrames, screenRect: lastScreenRect, lane, camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw, pitch } };
     },
     dispose() {
       disposed = true;
       inspectionSlots?.dispose();
+      landfill?.dispose();
       releaseMouseLook();
       cancelAnimationFrame(frameRequest);
       window.clearTimeout(inspectionShuffleTimer);

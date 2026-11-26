@@ -1,4 +1,4 @@
-import { createRoom } from './room.js?v=ea79eaae7e43';
+import { createRoom } from './room.js?v=f2ae597344da';
 import { HOME } from './guts.js?v=5261e0e93b27';
 import { stick, watchGamepad } from './gamepads.js?v=1d5b5f6c507d';
 
@@ -36,6 +36,7 @@ const closeInspection = document.getElementById('close-inspection');
 const runButton = document.getElementById('run-toggle');
 const locationName = document.getElementById('location-name');
 const shelfLink = document.getElementById('game-shelf');
+const atlasLink = document.getElementById('landfill-atlas');
 const base = new URL('../', location.href);
 const progressKey = `zang-arcade:${base.pathname}:room:kingfisher-v1`;
 const visitKey = `zang-arcade:${base.pathname}:museum-visit-v1`;
@@ -82,11 +83,14 @@ function setMode(next) {
 }
 
 function updateProgress() {
+  atlasLink.hidden = exhibit?.id !== 'landfill';
   const carried = cartridge ? `${cartridge.title} ${cartState === 'inserted' ? 'seated' : 'in hand'}. ` : '';
   if (!exhibit) progressLabel.textContent = carried.trimEnd();
   else if (exhibit === HOME) progressLabel.textContent = discovered.size > shelved.size ? 'Approach the shelf to box your new cartridges.' : 'Bring found cartridges here to fill the shelf.';
   else if (exhibit.id === 'kingfisher') {
     progressLabel.textContent = carried + (progress.open ? 'The floor grate is open.' : `${progress.catches} / 10 fish saved. Catch ten to open the floor grate.`);
+  } else if (exhibit.id === 'landfill') {
+    progressLabel.textContent = carried || 'Cross the sorting lanes on blue. The cartridge is down by the coast.';
   } else progressLabel.textContent = carried || exhibit.blurb || `Find the ${exhibit.title} cartridge.`;
 }
 
@@ -320,6 +324,9 @@ async function interact(id) {
     }
   } else if (id === 'guide') {
     progressLabel.textContent = 'Maze keeper: “Follow the wall until it runs out. The way through keeps changing sides.”';
+  } else if (id === 'food-truck') {
+    progressLabel.textContent = 'The cook: “Bale fries are up. Anything that fell in the chute is going back on the menu.”';
+    announcement.textContent = progressLabel.textContent;
   } else if (id === 'grate') {
     progressLabel.textContent = progress.open ? 'A warm light under the open grate.' : 'Locked. A small indicator reads 10.';
     announcement.textContent = progressLabel.textContent;
@@ -557,6 +564,14 @@ try {
       locationName.textContent = name;
       document.body.toggleAttribute('data-district', !exhibit);
       updateProgress();
+    },
+    onHazard() {
+      const message = 'The chute fired. Cross while the lane is blue.';
+      progressLabel.textContent = message;
+      announcement.textContent = message;
+      window.setTimeout(() => {
+        if (exhibit?.id === 'landfill' && progressLabel.textContent === message) updateProgress();
+      }, 2600);
     },
     onInspectionDrums(available, hasSlots) {
       inspectDrums.hidden = !available;

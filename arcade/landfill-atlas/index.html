@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Landfill · Atlas reconstruction</title>
+<link rel="icon" href="../../art/brand/zang-favicon.png" type="image/png">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; overflow: hidden; background: #201e26; color: #fff3d8; font: 14px system-ui; }
+  canvas { display: block; }
+  nav { position: fixed; top: 15px; left: 16px; right: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  select, a, span, strong { padding: 8px 11px; color: inherit; background: #171923eb; border: 1px solid #a66b46; border-radius: 6px; }
+  a { text-decoration: none; }
+  #state:empty { display: none; }
+</style>
+<script type="importmap">
+{"imports":{"three":"../vendor/three.module.js","three/addons/postprocessing/Pass.js":"./Pass.js","spark":"./spark.module.js"}}
+</script>
+<nav aria-label="Reconstruction views">
+  <strong>Landfill · Atlas reconstruction</strong>
+  <select aria-label="View" id="choose">
+    <option value="0">Arrival</option>
+    <option value="1">Sorting floor</option>
+    <option value="2">Salvage ramp</option>
+    <option value="3">Food truck</option>
+    <option value="4">Look back from the coast</option>
+  </select>
+  <span id="state" role="status">Loading scene…</span>
+  <a href="../?room=landfill">Play the exhibit ↗</a>
+</nav>
+<script type="module">
+  import * as THREE from 'three';
+  import { SparkRenderer, SplatMesh } from 'spark';
+  import { OrbitControls } from './OrbitControls.js';
+
+  const renderer = new THREE.WebGLRenderer({ antialias: false });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  document.body.append(renderer.domElement);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color('#25232c');
+  const camera = new THREE.PerspectiveCamera(58, 1, .05, 205);
+  const spark = new SparkRenderer({ renderer });
+  scene.add(spark);
+  const mesh = new SplatMesh({ url: './draftSplat.spz' });
+  scene.add(mesh);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.listenToKeyEvents(window);
+  controls.rotateSpeed = .47;
+  controls.zoomSpeed = .5;
+  const state = document.querySelector('#state');
+  const picker = document.querySelector('#choose');
+  function resize() {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  }
+  addEventListener('resize', resize);
+  resize();
+  try {
+    const response = await fetch('./cameras.json');
+    if (!response.ok) throw new Error('The camera presets could not be loaded.');
+    const views = await response.json();
+    function choose() {
+      const pose = views[Number(picker.value)].camera.extrinsics;
+      camera.position.fromArray(pose.position);
+      camera.quaternion.fromArray(pose.quaternion);
+      controls.target.copy(camera.position).add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(9));
+      controls.update();
+    }
+    picker.addEventListener('change', choose);
+    choose();
+    await mesh.initialized;
+    state.textContent = '';
+    renderer.setAnimationLoop(() => renderer.render(scene, camera));
+    document.body.dataset.ready = 'true';
+  } catch (error) {
+    state.textContent = error.message || 'The scene could not be opened.';
+  }
+</script>
+</html>
