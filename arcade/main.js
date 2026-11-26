@@ -1,6 +1,6 @@
-import { createRoom } from './room.js?v=f29f43333981';
+import { createRoom } from './room.js?v=8769cc7678b7';
 import { HOME } from './guts.js?v=5261e0e93b27';
-import { stick, watchGamepad } from './gamepads.js?v=1d5b5f6c507d';
+import { HANDHELD_RETURN_BUTTON, stick, watchGamepad } from './gamepads.js?v=af46a223244a';
 
 const canvas = document.getElementById('room');
 const entrance = document.getElementById('entrance');
@@ -9,6 +9,7 @@ const roomHud = document.getElementById('room-hud');
 const playHud = document.getElementById('play-hud');
 const interactButton = document.getElementById('interact');
 const lowerButton = document.getElementById('lower-handheld');
+const lowerLabel = lowerButton.innerHTML;
 const iframe = document.getElementById('handheld-screen');
 const progressLabel = document.getElementById('progress-label');
 const playerState = document.getElementById('player-state');
@@ -17,6 +18,8 @@ const announcement = document.getElementById('announcement');
 const movePad = document.getElementById('move-pad');
 const padThumb = document.getElementById('pad-thumb');
 const directory = document.getElementById('exhibit-select');
+const directoryDialog = document.getElementById('directory-dialog');
+const directoryList = document.getElementById('directory-list');
 const mouseLook = document.getElementById('mouse-look');
 const inventoryToggle = document.getElementById('inventory-toggle');
 const inventoryDialog = document.getElementById('inventory-dialog');
@@ -127,7 +130,7 @@ function playerRoom() {
 }
 
 function updateInteraction() {
-  interactButton.disabled = mode !== 'room' || !target || inventoryDialog.open;
+  interactButton.disabled = mode !== 'room' || !target || inventoryDialog.open || directoryDialog.open;
   interactButton.textContent = target?.label || (!exhibit ? 'Approach a doorway' : exhibit === HOME ? 'Approach the shelf' : discovered.has(exhibit.id) ? 'Explore the exhibit' : 'Approach the cartridge');
   raiseButton.disabled = !cartridge || mode !== 'room';
   const inspectable = inspectionChoice();
@@ -201,12 +204,54 @@ function renderInventory() {
 }
 
 function toggleInventory() {
-  if (mode !== 'room' || room.getState().transitioning) return;
+  if (mode !== 'room' || directoryDialog.open || room.getState().transitioning) return;
   if (inventoryDialog.open) { inventoryDialog.close(); return; }
   setRun(false);
   room.setInputEnabled(false);
   renderInventory();
   inventoryDialog.showModal();
+  inventoryList.querySelector('[aria-pressed=true]')?.focus();
+}
+
+function openDirectory() {
+  if (mode !== 'room' || inventoryDialog.open || room.getState().transitioning) return;
+  if (directoryDialog.open) { directoryDialog.close(); return; }
+  setRun(false);
+  room.setInputEnabled(false);
+  directoryList.replaceChildren();
+  function addEntry(label, selected, choose) {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    if (selected) button.setAttribute('aria-current', 'true');
+    button.addEventListener('click', () => {
+      directoryDialog.close();
+      choose();
+    });
+    item.append(button);
+    directoryList.append(item);
+  }
+  for (const option of directory.options) {
+    addEntry(option.text, option.value === directory.value,
+      () => changeExhibit(option.value === HOME.id ? HOME : games.get(option.value)));
+  }
+  addEntry('Game shelf', false, () => shelfLink.click());
+  directoryDialog.showModal();
+  directoryList.querySelector('[aria-current=true]')?.focus();
+}
+
+function navigateMenu(list, edge) {
+  const buttons = Array.from(list.querySelectorAll('button:not(:disabled)'));
+  const current = buttons.indexOf(document.activeElement);
+  if (!buttons.length) return;
+  const previous = edge(12) || edge(14);
+  const next = edge(13) || edge(15);
+  if (previous || next) {
+    const index = current < 0 ? (previous ? buttons.length - 1 : 0)
+      : (current + (previous ? -1 : 1) + buttons.length) % buttons.length;
+    buttons[index].focus();
+  } else if (edge(0)) (buttons[current] || buttons[0]).click();
 }
 
 function rememberVisit() {
@@ -291,7 +336,7 @@ async function raiseHandheld() {
   iframe.hidden = false;
   setMode('play');
   lowerButton.disabled = false;
-  lowerButton.innerHTML = 'Lower handheld <kbd>Esc</kbd>';
+  lowerButton.innerHTML = lowerLabel;
   updatePlayerLabel();
   send('resume');
   iframe.focus();
@@ -429,14 +474,17 @@ runButton.addEventListener('click', () => {
   canvas.focus({ preventScroll: true });
 });
 document.getElementById('inventory-close').addEventListener('click', () => inventoryDialog.close());
+document.getElementById('directory-close').addEventListener('click', () => directoryDialog.close());
 document.getElementById('inventory-home').addEventListener('click', () => { inventoryDialog.close(); changeExhibit(HOME); });
 inventoryPlay.addEventListener('click', () => { inventoryDialog.close(); raiseHandheld(); });
-inventoryDialog.addEventListener('close', () => {
-  if (mode !== 'room') return;
-  room.setInputEnabled(true);
-  updateInteraction();
-  canvas.focus({ preventScroll: true });
-});
+for (const dialog of [inventoryDialog, directoryDialog]) {
+  dialog.addEventListener('close', () => {
+    if (mode !== 'room' || inventoryDialog.open || directoryDialog.open) return;
+    room.setInputEnabled(true);
+    updateInteraction();
+    canvas.focus({ preventScroll: true });
+  });
+}
 shelfLink.addEventListener('click', event => {
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   if (mode === 'play' || mode === 'saving' || mode === 'docking') {
@@ -450,7 +498,7 @@ window.addEventListener('keydown', event => {
   if (event.key === 'Escape' && mode === 'play') { event.preventDefault(); lowerHandheld(); }
   if (event.repeat || mode !== 'room' || event.target === directory) return;
   if (event.code === 'KeyI') { event.preventDefault(); toggleInventory(); }
-  if (event.code === 'KeyH' && !inventoryDialog.open) { event.preventDefault(); raiseHandheld(); }
+  if (event.code === 'KeyH' && !inventoryDialog.open && !directoryDialog.open) { event.preventDefault(); raiseHandheld(); }
 });
 
 watchGamepad((pad, down, edge, delta) => {
@@ -461,18 +509,24 @@ watchGamepad((pad, down, edge, delta) => {
   if (!pad) { room.moveGamepad(0, 0); return; }
   if (mode === 'intro' && (edge(0) || edge(9))) { enterButton.click(); return; }
   if (mode === 'play') {
-    if (down(10) && down(11) && (edge(10) || edge(11))) lowerHandheld();
+    if (edge(HANDHELD_RETURN_BUTTON)) lowerHandheld();
     else if (gameReady && !gameRunning && (edge(0) || edge(9))) send('start');
+    return;
+  }
+  if (directoryDialog.open) {
+    if (edge(1) || edge(9)) directoryDialog.close();
+    else navigateMenu(directoryList, edge);
     return;
   }
   if (inventoryDialog.open) {
     if (edge(1) || edge(8)) { inventoryDialog.close(); return; }
-    const items = Array.from(inventoryList.querySelectorAll('button'));
-    if (!items.length) return;
-    const current = Math.max(0, items.indexOf(document.activeElement));
-    if (edge(12) || edge(14)) items[(current+items.length-1)%items.length].focus();
-    else if (edge(13) || edge(15)) items[(current+1)%items.length].focus();
-    else if (edge(0)) items[current].click();
+    if (edge(3)) {
+      const selected = document.activeElement;
+      if (inventoryList.contains(selected)) selected.click();
+      if (cartridge) { inventoryDialog.close(); raiseHandheld(); }
+      return;
+    }
+    navigateMenu(inventoryList, edge);
     return;
   }
   const [lookX, lookY] = stick(pad.axes[2],pad.axes[3]);
@@ -481,6 +535,12 @@ watchGamepad((pad, down, edge, delta) => {
     if (edge(1)) exitInspection();
     else if (edge(0) && !inspectSlots.hidden) room.pullInspectionLever();
     else if (edge(4) || edge(5)) room.turnCartridge();
+    else if (!inspectDrums.hidden) {
+      if (edge(14)) room.turnInspectionBand(0);
+      else if (edge(12)) room.turnInspectionBand(1);
+      else if (edge(15)) room.turnInspectionBand(2);
+      else if (edge(3)) inspectDrumAuto.click();
+    }
     return;
   }
   if (mode !== 'room') return;
@@ -492,6 +552,7 @@ watchGamepad((pad, down, edge, delta) => {
   else if (edge(3)) raiseHandheld();
   else if (edge(2)) openInspection(inspectionChoice());
   else if (edge(8)) toggleInventory();
+  else if (edge(9)) openDirectory();
 });
 
 function moveFromPointer(event) {

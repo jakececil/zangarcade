@@ -2,6 +2,16 @@
 
 **The standard for new cartridges is six matched orthographic references and Hunyuan3D-2mv reconstruction.** Specimen Run established the multiview geometry workflow. Lower Management added the top reference and separate material zones. Swamp Rocket adds the underside and a cloudy refractive casting. All cartridges share the handheld connector coordinates.
 
+## ZANG Field Player
+
+Use the same four-view Hunyuan3D-2mv reconstruction with front, left, rear, and right references. Supply the matching top and underside for the texture projections. The field player’s imagegen reference sheet depicts a charcoal field recorder with a worn skull sticker, yellow hazard tape, an empty top cartridge port, and a 3:2 screen recess. Crop each view individually and use `--solid-silhouette --resolution 320 --steps 12`.
+
+```powershell
+blender -b --factory-startup --python-exit-code 1 --python tools/cartridge-pipeline/bake-field-player.py -- build/zang-field-player
+```
+
+The bake decimates the generated shell, applies the projection atlas and roughness/metallic zones, then cuts the display aperture and cartridge port. It exports an editable `zang-field-player.blend` and an optimized GLB. Publish the GLB to `arcade/art/zang-field-player.glb`. The runtime and model share an aperture of 1.44 × 0.96 centered at Y-up 0.08. Check the insertion animation and browser viewport alignment after editing the bezel.
+
 ## Art masters
 
 1. Generate a **straight-on front** with the whole shell isolated on a neutral background. Give it a centered contact tongue and a well for a separate label. Lock the design before making the other views.

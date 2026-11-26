@@ -1,4 +1,4 @@
-import { emulatorGamepads, watchGamepad } from "./arcade/gamepads.js?v=1d5b5f6c507d";
+import { emulatorGamepads, HANDHELD_RETURN_BUTTON, watchGamepad } from "./arcade/gamepads.js?v=af46a223244a";
 
 const player = document.getElementById("game");
 const viewport = document.getElementById("viewport");
@@ -244,7 +244,10 @@ function configureGamepadPolling(emulator) {
   const active = () => !roomMode || roomBridge?.acceptsGamepad;
   for (const type of ["buttondown", "buttonup", "axischanged"]) {
     const dispatch = handler.listeners[type];
-    handler.on(type, event => { if (active()) dispatch(event); });
+    handler.on(type, event => {
+      if (roomMode && type !== "axischanged" && event.index === HANDHELD_RETURN_BUTTON) return;
+      if (active()) dispatch(event);
+    });
   }
   const disconnect = handler.listeners.disconnected;
   handler.on("disconnected", event => {

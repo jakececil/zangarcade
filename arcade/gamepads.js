@@ -1,5 +1,6 @@
 const released = Object.freeze({ pressed: false, value: 0 });
 const pressed = Object.freeze({ pressed: true, value: 1 });
+export const HANDHELD_RETURN_BUTTON = 11; // R3 / right-stick click
 const sonyDualSense = /dualsense|054c\b.*\b(?:0ce6|0df2|0e5f)\b/i;
 const hatDirections = [
   [0], [0, 3], [3], [1, 3], [1], [1, 2], [2], [0, 2]

@@ -8,8 +8,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; connect-src 'self' blob:; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob: data:; frame-src 'self'">
   <title>Museum | ZANG Arcade</title>
   <link rel="icon" href="../art/brand/zang-favicon.png" type="image/png">
-  <link rel="stylesheet" href="./room.css?v=f6e6e850138a">
-  <script type="module" src="./main.js?v=f1944f65288a"></script>
+  <link rel="stylesheet" href="./room.css?v=ee20fbc3228e">
+  <script type="module" src="./main.js?v=8b0a21ae5c5e"></script>
 </head>
 <body data-mode="loading">
   <canvas id="room" tabindex="0" aria-label="ZANG Arcade Museum. Use arrow keys or WASD to walk, drag or press M to look, and E to interact."></canvas>
@@ -51,14 +51,22 @@
       <button id="interact" class="interaction" type="button" disabled>Walk to the cartridge</button>
     </div>
     <div class="walk-help desktop-help">WASD / arrows move · Shift runs · M toggles mouse look · E interacts</div>
-    <div class="walk-help gamepad-help">Sticks move and look · L2 / LT toggles sprint · Cross / A interacts · Triangle / Y raises the handheld · Create / View opens inventory</div>
+    <div class="walk-help gamepad-help">A / Cross interact · Y / Triangle play · X / Square inspect · View inventory · Menu exhibits · LT sprint</div>
   </main>
 
-  <dialog id="inventory-dialog" aria-labelledby="inventory-title">
+  <dialog id="inventory-dialog" class="museum-dialog" aria-labelledby="inventory-title">
     <div class="inventory-top"><div><h2 id="inventory-title">Cartridges</h2><p id="inventory-count"></p></div><button id="inventory-close" type="button">Close</button></div>
     <ul id="inventory-list"></ul>
     <p id="inventory-empty">Find your first cartridge on an exhibit pedestal.</p>
     <div class="inventory-bottom"><button id="inventory-home" type="button">Apartment</button><button id="inventory-play" class="primary" type="button" disabled>Raise handheld</button></div>
+  </dialog>
+
+  <dialog id="directory-dialog" class="museum-dialog" aria-labelledby="directory-title">
+    <div class="inventory-top">
+      <h2 id="directory-title">Exhibits</h2>
+      <button id="directory-close" type="button">Close</button>
+    </div>
+    <ul id="directory-list"></ul>
   </dialog>
 
   <section id="inspect-hud" class="inspect-hud" aria-labelledby="inspect-title" hidden>
@@ -85,10 +93,9 @@
   <section id="play-hud" class="play-hud" aria-label="Handheld controls" hidden>
     <div class="play-bar">
       <span id="player-state" role="status">Preparing Kingfisher…</span>
-      <button id="lower-handheld" type="button">Lower handheld <kbd>Esc</kbd></button>
+      <button id="lower-handheld" type="button">Lower handheld <kbd class="desktop-help">Esc</kbd><kbd class="gamepad-help">R3</kbd></button>
     </div>
     <div class="play-keyboard desktop-help">Arrows move · A / D are A / B · Q / E are L / R · Shift selects · Enter starts</div>
-    <div class="play-keyboard gamepad-help">Click both sticks to lower the handheld</div>
     <div id="touch-gamepad" class="touch-gamepad" aria-label="Game touch controls">
       <div class="game-dpad">
         <button data-input="4" class="pad-up" aria-label="Game up">▲</button>

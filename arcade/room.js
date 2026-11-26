@@ -13,11 +13,13 @@ import { canWalkLandfill, landfillLevel, landfillProfile, serviceWindow, sortApp
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
 const SCREEN_CENTER = new THREE.Vector3(0, .08, .131);
+const FIELD_PLAYER_PATH = 'arcade/art/zang-field-player.glb?v=be8cf49f86ab';
+const CART_SCALE = 1.22;
 const CART_HOME = new THREE.Vector3(-1.53, 1.12, -.2);
 const POCKET = new THREE.Vector3(0, -1.42, -.92);
-const SLOT = new THREE.Vector3(0, .682, -.008);
+const SLOT = new THREE.Vector3(0, .744, -.008);
 // The molded shell sits proud of the slot, with its contact tongue recessed.
-const MODEL_CART_SEAT = new THREE.Vector3(0, .804, -.008);
+const MODEL_CART_SEAT = new THREE.Vector3(0, .870, -.008);
 const GRATE_HOME = new THREE.Vector3(1.92, .015, -2.18);
 const UNDERSHELL = 'undergrowth-advance';
 const INSPECTION_BACKGROUND = new THREE.Color('#252922');
@@ -162,11 +164,9 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   const darkMetal = material('#202a2b', { metalness: .65, roughness: .46 });
   const brass = material('#b7a66e', { metalness: .72, roughness: .37 });
   const black = material('#090f10', { roughness: .48 });
-  const teal = material('#3e9d9d', { bumpMap: grain, bumpScale: .006, metalness: .19, roughness: .49 });
   const screenBlack = material('#02070a', { metalness: .12, roughness: .19, emissive: '#082b2c', emissiveIntensity: .26 });
   const amber = material('#ffd390', { emissive: '#ffbf60', emissiveIntensity: 1.2 });
   const lime = material('#d9f57b', { emissive: '#799f26', emissiveIntensity: .3 });
-  const rainbow = ['#e7618c', '#e0aa58', '#d9e776', '#74bea0', '#70b9d6', '#927cbb'].map(color => material(color));
 
   const fillLight = new THREE.HemisphereLight('#dae8d5', '#2d3027', 2.05);
   scene.add(fillLight);
@@ -213,43 +213,43 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   pedestalLight.position.set(.20, 1.96, .40);
   pedestal.add(pedestalLight);
 
-  // Handheld geometry leaves an actual rectangular opening between the bezel rails.
   const handheld = new THREE.Group();
   camera.add(handheld);
   handheld.position.copy(POCKET);
   handheld.visible = false;
-  box(2.18, 1.43, .17, black, handheld, 0, 0, -.045);
-  box(.29, 1.37, .2, teal, handheld, -.925, 0, .005);
-  box(.29, 1.37, .2, teal, handheld, .925, 0, .005);
-  box(1.62, .13, .2, teal, handheld, 0, .65, .005);
-  box(1.62, .25, .2, teal, handheld, 0, -.59, .005);
-  box(1.51, .05, .04, darkMetal, handheld, 0, .59, .119);
-  box(1.51, .05, .04, darkMetal, handheld, 0, -.43, .119);
-  box(.05, .99, .04, darkMetal, handheld, -.755, .08, .119);
-  box(.05, .99, .04, darkMetal, handheld, .755, .08, .119);
-  plane(SCREEN_WIDTH, SCREEN_HEIGHT, screenBlack, handheld, SCREEN_CENTER.x, SCREEN_CENTER.y, SCREEN_CENTER.z);
-
-  // A split top rail and a dark recessed throat form the cartridge slot.
-  box(.38, .023, .09, black, handheld, 0, .728, -.008);
-  box(.79, .055, .13, metal, handheld, -.61, .728, -.008);
-  box(.79, .055, .13, metal, handheld, .61, .728, -.008);
-  box(.37, .018, .015, brass, handheld, 0, .743, .042);
-  box(.37, .018, .015, brass, handheld, 0, .743, -.058);
-  box(.19, .055, .02, black, handheld, -.925, .1, .13);
-  box(.055, .19, .02, black, handheld, -.925, .1, .133);
-  for (const [x, y] of [[.9, .15], [.99, .25]]) {
-    const button = cylinder(.055, .035, rainbow[x > .95 ? 0 : 4], handheld, x, y, .125);
+  const handheldFallback = new THREE.Group();
+  handheld.add(handheldFallback);
+  box(2.39, 1.37, .19, darkMetal, handheldFallback, 0, .075, -.046);
+  for (const x of [-.985, .985]) box(.43, 1.21, .11, black, handheldFallback, x, .065, .050);
+  box(1.53, .16, .111, metal, handheldFallback, 0, -.51, .051);
+  box(1.53, .16, .111, metal, handheldFallback, 0, .64, .051);
+  box(.46, .035, .12, black, handheldFallback, 0, .741, -.008);
+  box(.18, .055, .021, black, handheldFallback, -.969, .095, .124);
+  box(.055, .18, .020, black, handheldFallback, -.969, .095, .127);
+  for (const [x, y] of [[1.04, .18], [.91, .024]]) {
+    const button = cylinder(.052, .029, darkMetal, handheldFallback, x, y, .124);
     button.rotation.x = Math.PI / 2;
   }
-  for (let i = 0; i < 5; i++) box(.016, .12, .017, black, handheld, -.1 + i * .05, -.59, .121);
-  for (const x of [-1.005, 1.005]) for (const y of [-.61, .61]) {
-    const screw = cylinder(.022, .011, brass, handheld, x, y, .112);
-    screw.rotation.x = Math.PI / 2;
+  plane(SCREEN_WIDTH, SCREEN_HEIGHT, screenBlack, handheld, SCREEN_CENTER.x, SCREEN_CENTER.y, SCREEN_CENTER.z - .031);
+  const powerLed = box(.022, .012, .010, lime, handheld, .67, -.491, .144);
+  const handheldLight = new THREE.DirectionalLight('#f2f6ff', 1.15);
+  handheldLight.position.set(-1.4, 1.8, .85);
+  handheldLight.target.position.set(0, 0, -2);
+  handheldLight.layers.set(1);
+  handheldLight.visible = false;
+  camera.add(handheldLight, handheldLight.target);
+  let fieldPlayer;
+  let fieldPlayerLoad;
+
+  function preloadFieldPlayer() {
+    return fieldPlayerLoad ??= loadCartridgeAsset(FIELD_PLAYER_PATH).then(asset => {
+      if (disposed) return;
+      fieldPlayer = asset.clone(true);
+      fieldPlayer.visible = false;
+      fieldPlayer.traverse(object => object.layers.set(1));
+      handheld.add(fieldPlayer);
+    }).catch(() => { fieldPlayerLoad = undefined; });
   }
-  const powerLed = box(.035, .035, .012, lime, handheld, .68, -.59, .119);
-  const logoSurface = new THREE.MeshBasicMaterial({ map: texture('../art/brand/zang-mark.webp'), transparent: true, depthWrite: false });
-  materials.add(logoSurface);
-  plane(.105, .105, logoSurface, handheld, -.67, -.59, .125);
 
   function cartridgeModel(parent, displayWidth) {
     const model = new THREE.Group();
@@ -275,12 +275,13 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     loadCartridgeAsset(game.cartridgeModel).then(model => {
       if (disposed || parts.gameId !== game.id || parts.asset) return;
       parts.asset = model.clone(true);
+      parts.bounds = new THREE.Box3().setFromObject(model);
       parts.shadows = parts === inspectionCart && enableCartridgeShadows(parts.asset);
       parts.asset.traverse(object => { object.layers.mask = parts.model.layers.mask; });
       parts.model.add(parts.asset);
       if (parts.shadows) parts.model.traverse(object => object.layers.set(2));
       if (parts.displayWidth) {
-        const bounds = new THREE.Box3().setFromObject(model);
+        const bounds = parts.bounds;
         const width = bounds.max.x - bounds.min.x;
         if (width * 1.6 > parts.displayWidth) {
           const scale = parts.displayWidth / width;
@@ -298,6 +299,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (parts.gameId === game.id) return;
     parts.gameId = game.id;
     parts.shadows = false;
+    parts.bounds = undefined;
     const translucent = game.id === UNDERSHELL;
     if (parts.asset) {
       parts.asset.removeFromParent();
@@ -464,7 +466,10 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   function setCartridge(game) {
     carriedGame = game || undefined;
-    if (carriedGame) skinCartridge(carriedCart, carriedGame);
+    if (carriedGame) {
+      preloadFieldPlayer();
+      skinCartridge(carriedCart, carriedGame);
+    }
     setCartState(carriedGame ? 'held' : 'on-desk');
   }
 
@@ -581,11 +586,14 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   function dockPose() {
     const viewport = canvas.getBoundingClientRect();
-    const widthLimit = viewport.width < 620 ? Math.max(240, viewport.width * .66) : Math.min(760, viewport.width - 90);
-    const heightLimit = carriedGame?.cartridgeModel ? .83 : .98;
-    const desiredWidth = Math.min(widthLimit, viewport.width - 24, viewport.height * heightLimit);
+    const compact = viewport.width < 620;
+    const top = Math.max(.835, cartridgeSeat().y + (carriedCart.bounds?.max.y ?? .13) * CART_SCALE);
+    const bottom = -.615;
+    const widthLimit = compact ? viewport.width * .62 : Math.min(770, (viewport.width - 24) * SCREEN_WIDTH / 2.44);
+    const fitHeight = viewport.height * (compact ? .66 : .945) * SCREEN_WIDTH / (top - bottom);
+    const desiredWidth = Math.min(widthLimit, fitHeight);
     const distance = SCREEN_WIDTH * viewport.height / (2 * desiredWidth * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
-    return new THREE.Vector3(0, -SCREEN_CENTER.y, -distance - SCREEN_CENTER.z);
+    return new THREE.Vector3(0, -(top + bottom) / 2 + (compact ? .15 : 0), -distance - SCREEN_CENTER.z);
   }
 
   function requestRender() {
@@ -678,6 +686,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (!['on-desk', 'held', 'inserted'].includes(normalized)) return;
     cartState = normalized;
     cartridge.visible = Boolean(carriedGame && (transitioning || docked));
+    cartridge.scale.setScalar(CART_SCALE);
     if (normalized === 'held') {
       camera.add(cartridge);
       cartridge.position.set(.33, -.32, -.67);
@@ -759,12 +768,20 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     clearInput();
     emitTarget(null);
     savedPose = { position: camera.position.clone(), yaw, pitch };
+    await Promise.race([preloadFieldPlayer(), new Promise(resolve => setTimeout(resolve, 300))]);
+    if (disposed) return;
+    handheldFallback.visible = !fieldPlayer;
+    if (fieldPlayer) fieldPlayer.visible = true;
     handheld.visible = true;
+    handheldLight.visible = true;
     handheld.traverse(object => object.layers.set(1));
     const destination = dockPose();
     const peak = destination.clone();
     if (cartState !== 'inserted') peak.y -= .23;
-    await tween(365, amount => { handheld.position.lerpVectors(POCKET, peak, amount); });
+    await tween(365, amount => {
+      handheld.position.lerpVectors(POCKET, peak, amount);
+      handheld.rotation.set(.19 * (1 - amount), .06 * (1 - amount), -.095 * (1 - amount));
+    });
     if (cartState !== 'inserted') {
       setCartState('held');
       const initialPosition = cartridge.position.clone();
@@ -801,9 +818,13 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     transitioning = true;
     docked = false;
     const startPosition = handheld.position.clone();
-    await tween(360, amount => { handheld.position.lerpVectors(startPosition, POCKET, amount); });
+    await tween(360, amount => {
+      handheld.position.lerpVectors(startPosition, POCKET, amount);
+      handheld.rotation.set(.21 * amount, .035 * amount, -.085 * amount);
+    });
     if (disposed) return;
     handheld.visible = false;
+    handheldLight.visible = false;
     if (savedPose) {
       camera.position.copy(savedPose.position);
       yaw = savedPose.yaw;
