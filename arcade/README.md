@@ -6,6 +6,12 @@ Walk with WASD or arrows and hold Shift to run. Press M for mouse look, Escape t
 
 Discovered cartridges persist under `zang-arcade:<site-path>:museum-collection-v1`. Bring them to the living-room shelf and use **Box new cartridges**. Once stored, face an individual box and interact to pull it out and load its title into your portable selection. Earlier visitors keep their last selected cartridge, and a saved Kingfisher catch also preserves discovery. Undergrowth Advance uses a translucent amber shell with a visible board and contacts.
 
+## The Works
+
+The two service openings on the west wall of the exhibition corridor connect through Mycelium Court and Backflow Vault. The Copper Run and Coolant Bypass form parallel paths. The Filter Room branches off the Copper Run. Open `/arcade/?room=works` within the site to start in the Service Cut.
+
+The rectangles in `museum-works.js` are measured in metres. Attach a module along a shared edge with a walkable overlap. The plan builds wall openings, lintels where ceiling heights differ, and collision from those same boundaries. Several landmarks and nav signs are placed by area. The rooms share the museum's existing material textures and ship as geometry code. A future level-scale mesh can use these openings as alignment points for the render mesh and collision.
+
 ## Cartridge and save signal
 
 `roms/Kingfisher-V10-Room-v1.gba` is a byte-identical copy of the existing Kingfisher V10 ROM, given its own filename for native battery-save isolation. Its separate emulator ID is `2268921765`, game name is `Kingfisher V10 room-v1`, and battery save is `/data/saves/mGBA/Kingfisher-V10-Room-v1.srm`. The room redirects its own IDBFS instance to the IndexedDB database `zang-arcade:<site-path>:room:kingfisher-v1:battery` before mounting. Its save lifecycle operates entirely in that database. The catalog cartridge uses its existing filename, database, ID, settings, and state name.

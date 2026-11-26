@@ -1,4 +1,4 @@
-import { createRoom } from './room.js?v=27a5b2879f72';
+import { createRoom } from './room.js?v=47240b2de4cb';
 import { HOME } from './guts.js';
 import { stick, watchGamepad } from './gamepads.js?v=9bc07178600a';
 
@@ -83,7 +83,8 @@ function setMode(next) {
 
 function updateProgress() {
   const carried = cartridge ? `${cartridge.title} ${cartState === 'inserted' ? 'seated' : 'in hand'}. ` : '';
-  if (!exhibit) progressLabel.textContent = carried + 'Walk up to a doorway or choose an exhibit from the directory.';
+  if (!exhibit) progressLabel.textContent = document.body.hasAttribute('data-works') ? carried.trimEnd()
+    : carried + 'Walk up to a doorway or choose an exhibit from the directory.';
   else if (exhibit === HOME) progressLabel.textContent = discovered.size > shelved.size ? 'Approach the shelf to box your new cartridges.' : 'Bring found cartridges here to fill the shelf.';
   else if (exhibit.id === 'kingfisher') {
     progressLabel.textContent = carried + (progress.open ? 'The floor grate is open.' : `${progress.catches} / 10 fish saved. Catch ten to open the floor grate.`);
@@ -221,7 +222,6 @@ function changeExhibit(game) {
   setRun(false);
   room.setLocation(game);
   directory.value = game?.id || '';
-  locationName.textContent = game?.title || 'Arcade Museum';
   rememberVisit();
   updateProgress();
   updateInteraction();
@@ -553,6 +553,11 @@ try {
     directory.add(new Option(game.title, game.id));
   }
   room = await createRoom({
+    onArea(name) {
+      locationName.textContent = name;
+      document.body.toggleAttribute('data-works', !exhibit && name !== 'Exhibition Corridor');
+      updateProgress();
+    },
     onInspectionDrums(available, hasSlots) {
       inspectDrums.hidden = !available;
       inspectSlots.hidden = !hasSlots;
@@ -580,10 +585,9 @@ try {
   exhibit = destination === HOME.id ? HOME : games.get(destination);
   if (!requested && visit?.cartridge) cartridge = games.get(visit.cartridge);
   if (cartridge) cartState = 'held';
-  room.setLocation(exhibit);
+  room.setLocation(exhibit, destination);
   room.setCartridge(cartridge);
   directory.value = exhibit?.id || '';
-  locationName.textContent = exhibit?.title || 'Arcade Museum';
   room.setFishCount(progress.catches);
   if (progress.open) room.openGrate(false);
   document.body.dataset.grate = progress.open ? 'open' : 'locked';

@@ -1,11 +1,12 @@
 import * as THREE from './vendor/three.module.js';
-import { ENTRY_Z, museumGeometry } from './museum-geometry.js';
+import { ENTRY_Z, HALL_WIDTH, museumGeometry } from './museum-geometry.js?v=d9250d395c6f';
+import { worksArrival } from './museum-works.js?v=d1bb999ea3de';
 import { HOME, buildGuts, mazeWalls, roomProfile } from './guts.js';
 import { loadCartridgeAsset } from './cartridge-assets.js';
 import { createCartridgeDrums } from './cartridge-drums.js';
 import { createCartridgeSlots, pickCartridgePart } from './cartridge-slots.js?v=513bd344741e';
 import { configureCartridgeKey, createCartridgeReflections, enableCartridgeShadows } from './cartridge-lighting.js';
-import { buildCabinetAlcove, mountCabinet } from './cabinet-alcove.js?v=ac1f5dcbce49';
+import { buildCabinetAlcove, mountCabinet } from './cabinet-alcove.js?v=c17ae7b4baff';
 
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
@@ -21,7 +22,7 @@ const UNDERSHELL = 'undergrowth-advance';
 const INSPECTION_BACKGROUND = new THREE.Color('#252922');
 
 export async function createRoom({ canvas, games, onInteract = () => {}, onTarget = () => {}, onScreenRect = () => {}, onMouseLook = () => {},
-  onInspectionDrums = () => {}, onInspectionSlotsState = () => {} }) {
+  onInspectionDrums = () => {}, onInspectionSlotsState = () => {}, onArea = () => {} }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -62,6 +63,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   let frameRequest = 0;
   let previousTime = 0;
   let cabinetLoading;
+  let area;
   let savedPose;
   let dockPromise;
   let renderedFrames = 0;
@@ -343,7 +345,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   hatchGlow.rotation.x = -Math.PI / 2;
   hatchGlow.visible = false;
 
-  const museum = museumGeometry({ games, box, plane, material, texture, paper, requestRender });
+  const museum = museumGeometry({ games, box, plane, material, texture, paper, geometry: geometries, requestRender });
   scene.add(museum.hall);
   exhibit.add(museum.installation);
   const hallProps = guts.props(museum.hall);
@@ -410,7 +412,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     updateTarget();
   }
 
-  function setLocation(game) {
+  function setLocation(game, arrival) {
     if (docked || transitioning) return;
     if (currentGame) exitDoor = museum.doors.find(door => door.game === currentGame);
     currentGame = game || undefined;
@@ -446,6 +448,10 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       camera.position.set(0, 1.62, profile.depth / 2 - .77);
       yaw = 0;
       pitch = -.17;
+    } else if (arrival === 'works') {
+      camera.position.set(worksArrival.x, 1.62, worksArrival.z);
+      yaw = worksArrival.yaw;
+      pitch = -.05;
     } else {
       camera.position.set(exitDoor ? exitDoor.side * 2.25 : 0, 1.62, exitDoor?.z ?? ENTRY_Z);
       yaw = exitDoor ? exitDoor.side * Math.PI / 2 : 0;
@@ -465,6 +471,11 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function updateCamera() {
     camera.rotation.set(pitch, yaw, 0, 'YXZ');
     camera.updateMatrixWorld();
+    const label = currentGame?.title ?? museum.plan.area(camera.position.x,camera.position.z);
+    if (label !== area) {
+      area = label;
+      onArea(area);
+    }
   }
 
   function emitTarget(next) {
@@ -475,6 +486,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   function updateTarget() {
     if (!inputEnabled || docked || transitioning || inspecting) return emitTarget(null);
+    if (!currentGame && Math.abs(camera.position.x) > HALL_WIDTH/2) return emitTarget(null);
     camera.getWorldDirection(forward);
     const candidates = currentGame ? [
       { id: 'exit', point: new THREE.Vector3(0, 1.62, profile.depth / 2 - .12), label: 'Return to corridor' }
@@ -510,7 +522,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (!currentGame) {
       const cabinet = hallProps.cabinet.position;
       if (Math.abs(x-cabinet.x) < .72 && Math.abs(z-cabinet.z) < .72) return false;
-      return Math.abs(x) < 2.95 && z > ENTRY_Z + 2.3 - museum.length && z < ENTRY_Z + 1.7;
+      return museum.plan.canWalk(x,z);
     }
     if (Math.abs(x) >= profile.width / 2 - .29 || Math.abs(z) >= profile.depth / 2 - .33) return false;
     const blockers = currentGame === HOME ? homeObstacles : currentGame.id === 'zonk' ? mazeWalls : [];
@@ -530,7 +542,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     const distance = delta * (currentGame ? 2.15 : 4.1) * (sprinting ? 1.85 : 1);
     const nextX = camera.position.x + (Math.cos(yaw) * x - Math.sin(yaw) * z) * distance;
     const nextZ = camera.position.z + (-Math.sin(yaw) * x - Math.cos(yaw) * z) * distance;
-    if (!currentGame && Math.abs(nextX) > 2.84 && Math.abs(nextX) > Math.abs(camera.position.x)) {
+    if (!currentGame && Math.abs(nextX) > 2.84 && Math.abs(nextX) > Math.abs(camera.position.x)
+      && Math.abs(camera.position.x) < HALL_WIDTH/2 && !museum.plan.hasCut(Math.sign(nextX),nextZ)) {
       const door = museum.doors.find(item => item.side === Math.sign(nextX) && Math.abs(item.z - nextZ) < .76);
       if (door) { onInteract(`door:${door.game.id}`); return; }
     }
@@ -587,7 +600,9 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     museum.updateFish(time);
     if (!currentGame) {
       const nearest = Math.max(0, Math.min(hallLights.length - 1, Math.round((2 - camera.position.z) / 5.2)));
-      hallLights.forEach((light, index) => { light.visible = Math.abs(index - nearest) <= 1; });
+      const inCorridor = camera.position.x > -4.25;
+      hallLights.forEach((light, index) => { light.visible = inCorridor && Math.abs(index - nearest) <= 1; });
+      for (const light of museum.worksLights) light.visible = light.position.distanceToSquared(camera.position) < 70;
     }
     const background = scene.background;
     window.clearTimeout(inspectionShuffleTimer);
@@ -995,7 +1010,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     },
     look,
     getState() {
-      return { cartState, location: currentGame?.id || 'corridor', carried: carriedGame?.id, dimensions: currentGame ? [profile.width, profile.height, profile.depth] : null, docked, inputEnabled, grateOpen, transitioning, target, renderedFrames, screenRect: lastScreenRect, camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw, pitch } };
+      return { cartState, location: currentGame?.id || 'corridor', area, carried: carriedGame?.id, dimensions: currentGame ? [profile.width, profile.height, profile.depth] : null, docked, inputEnabled, grateOpen, transitioning, target, renderedFrames, screenRect: lastScreenRect, camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw, pitch } };
     },
     dispose() {
       disposed = true;

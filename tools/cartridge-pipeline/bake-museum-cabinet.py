@@ -13,6 +13,7 @@ from blender_common import frame_asset, import_reconstruction
 from material_zones import map_texture, pixels, smooth
 from reference_bake import bake_reference_atlas, create_projectors, remove_projectors
 from relief_lighting import reference_coordinates
+from cabinet_details import clean_controls_from_atlas, mount_brackets, mount_controls
 
 
 folder = Path(sys.argv[sys.argv.index('--')+1]).resolve()
@@ -40,9 +41,10 @@ material = bpy.data.materials.new('Pitted steel, CRT glass and luminous marquee'
 atlas = bake_reference_atlas(cabinet, material, folder, size=1536, basename='cabinet-atlas', face_priority=True)
 u,v,facing = reference_coordinates(material, *atlas.size)
 surface = pixels(atlas)[...,:3].clip(0,1)
-r,g,b = np.moveaxis(surface**(1/2.2), -1, 0)
 face = smooth(.28,.73,facing)
 screen = face*(1-smooth(.29,.36,np.abs(u-.50)))*smooth(.558,.587,v)*(1-smooth(.772,.795,v))
+surface = clean_controls_from_atlas(surface,v,screen)
+r,g,b = np.moveaxis(surface**(1/2.2), -1, 0)
 growth = np.maximum(
     smooth(.022,.115,g-r)*smooth(.043,.16,g-b),
     smooth(.07,.30,r-g)*smooth(.10,.32,g-b))*(1-screen)
@@ -55,6 +57,8 @@ amber = face*smooth(.77,.82,v)*(1-smooth(.84,.87,v))*smooth(.27,.76,r)*smooth(.1
 
 nodes,links = material.node_tree.nodes,material.node_tree.links
 shader = nodes.get('Principled BSDF')
+color = map_texture(nodes,folder,'cabinet-clean.jpg','Clean six-view cabinet albedo',surface,color=True)
+links.new(color.outputs['Color'],shader.inputs['Base Color'])
 channels = nodes.new('ShaderNodeSeparateColor')
 finish = map_texture(nodes,folder,'cabinet-finish.png','Roughness and metal by zone',
                      np.stack((np.zeros_like(roughness),roughness,metal),axis=-1))
@@ -70,6 +74,8 @@ shader.inputs['Coat Weight'].default_value = .085
 shader.inputs['Coat Roughness'].default_value = .20
 
 cabinet['Source'] = 'Hunyuan3D-2mv, six orthographic reference projections'
+mount_controls(cabinet)
+mount_brackets(cabinet)
 frame_asset(3.5)
 bpy.ops.wm.save_as_mainfile(filepath=str(folder/'gutter-cabinet.blend'))
 remove_projectors(cabinet.data)

@@ -1,7 +1,7 @@
 import * as THREE from './vendor/three.module.js';
 import { loadCartridgeAsset } from './cartridge-assets.js';
 
-export const cabinetAsset = './arcade/art/gutter-cabinet.glb?v=00e3c81d591f';
+export const cabinetAsset = './arcade/art/gutter-cabinet.glb?v=534c1952c176';
 
 export async function mountCabinet(placeholders, requestRender) {
   const model = await loadCartridgeAsset(cabinetAsset);

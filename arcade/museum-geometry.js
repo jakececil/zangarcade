@@ -1,13 +1,16 @@
 import * as THREE from './vendor/three.module.js';
+import { buildMuseumWorks, worksPlan } from './museum-works.js?v=d1bb999ea3de';
 
 export const BAY_PITCH = 4;
 export const HALL_WIDTH = 6.3;
 export const ENTRY_Z = 3;
 
-export function museumGeometry({ games, box, plane, material, texture, paper, requestRender }) {
+export function museumGeometry({ games, box, plane, material, texture, paper, geometry, requestRender }) {
   const hall = new THREE.Group();
   const installation = new THREE.Group();
   const length = Math.max(12, Math.ceil(games.length / 2) * BAY_PITCH + 6);
+  const corridor = { x0:-HALL_WIDTH/2, x1:HALL_WIDTH/2, z0:ENTRY_Z+2-length, z1:ENTRY_Z+2, h:3.4 };
+  const plan = worksPlan(corridor);
   const hallGrain = texture('./art/guts-enamel.webp', 7);
   hallGrain.repeat.y = 1.35;
   const wall = material('#505e54', { map: hallGrain, bumpMap: hallGrain, bumpScale: .052, roughness: .86 });
@@ -26,8 +29,10 @@ export function museumGeometry({ games, box, plane, material, texture, paper, re
   box(HALL_WIDTH, .047, length - .2, walkway, hall, 0, -.02, center);
   box(.52, .05, length - .2, stone, hall, 0, -.014, center);
   for (const side of [-1, 1]) {
-    box(.17, 3.4, length, wall, hall, side * HALL_WIDTH / 2, 1.7, center);
-    box(.07, .23, length, metal, hall, side * 3.016, .12, center);
+    for (const { start, end, sill } of plan.outerWalls(corridor, side < 0 ? 'x0' : 'x1')) {
+      box(.17, corridor.h-sill, end-start, wall, hall, side*HALL_WIDTH/2, (corridor.h+sill)/2, (start+end)/2);
+      if (!sill) box(.07, .23, end-start, metal, hall, side*3.016, .12, (start+end)/2);
+    }
     box(.035, .04, length - .25, brass, hall, side * .29, .006, center);
     box(.25, .045, length - .25, stone, hall, side * 2.83, .001, center);
     box(.04, .035, length - .25, brass, hall, side * 2.7, .014, center);
@@ -83,8 +88,11 @@ export function museumGeometry({ games, box, plane, material, texture, paper, re
     box(HALL_WIDTH, .28, .22, metal, hall, 0, 3.25, z);
     box(1.56, .045, .12, lamp, hall, 0, 3.09, z);
     box(6.19, .014, .038, metal, hall, 0, .019, z);
-    for (const side of [-1, 1]) box(.26, 3.1, .28, metal, hall, side * 2.99, 1.55, z);
+    for (const side of [-1, 1]) {
+      if (!plan.hasCut(side, z)) box(.26, 3.1, .28, metal, hall, side * 2.99, 1.55, z);
+    }
   }
+  const worksLights = buildMuseumWorks({ world:hall, plan, sign, box, material, texture, geometry });
   sign('ZANG ARCADE MUSEUM', 'GAMES COLLECTION', '#e8f8a4', hall, 0, 2.15, ENTRY_Z + 1.9, Math.PI, 3.6);
   box(2.13, 2.5, .14, black, hall, 0, 1.25, ENTRY_Z + 1.78);
   box(1.95, .07, .08, lamp, hall, 0, .11, ENTRY_Z + 1.68);
@@ -192,7 +200,7 @@ export function museumGeometry({ games, box, plane, material, texture, paper, re
   }
 
   return {
-    hall, installation, doors, length, setExhibit,
+    hall, installation, doors, plan, worksLights, setExhibit,
     setFishCount(count) {
       fish.forEach(({ specimen }, index) => { specimen.visible = index < count; });
       requestRender();
