@@ -30,6 +30,16 @@ body[data-gamepad] kbd.gamepad-help { display: inline-block; }
 .room-identity img { width: 29px; height: 29px; object-fit: contain; }
 .room-header a { display: grid; place-items: center; min-height: 34px; padding: 5px 10px; border-color: #d8e6dc3d; background: #111b1b85; text-decoration: none; font-size: 12px; pointer-events: auto; }
 
+.apartment-hud { position: fixed; z-index: 3; bottom: max(10px, env(safe-area-inset-bottom)); inset-inline: 12px; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 12px; pointer-events: none; }
+.apartment-hud form, .apartment-actions { display: flex; justify-content: center; gap: 6px; }
+.apartment-hud button, #tv-url { min-height: 42px; padding-inline: 11px; pointer-events: auto; }
+#tv-url { width: min(48vw, 250px); color: inherit; font: inherit; background: #141c1aee; border: 1px solid #93b1a366; border-radius: 5px; }
+#apartment-tv { position: fixed; z-index: 2; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(calc(100% - 24px), 730px, calc(66dvh * 16 / 9)); aspect-ratio: 16 / 9; min-height: 200px; border: 0; background: #0b0b10; }
+body[data-mode='tv'] .room-header { visibility: hidden; }
+@media (max-height: 435px) and (orientation: landscape) {
+  .apartment-hud { justify-content: space-between; }
+}
+
 .entrance { position: fixed; inset: 0; z-index: 6; display: grid; place-items: center; padding: 22px; background: #07130d77; backdrop-filter: blur(3px); }
 .entrance-panel { width: min(100%, 450px); padding: clamp(24px, 5vw, 42px); border: 1px solid #84b6a970; border-top: 3px solid var(--lime); border-radius: 9px; background: #10241df0; box-shadow: 0 16px 90px #0008; }
 .eyebrow { margin: 0; color: var(--teal); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; }

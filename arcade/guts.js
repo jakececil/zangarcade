@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.js';
+import { buildApartment, shelf as shelfLayout } from './apartment.js?v=1';
 
 export const HOME = Object.freeze({ id: 'home', title: 'Apartment' });
 
@@ -25,47 +26,35 @@ export const mazeWalls = [
   { x: -.85, z: -2.9, w: 6.55, d: .22 }
 ];
 
-export function buildGuts({ games, box, plane, material, texture, paper }) {
+export function buildGuts({ games, box, plane, material, texture, paper, requestRender }) {
   const home = new THREE.Group();
   const maze = new THREE.Group();
   const materialTile = texture('./art/guts-enamel.webp', 3);
   const iron = material('#78655f', { map: materialTile, bumpMap: materialTile, bumpScale: .05, roughness: .67, metalness: .3 });
   const wood = material('#694848', { map: materialTile, bumpMap: materialTile, bumpScale: .035 });
   const rubber = material('#352a35', { map: materialTile, bumpMap: materialTile, bumpScale: .028 });
-  const upholstery = material('#673854', { bumpMap: materialTile, bumpScale: .018, roughness: .98, metalness: 0 });
   const glass = material('#7ddac5', { transparent: true, opacity: .24, depthWrite: false, roughness: .24 });
   const warmth = material('#ffc581', { emissive: '#ff935a', emissiveIntensity: 1.5 });
   const signal = material('#c3ed7d', { emissive: '#a3d75b', emissiveIntensity: .75 });
   const magenta = material('#a64d80', { map: materialTile, bumpMap: materialTile, bumpScale: .024 });
   const black = material('#141218', { roughness: .75 });
 
-  const floorMat = material('#8b3d53', { map: materialTile, roughness: .96 });
   box(2.05, 2.48, .12, black, home, 0, 1.24, 4.08);
   for (const x of [-1.04, 1.04]) box(.08, 2.51, .08, warmth, home, x, 1.25, 3.995);
   box(2.15, .09, .13, warmth, home, 0, 2.52, 4);
-  box(5.4, .032, 4.84, floorMat, home, 0, .012, -.12);
-  box(2.12, .46, .8, rubber, home, -2.38, .31, .72);
-  box(2.14, .72, .198, upholstery, home, -2.38, .70, 1.05);
-  for (const x of [-3.4, -1.38]) box(.22, .44, .8, upholstery, home, x, .48, .71);
-  for (const x of [-2.85, -1.91]) box(.85, .18, .61, upholstery, home, x, .59, .62);
-  const cushion = box(.35, .34, .16, material('#c0aa6c', { bumpMap: materialTile, bumpScale: .009 }), home, -1.85, .85, .87);
-  cushion.rotation.z = -.26;
-  box(1.07, .11, .73, wood, home, 2.01, .52, .34);
-  for (const x of [1.55, 2.46]) box(.11, .47, .55, iron, home, x, .25, .34);
-  box(.43, .04, .42, iron, home, 3.13, .03, -1.05);
-  box(.06, 2.31, .06, iron, home, 3.13, 1.15, -1.05);
-  box(.39, .14, .38, warmth, home, 3.13, 2.30, -1.05);
+  const apartment = buildApartment({ home, box, plane, material, texture, paper, requestRender });
   const homeLight = new THREE.PointLight('#ffd397', 10, 10, 2);
   homeLight.position.set(2.35, 2.46, -.5);
   home.add(homeLight);
   const fill = new THREE.HemisphereLight('#e8d5bd', '#887086', .68);
   home.add(fill);
   const shelfLight = new THREE.PointLight('#ffd6a1', 13, 5.5, 2);
-  shelfLight.position.set(0, 2.42, -2.31);
+  shelfLight.position.set(2.82, 2.42, -.36);
   home.add(shelfLight);
 
   const shelf = new THREE.Group();
-  shelf.position.z = -3.45;
+  shelf.position.set(shelfLayout.x, 0, shelfLayout.z);
+  shelf.rotation.y = -Math.PI / 2;
   home.add(shelf);
   box(4.66, 2.62, .16, wood, shelf, 0, 1.42, -.22);
   for (const x of [-2.36, 2.36]) box(.16, 2.7, .55, wood, shelf, x, 1.42, 0);
@@ -85,7 +74,7 @@ export function buildGuts({ games, box, plane, material, texture, paper }) {
     box(.424, .515, .116, shell, caseGroup);
     plane(.388, .474, paper(texture('../' + game.cover)), caseGroup, 0, 0, .061);
     shelf.add(caseGroup);
-    boxes.set(game.id, { model: caseGroup, point: new THREE.Vector3(x, y + .276, -3.28) });
+    boxes.set(game.id, { model: caseGroup, point: new THREE.Vector3(shelfLayout.x - .17, y + .276, shelfLayout.z + x) });
   }
 
   // Each baffle leaves a real passage at the opposite end from the previous one.
@@ -136,8 +125,8 @@ export function buildGuts({ games, box, plane, material, texture, paper }) {
   }
 
   return {
-    home, maze, boxes, props, materialTile,
+    home, maze, boxes, props, materialTile, apartment,
     setShelf(ids) { for (const [id, entry] of boxes) entry.model.visible = ids.has(id); },
-    dispose() { head.geometry.dispose(); }
+    dispose() { apartment.dispose(); head.geometry.dispose(); }
   };
 }

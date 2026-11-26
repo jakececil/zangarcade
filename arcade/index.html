@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#101817">
   <meta name="description" content="Explore the ZANG Arcade Museum and play its collection of original games.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; connect-src 'self' blob:; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob: data:; frame-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; connect-src 'self' blob:; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob: data:; frame-src 'self' https://www.youtube-nocookie.com">
   <title>Museum | ZANG Arcade</title>
   <link rel="icon" href="../art/brand/zang-favicon.png" type="image/png">
-  <link rel="stylesheet" href="./room.css?v=ee20fbc3228e">
-  <script type="module" src="./main.js?v=f87c60ba4cdd"></script>
+  <link rel="stylesheet" href="./room.css?v=apartment1">
+  <script type="module" src="./main.js?v=apartment1"></script>
 </head>
 <body data-mode="loading">
   <canvas id="room" tabindex="0" aria-label="ZANG Arcade Museum. Use arrow keys or WASD to walk, drag or press M to look, and E to interact."></canvas>
@@ -114,6 +114,20 @@
       </div>
     </div>
   </section>
+  <section id="apartment-hud" class="apartment-hud" aria-label="Apartment controls" hidden>
+    <form id="tv-form" hidden>
+      <label class="visually-hidden" for="tv-url">YouTube video link</label>
+      <input id="tv-url" type="text" inputmode="url" placeholder="Paste a YouTube video link" maxlength="1024" required>
+      <button type="submit">Load video</button>
+    </form>
+    <div class="apartment-actions">
+      <button id="watch-tv" type="button">Watch TV <kbd class="gamepad-help">A</kbd></button>
+      <button id="close-tv" type="button" hidden>Back to couch <kbd class="gamepad-help">B</kbd></button>
+      <button id="stand-up" type="button">Stand up <kbd class="gamepad-help">B</kbd></button>
+    </div>
+  </section>
+  <iframe id="apartment-tv" title="Apartment television YouTube player" referrerpolicy="strict-origin-when-cross-origin"
+    allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen hidden></iframe>
   <iframe id="handheld-screen" title="Museum handheld" allow="autoplay; gamepad; fullscreen" hidden></iframe>
   <p id="announcement" class="visually-hidden" role="status" aria-live="polite"></p>
 

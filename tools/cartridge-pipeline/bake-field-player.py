@@ -124,7 +124,7 @@ def round_cap(name, x, z, depth, rings, materials):
     return obj
 
 
-def detach_shoulder(shell, side, name, gasket):
+def detach_shoulder(shell, side, name):
     outline = [(-1.29,.590),(-1.19,.594),(-1.02,.715),(-.825,.748),
                (-.754,.747),(-.737,.920),(-1.34,.920)]
     cutter = prism('Shoulder seam cutter', [(x * side, z) for x, z in outline], -.22, .22, (0,0,0))
@@ -140,7 +140,6 @@ def detach_shoulder(shell, side, name, gasket):
     bpy.context.view_layer.objects.active = cap
     bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
     cap.scale = (.991, .991, .985)
-    block('Shoulder spring mount', (.28, .20, .057), (-.974 * side, 0, .709), gasket, .012)
 
 
 shell = import_reconstruction(folder / 'shell-dense.glb', native_gltf=True)
@@ -249,8 +248,8 @@ cross = [(-arm,half),(-arm,arm),(-half,arm),(-half,-arm),(-arm,-arm),(-arm,-half
 prism('Fixed direction well', [(x*1.093,z*1.093) for x,z in cross], -.014, .010,
       (PAD[0],-.130,PAD[1]), gasket, .008)
 prism('FieldDPad', cross, -.027, .015, (PAD[0],-.160,PAD[1]), rubber, .013)
-detach_shoulder(shell, 1, 'FieldL', gasket)
-detach_shoulder(shell, -1, 'FieldR', gasket)
+detach_shoulder(shell, 1, 'FieldL')
+detach_shoulder(shell, -1, 'FieldR')
 
 for name, label, x in (('FieldSelect','SELECT',-.171),('FieldStart','START',.171)):
     block('Fixed system button well', (.127,.019,.051), (x,-.131,-.495), gasket,.012)

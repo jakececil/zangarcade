@@ -8,6 +8,10 @@ On a controller, the sticks move and look, L2 / LT toggles sprint, Cross / A int
 
 The shared ZANG Field Player uses a Hunyuan3D-2mv shell baked from six original reference views. Its screen opening aligns with the emulator’s 3:2 viewport, and the cartridge seats at 1.28× its original held scale. The D-pad, A/B, shoulders, Start, and Select follow inputs accepted by the emulator. The player samples the left and right edges of the live GBA image to light the controls. During play the runtime reuses the still room view while it redraws the handheld. See [the build notes](../docs/cartridge-models.md#zang-field-player).
 
+In the apartment, approach the couch and press E, tap the interaction button, or press A / Cross. Drag or use the right stick to look around while seated. Watch TV zooms into the set, where you can paste a YouTube video link, load it, and use the player’s own controls. Back to couch or B / Circle closes the video. Stand up returns you to the same spot. The collection shelf is along the right wall.
+
+The couch and television use four-view Hunyuan3D-2mv meshes with Blender-baked surface art. `tools/cartridge-pipeline/bake-apartment-prop.py` exports the web models. The window is an illustration of the neighborhood at dusk.
+
 Discovered cartridges persist under `zang-arcade:<site-path>:museum-collection-v1`. Bring them to the living-room shelf and use **Box new cartridges**. Once stored, face an individual box and interact to pull it out and load its title into your portable selection. Earlier visitors keep their last selected cartridge, and a saved Kingfisher catch also preserves discovery. Undergrowth Advance uses a translucent amber shell with a visible board and contacts.
 
 ## The neighborhood

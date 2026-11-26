@@ -2,7 +2,8 @@ import * as THREE from './vendor/three.module.js';
 import { createFieldPlayerControls } from './field-player-controls.js?v=294a7615efd7';
 import { museumGeometry } from './museum-geometry.js?v=bd8b3560b9e4';
 import { arrivals, canWalkDistrict, cellAt, crossingPortal, levelAt } from './district-layout.js?v=c354d2963689';
-import { HOME, buildGuts, mazeWalls, roomProfile } from './guts.js?v=5261e0e93b27';
+import { HOME, buildGuts, mazeWalls, roomProfile } from './guts.js?v=apartment1';
+import { apartmentBlockers, seatEye, seatTarget, shelf, tvScreen } from './apartment.js?v=1';
 import { loadCartridgeAsset } from './cartridge-assets.js';
 import { createCartridgeDrums } from './cartridge-drums.js';
 import { createCartridgeSlots, pickCartridgePart } from './cartridge-slots.js?v=513bd344741e';
@@ -14,7 +15,7 @@ import { canWalkLandfill, landfillLevel, landfillProfile, serviceWindow, sortApp
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
 const SCREEN_CENTER = new THREE.Vector3(0, .08, .131);
-const FIELD_PLAYER_PATH = 'arcade/art/zang-field-player.glb?v=560f4f96a53f';
+const FIELD_PLAYER_PATH = 'arcade/art/zang-field-player.glb?v=5d155ffd8463';
 const CART_SCALE = 1.28;
 const CART_HOME = new THREE.Vector3(-1.53, 1.12, -.2);
 const POCKET = new THREE.Vector3(0, -1.42, -.92);
@@ -76,6 +77,9 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   const outsideFog = new THREE.Color('#a9b3a4');
   const lightSample = new THREE.Vector3(Infinity,Infinity,Infinity);
   let savedPose;
+  let walkPose;
+  let seatPose;
+  let tvFocused = false;
   let dockPromise;
   let renderedFrames = 0;
   let worldFrames = 0;
@@ -158,7 +162,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   const grain = texture('../art/materials/abs-grain.webp', 3);
   const wear = texture('../art/materials/shell-wear.webp', 2);
-  const guts = buildGuts({ games, box, plane, material, texture, paper });
+  const guts = buildGuts({ games, box, plane, material, texture, paper, requestRender });
   exhibit.add(guts.home, guts.maze);
   const wall = material('#617771', { map: guts.materialTile, bumpMap: guts.materialTile, bumpScale: .043, roughness: .79 });
   const plaster = material('#748174', { bumpMap: wear, bumpScale: .012, roughness: .94 });
@@ -377,10 +381,6 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   hallProps.vending.rotation.y = -Math.PI / 2;
   hallProps.cabinet.position.set(-4.18, .03, -6.24);
   hallProps.cabinet.rotation.y = -.21;
-  const homeProps = guts.props(guts.home);
-  homeProps.vending.visible = false;
-  homeProps.cabinet.position.set(3.1, 0, -2.47);
-  homeProps.cabinet.rotation.y = -.18;
   buildCabinetAlcove({ parent: museum.hall, texture, material, geometry: geometries, box, cylinder, x:-4.18, z:-6.96 });
   const exhibitLamps = new THREE.Group();
   exhibit.add(exhibitLamps);
@@ -398,13 +398,6 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   for (const light of [inspectionKey, inspectionFill, inspectionRim]) light.layers.set(2);
   camera.add(inspectionKey, inspectionKey.target, inspectionFill, inspectionRim, inspectionRim.target);
 
-  const homeObstacles = [
-    { x: -2.38, z: .72, w: 2.14, d: .82 },
-    { x: 2.01, z: .34, w: 1.07, d: .73 },
-    { x: 0, z: -3.45, w: 4.78, d: .55 },
-    { x: 3.1, z: -2.47, w: .92, d: .92 }
-  ];
-
   function setCollection(discovered, shelved) {
     found = discovered;
     boxed = shelved;
@@ -418,9 +411,10 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (docked || transitioning) return;
     if (currentGame) exitDoor = museum.doors.find(door => currentGame === HOME ? door.id === 'home' : door.game === currentGame);
     currentGame = game || undefined;
+    if (game === HOME) guts.apartment.load();
     if ((!game || game === HOME) && !cabinetLoading) {
       // Leave the simple prop in place on a network error, then retry on return.
-      cabinetLoading = mountCabinet([hallProps.cabinet, homeProps.cabinet], requestRender)
+      cabinetLoading = mountCabinet([hallProps.cabinet], requestRender)
         .catch(() => { cabinetLoading = undefined; });
     }
     const sortingYard = game?.id === 'landfill';
@@ -440,7 +434,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     scene.fog.far = game ? Math.max(16, profile.depth * 1.54) : 15;
     museum.hall.visible = !game;
     exhibit.visible = Boolean(game);
-    architecture.visible = exhibitLamps.visible = !sortingYard;
+    architecture.visible = !sortingYard;
+    exhibitLamps.visible = !sortingYard && game !== HOME;
     guts.home.visible = game === HOME;
     guts.maze.visible = game?.id === 'zonk';
     museum.installation.visible = Boolean(game && game !== HOME && !sortingYard);
@@ -524,7 +519,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       id:door.id, point:door.point, label:door.game ? `Enter ${door.game.title}` : 'Enter apartment'
     }));
     if (currentGame === HOME) {
-      if (canStore) candidates.push({ id: 'store', point: new THREE.Vector3(0, 1.4, -3.01), label: 'Box new cartridges' });
+      candidates.push({ id: 'sit', point: new THREE.Vector3(...seatTarget), label: 'Sit on the couch' });
+      if (canStore) candidates.push({ id: 'store', point: new THREE.Vector3(shelf.x - .43, 1.4, shelf.z), label: 'Box new cartridges' });
       for (const [id, { point }] of guts.boxes) {
         if (boxed.has(id)) candidates.push({ id: `box:${id}`, point, label: `Pull ${games.find(game => game.id === id).title} from the shelf` });
       }
@@ -554,7 +550,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (!currentGame) return canWalkDistrict(x,z);
     if (Math.abs(x) >= profile.width / 2 - .29 || Math.abs(z) >= profile.depth / 2 - .33) return false;
     if (currentGame.id === 'landfill' && !canWalkLandfill(x, z)) return false;
-    const blockers = currentGame === HOME ? homeObstacles : currentGame.id === 'zonk' ? mazeWalls : [];
+    const blockers = currentGame === HOME ? apartmentBlockers : currentGame.id === 'zonk' ? mazeWalls : [];
     if (pedestal.visible && Math.abs(x - CART_HOME.x) < .55 && Math.abs(z - CART_HOME.z) < .49) return false;
     return !blockers.some(item => Math.abs(x - item.x) < item.w / 2 + .21 && Math.abs(z - item.z) < item.d / 2 + .21);
   }
@@ -704,7 +700,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     scene.background = background;
     renderedFrames++;
     if (docked) emitScreenRect();
-    if ((!docked && !inspecting) || tweens.size || drumDelay === 0 || spinning || controlsMoving) requestRender();
+    if ((!docked && !inspecting && !walkPose) || tweens.size || drumDelay === 0 || spinning || controlsMoving) requestRender();
     else if (Number.isFinite(drumDelay)) inspectionShuffleTimer = window.setTimeout(requestRender, drumDelay);
   }
 
@@ -905,6 +901,55 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (inputEnabled && !transitioning && !docked && target) onInteract(target.id);
   }
 
+  function televisionPose() {
+    const { width, height } = canvas.getBoundingClientRect();
+    const screenWidth = Math.max(1, Math.min(width - 24, 730, height * .66 * 16 / 9));
+    const distance = tvScreen.width * height / (2 * screenWidth * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+    return { position: new THREE.Vector3(tvScreen.x, tvScreen.y, tvScreen.z + distance), yaw: 0, pitch: 0, screenWidth };
+  }
+
+  async function moveView(next, duration) {
+    const from = camera.position.clone();
+    const startYaw = yaw;
+    const angle = THREE.MathUtils.euclideanModulo(next.yaw - yaw + Math.PI, 2 * Math.PI) - Math.PI;
+    const startPitch = pitch;
+    transitioning = true;
+    await tween(duration, amount => {
+      camera.position.lerpVectors(from, next.position, amount);
+      yaw = startYaw + angle * amount;
+      pitch = THREE.MathUtils.lerp(startPitch, next.pitch, amount);
+    });
+    transitioning = false;
+    requestRender();
+  }
+
+  async function sit() {
+    walkPose = { position: camera.position.clone(), yaw, pitch };
+    seatPose = { position: new THREE.Vector3(...seatEye), yaw: THREE.MathUtils.degToRad(8), pitch: .035 };
+    inputEnabled = false;
+    clearInput();
+    releaseMouseLook();
+    await moveView(seatPose, 660);
+  }
+
+  async function watchTV(on) {
+    if (on) Object.assign(seatPose, { yaw, pitch });
+    guts.apartment.setTV(on);
+    tvFocused = on;
+    await moveView(on ? televisionPose() : seatPose, 490);
+    if (on) {
+      camera.position.copy(televisionPose().position);
+      requestRender();
+    }
+  }
+
+  async function stand() {
+    await moveView(walkPose, 590);
+    walkPose = undefined;
+    inputEnabled = true;
+    requestRender();
+  }
+
   async function pullBox(id) {
     const entry = guts.boxes.get(id);
     if (!entry?.model.visible || transitioning || docked) return;
@@ -925,7 +970,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   function look(x, y) {
-    if (!inputEnabled || docked || transitioning) return;
+    const seated = walkPose && !tvFocused;
+    if ((!inputEnabled && !seated) || docked || transitioning) return;
     if (inspecting) {
       inspectedModel.rotation.y += x * .012;
       inspectedModel.rotation.x = THREE.MathUtils.clamp(inspectedModel.rotation.x + y * .012, -1.2, 1.2);
@@ -934,6 +980,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     }
     yaw -= x * .003;
     pitch = THREE.MathUtils.clamp(pitch - y * .003, -1.05, .8);
+    if (seated) yaw = THREE.MathUtils.clamp(THREE.MathUtils.euclideanModulo(yaw + Math.PI, Math.PI * 2) - Math.PI, -1.7, 1.7);
     updateCamera();
     requestRender();
   }
@@ -947,6 +994,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (frozenWorld) frozenWorld.valid = false;
     if (docked) handheld.position.copy(dockPose());
     if (inspecting) inspectionPose();
+    if (tvFocused && !transitioning) camera.position.copy(televisionPose().position);
     requestRender();
   }
 
@@ -989,7 +1037,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   function keyup(event) { keys.delete(event.code); }
   let drag;
   function pointerdown(event) {
-    if (!inputEnabled || docked || transitioning || event.button !== 0 || document.pointerLockElement === canvas) return;
+    if ((!inputEnabled && (!walkPose || tvFocused)) || docked || transitioning || event.button !== 0 || document.pointerLockElement === canvas) return;
     drag = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
     if (inspectionSlots && event.pointerType === 'touch') drag.lever = inspectionSlots.isLever(hitInspection(event));
     if (inspectionDrums) {
@@ -1060,6 +1108,9 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     setCollection,
     setRun(enabled) { run = Boolean(enabled); },
     pullBox,
+    sit,
+    stand,
+    watchTV,
     inspectCartridge,
     turnCartridge,
     turnInspectionBand(index) {

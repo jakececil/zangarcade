@@ -1,5 +1,5 @@
-import { createRoom } from './room.js?v=c277fe133984';
-import { HOME } from './guts.js?v=5261e0e93b27';
+import { createRoom } from './room.js?v=apartment1';
+import { HOME } from './guts.js?v=apartment1';
 import { HANDHELD_RETURN_BUTTON, stick, watchGamepad } from './gamepads.js?v=af46a223244a';
 
 const canvas = document.getElementById('room');
@@ -40,6 +40,13 @@ const runButton = document.getElementById('run-toggle');
 const locationName = document.getElementById('location-name');
 const shelfLink = document.getElementById('game-shelf');
 const atlasLink = document.getElementById('landfill-atlas');
+const apartmentHud = document.getElementById('apartment-hud');
+const watchButton = document.getElementById('watch-tv');
+const closeTVButton = document.getElementById('close-tv');
+const standButton = document.getElementById('stand-up');
+const tvForm = document.getElementById('tv-form');
+const tvURL = document.getElementById('tv-url');
+const television = document.getElementById('apartment-tv');
 const base = new URL('../', location.href);
 const progressKey = `zang-arcade:${base.pathname}:room:kingfisher-v1`;
 const visitKey = `zang-arcade:${base.pathname}:museum-visit-v1`;
@@ -83,6 +90,10 @@ function setMode(next) {
   roomHud.hidden = next !== 'room';
   inspectHud.hidden = next !== 'inspect';
   playHud.hidden = !['docking', 'play', 'saving'].includes(next);
+  apartmentHud.hidden = next !== 'seated' && next !== 'tv';
+  watchButton.hidden = next !== 'seated';
+  standButton.hidden = next !== 'seated';
+  closeTVButton.hidden = tvForm.hidden = next !== 'tv';
   updateInteraction();
 }
 
@@ -90,7 +101,7 @@ function updateProgress() {
   atlasLink.hidden = exhibit?.id !== 'landfill';
   const carried = cartridge ? `${cartridge.title} ${cartState === 'inserted' ? 'seated' : 'in hand'}. ` : '';
   if (!exhibit) progressLabel.textContent = carried.trimEnd();
-  else if (exhibit === HOME) progressLabel.textContent = discovered.size > shelved.size ? 'Approach the shelf to box your new cartridges.' : 'Bring found cartridges here to fill the shelf.';
+  else if (exhibit === HOME) progressLabel.textContent = discovered.size > shelved.size ? 'Box your new cartridges at the shelf on the right.' : 'Sit on the couch or browse your shelf on the right.';
   else if (exhibit.id === 'kingfisher') {
     progressLabel.textContent = carried + (progress.open ? 'The floor grate is open.' : `${progress.catches} / 10 fish saved. Catch ten to open the floor grate.`);
   } else if (exhibit.id === 'landfill') {
@@ -132,7 +143,7 @@ function playerRoom() {
 
 function updateInteraction() {
   interactButton.disabled = mode !== 'room' || !target || inventoryDialog.open || directoryDialog.open;
-  interactButton.textContent = target?.label || (!exhibit ? 'Approach a doorway' : exhibit === HOME ? 'Approach the shelf' : discovered.has(exhibit.id) ? 'Explore the exhibit' : 'Approach the cartridge');
+  interactButton.textContent = target?.label || (!exhibit ? 'Approach a doorway' : exhibit === HOME ? 'Approach the couch or shelf' : discovered.has(exhibit.id) ? 'Explore the exhibit' : 'Approach the cartridge');
   raiseButton.disabled = !cartridge || mode !== 'room';
   const inspectable = inspectionChoice();
   inspectButton.hidden = !inspectable;
@@ -349,6 +360,12 @@ async function interact(id) {
   if (id.startsWith('door:')) changeExhibit(games.get(id.slice(5)));
   else if (id === 'home') changeExhibit(HOME);
   else if (id === 'exit') changeExhibit(undefined);
+  else if (id === 'sit') {
+    setMode('seating');
+    await room.sit();
+    setMode('seated');
+    watchButton.focus({ preventScroll: true });
+  }
   else if (id === 'inspect-cart') openInspection(exhibit);
   else if (id === 'cart' && exhibit && !discovered.has(exhibit.id)) {
     unlockAudio();
@@ -378,6 +395,62 @@ async function interact(id) {
     announcement.textContent = progressLabel.textContent;
   }
 }
+
+async function openTV() {
+  if (mode !== 'seated') return;
+  setMode('seating');
+  await room.watchTV(true);
+  setMode('tv');
+  // Leave the touch keyboard closed until the viewer taps the link field.
+  closeTVButton.focus({ preventScroll: true });
+}
+
+async function closeTV() {
+  if (mode !== 'tv') return;
+  television.hidden = true;
+  television.removeAttribute('src');
+  setMode('seating');
+  await room.watchTV(false);
+  setMode('seated');
+  watchButton.focus({ preventScroll: true });
+}
+
+function youtubeID(link) {
+  try {
+    const url = new URL(link.trim());
+    if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
+    const [, route, part] = url.pathname.split('/');
+    let id;
+    if (url.hostname === 'youtu.be') id = route;
+    else if (['youtube.com', 'www.youtube.com', 'm.youtube.com', 'www.youtube-nocookie.com'].includes(url.hostname)) {
+      if (route === 'watch') id = url.searchParams.get('v');
+      else if (['embed', 'shorts', 'live'].includes(route)) id = part;
+    }
+    return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+  } catch { return null; }
+}
+
+watchButton.addEventListener('click', openTV);
+closeTVButton.addEventListener('click', closeTV);
+standButton.addEventListener('click', async () => {
+  if (mode !== 'seated') return;
+  setMode('seating');
+  await room.stand();
+  setMode('room');
+  canvas.focus({ preventScroll: true });
+});
+tvForm.addEventListener('submit', event => {
+  event.preventDefault();
+  const id = youtubeID(tvURL.value);
+  if (!id) {
+    tvURL.setCustomValidity('Use a YouTube video or share link.');
+    tvURL.reportValidity();
+    return;
+  }
+  television.src = `https://www.youtube-nocookie.com/embed/${id}?playsinline=1`;
+  television.hidden = false;
+});
+tvURL.addEventListener('input', () => tvURL.setCustomValidity(''));
 
 function releaseInputs() {
   for (const button of held.values()) {
@@ -510,6 +583,12 @@ shelfLink.addEventListener('click', event => {
   }
 });
 window.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && (mode === 'seated' || mode === 'tv')) {
+    event.preventDefault();
+    if (mode === 'tv') closeTV();
+    else standButton.click();
+    return;
+  }
   if (event.key === 'Escape' && mode === 'inspect') { event.preventDefault(); exitInspection(); return; }
   if (event.key === 'Escape' && mode === 'play') { event.preventDefault(); lowerHandheld(); }
   if (event.repeat || mode !== 'room' || event.target === directory) return;
@@ -527,6 +606,15 @@ watchGamepad((pad, down, edge, delta) => {
   if (mode === 'play') {
     if (edge(HANDHELD_RETURN_BUTTON)) lowerHandheld();
     else if (gameReady && !gameRunning && (edge(0) || edge(9))) send('start');
+    return;
+  }
+  if (mode === 'seated' || mode === 'tv') {
+    const [x, y] = stick(pad.axes[2], pad.axes[3]);
+    if (mode === 'seated' && (x || y)) room.look(x * 680 * delta, y * 540 * delta);
+    if (edge(1)) {
+      if (mode === 'tv') closeTV();
+      else standButton.click();
+    } else if (mode === 'seated' && edge(0)) openTV();
     return;
   }
   if (directoryDialog.open) {
