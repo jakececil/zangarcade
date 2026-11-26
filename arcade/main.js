@@ -1,4 +1,4 @@
-import { createRoom } from './room.js?v=8769cc7678b7';
+import { createRoom } from './room.js?v=c277fe133984';
 import { HOME } from './guts.js?v=5261e0e93b27';
 import { HANDHELD_RETURN_BUTTON, stick, watchGamepad } from './gamepads.js?v=af46a223244a';
 
@@ -78,6 +78,7 @@ function warn(message) {
 
 function setMode(next) {
   mode = next;
+  if (next === 'docking' || next === 'saving') room?.resetHandheldFeedback();
   document.body.dataset.mode = next;
   roomHud.hidden = next !== 'room';
   inspectHud.hidden = next !== 'inspect';
@@ -419,6 +420,10 @@ window.addEventListener('message', event => {
   if (message.save && playerGame.id === 'kingfisher') acceptSave(message.save);
   if (message.event === 'ready') { gameReady = true; updatePlayerLabel(); }
   if (message.event === 'running') { gameRunning = true; updatePlayerLabel(); }
+  if (mode === 'play' && message.event === 'controls' &&
+      Number.isInteger(message.mask) && message.mask >= 0 && message.mask <= 0xfff) room.setHandheldControls(message.mask);
+  if (mode === 'play' && message.event === 'display-light' && Array.isArray(message.edges) && message.edges.length === 6 &&
+      message.edges.every(value => Number.isInteger(value) && value >= 0 && value <= 255)) room.setDisplayLight(message.edges);
   if (message.event === 'request-lower') lowerHandheld();
   if (message.event === 'lowered' && mode === 'saving') returnToRoom(message.error || '');
   if (message.event === 'error') playerState.textContent = message.error || 'The cartridge could not start. Lower the handheld to return.';
@@ -436,9 +441,20 @@ enterButton.addEventListener('click', () => {
   unlockAudio();
   enterMuseum();
 });
-interactButton.addEventListener('click', () => {
+function interactAtTarget() {
   room.interact();
   if (mode === 'room') canvas.focus({ preventScroll: true });
+}
+let lastTouchInteraction = -Infinity;
+interactButton.addEventListener('pointerup', event => {
+  if (event.pointerType !== 'touch' || !event.isPrimary || interactButton.disabled) return;
+  if (!interactButton.contains(document.elementFromPoint(event.clientX, event.clientY))) return;
+  lastTouchInteraction = event.timeStamp;
+  interactAtTarget();
+});
+interactButton.addEventListener('click', event => {
+  if (event.detail && event.timeStamp - lastTouchInteraction < 400) return;
+  interactAtTarget();
 });
 lowerButton.addEventListener('click', lowerHandheld);
 directory.addEventListener('change', () => changeExhibit(directory.value === HOME.id ? HOME : games.get(directory.value)));

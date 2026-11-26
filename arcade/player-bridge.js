@@ -11,6 +11,10 @@ export function createPlayerBridge(player, game = "kingfisher", room = "kingfish
   let reading = false;
   let previousSave = "";
   const touchPresses = new Map();
+  let observedManager;
+  let heldControls = 0;
+  let displayEdges = [];
+  let displayFeed;
 
   function post(event, data = {}) {
     if (window.parent === window) return;
@@ -19,6 +23,96 @@ export function createPlayerBridge(player, game = "kingfisher", room = "kingfish
 
   function snapshot() {
     return parseKingfisherSave(emulator.gameManager.getSaveFile());
+  }
+
+  function observeHandheld() {
+    const manager = emulator.gameManager;
+    if (manager === observedManager) return;
+    observedManager = manager;
+    const simulateInput = manager.simulateInput;
+    manager.simulateInput = function (port, input, value) {
+      simulateInput.call(this, port, input, value);
+      if (port !== 0 || !INPUTS.has(input)) return;
+      const bit = 1 << input;
+      const mask = value && playing ? heldControls | bit : heldControls & ~bit;
+      if (mask === heldControls) return;
+      heldControls = mask;
+      post("controls", { mask });
+    };
+  }
+
+  function startDisplayFeed() {
+    if (displayFeed || document.hidden || !emulator.canvas?.captureStream) return;
+    let stream;
+    try {
+      // A presentation capture can see the frame even when WebGL clears its
+      // drawing buffer after presenting it. This stream stays in the iframe.
+      stream = emulator.canvas.captureStream(8);
+    } catch { return; }
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.srcObject = stream;
+    const sample = document.createElement("canvas");
+    sample.width = 12;
+    sample.height = 8;
+    const sampler = sample.getContext("2d", { willReadFrequently: true });
+    const feed = { video, stream };
+    displayFeed = feed;
+    if (!sampler) { stopDisplayFeed(); return; }
+
+    function readDisplay() {
+      if (displayFeed !== feed || video.readyState < 2) return;
+      try {
+        sampler.drawImage(video, 0, 0, 12, 8);
+        const rgba = sampler.getImageData(0, 0, 12, 8).data;
+        const sums = [0, 0, 0, 0, 0, 0];
+        for (let row = 1; row < 7; row++) {
+          for (let column = 0; column < 3; column++) {
+            const left = (row * 12 + column) * 4;
+            const right = (row * 12 + 11 - column) * 4;
+            for (let channel = 0; channel < 3; channel++) {
+              sums[channel] += rgba[left + channel];
+              sums[3 + channel] += rgba[right + channel];
+            }
+          }
+        }
+        const edges = sums.map((sum, channel) => {
+          const value = sum / 18;
+          return Math.round(value * .72 + (displayEdges[channel] ?? value) * .28);
+        });
+        if (edges.some((value, channel) => Math.abs(value - (displayEdges[channel] ?? -255)) >= 7)) {
+          displayEdges = edges;
+          post("display-light", { edges });
+        }
+      } catch {
+        stopDisplayFeed();
+      }
+    }
+
+    video.play().then(() => {
+      if (displayFeed !== feed) return;
+      if (video.requestVideoFrameCallback) {
+        const next = () => {
+          readDisplay();
+          if (displayFeed === feed) feed.frame = video.requestVideoFrameCallback(next);
+        };
+        feed.frame = video.requestVideoFrameCallback(next);
+      } else {
+        feed.timer = setInterval(readDisplay, 125);
+      }
+    }).catch(() => { if (displayFeed === feed) stopDisplayFeed(); });
+  }
+
+  function stopDisplayFeed() {
+    if (!displayFeed) return;
+    const { video, stream, frame, timer } = displayFeed;
+    displayFeed = undefined;
+    if (frame !== undefined) video.cancelVideoFrameCallback(frame);
+    if (timer !== undefined) clearInterval(timer);
+    stream.getTracks().forEach(track => track.stop());
+    video.srcObject = null;
+    displayEdges = [];
   }
 
   function publishSave(save) {
@@ -102,6 +196,7 @@ export function createPlayerBridge(player, game = "kingfisher", room = "kingfish
     if (lowering) return;
     lowering = true;
     playing = false;
+    stopDisplayFeed();
     let save = { valid: false };
     let failure;
     try {
@@ -133,6 +228,7 @@ export function createPlayerBridge(player, game = "kingfisher", room = "kingfish
       emulator.play();
       emulator.setVolume(emulator.muted ? 0 : emulator.volume);
       playing = true;
+      startDisplayFeed();
       player.focus({ preventScroll: true });
     } else if (command.action === "input" && playing && !lowering && INPUTS.has(command.input) && [0, 1].includes(command.value)) {
       touchInput(command.input, command.value);
@@ -140,7 +236,12 @@ export function createPlayerBridge(player, game = "kingfisher", room = "kingfish
   });
 
   window.addEventListener("blur", releaseInputs);
-  document.addEventListener("visibilitychange", () => { if (document.hidden) releaseInputs(); });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      releaseInputs();
+      stopDisplayFeed();
+    } else if (playing) startDisplayFeed();
+  });
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
     event.preventDefault();
@@ -150,7 +251,10 @@ export function createPlayerBridge(player, game = "kingfisher", room = "kingfish
   }, true);
 
   const timer = setInterval(() => { if (playing) readSave(); }, 2000);
-  window.addEventListener("pagehide", () => clearInterval(timer), { once: true });
+  window.addEventListener("pagehide", () => {
+    clearInterval(timer);
+    stopDisplayFeed();
+  }, { once: true });
 
   return {
     get acceptsGamepad() { return playing && !lowering; },
@@ -174,6 +278,8 @@ export function createPlayerBridge(player, game = "kingfisher", room = "kingfish
     },
     running() {
       playing = true;
+      observeHandheld();
+      startDisplayFeed();
       // The pinned native exit handler restarts the core and flushes again before unmounting.
       // Keep this room's already-persisted battery intact while its iframe is destroyed.
       emulator.functions.exit = [() => {

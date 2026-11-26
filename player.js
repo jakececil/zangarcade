@@ -430,7 +430,7 @@ async function loadCartridge() {
   document.getElementById("core-name").hidden = false;
   controls.hidden = false;
   if (roomMode) {
-    const { createPlayerBridge } = await import("./arcade/player-bridge.js?v=eaaaa2ba45de");
+    const { createPlayerBridge } = await import("./arcade/player-bridge.js?v=0ee07ab3ad6e");
     roomBridge = createPlayerBridge(player, game.id, roomId);
     document.body.classList.add("room-player");
     const style = document.createElement("link");

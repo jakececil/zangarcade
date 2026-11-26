@@ -10,7 +10,7 @@ Use the same four-view Hunyuan3D-2mv reconstruction with front, left, rear, and 
 blender -b --factory-startup --python-exit-code 1 --python tools/cartridge-pipeline/bake-field-player.py -- build/zang-field-player
 ```
 
-The bake decimates the generated shell, applies the projection atlas and roughness/metallic zones, then cuts the display aperture and cartridge port. It exports an editable `zang-field-player.blend` and an optimized GLB. Publish the GLB to `arcade/art/zang-field-player.glb`. The runtime and model share an aperture of 1.44 × 0.96 centered at Y-up 0.08. Check the insertion animation and browser viewport alignment after editing the bezel.
+The bake decimates the generated shell, applies the projection atlas and roughness/metallic zones, then cuts the display aperture and cartridge port. It replaces the fused D-pad and A/B relief with separate caps and sockets, detaches the reconstructed shoulders, and adds Start and Select. The runtime animation targets the seven GLB nodes named `FieldDPad`, `FieldA`, `FieldB`, `FieldL`, `FieldR`, `FieldSelect`, and `FieldStart`. The bake exports an editable `zang-field-player.blend` and an optimized GLB. Publish the GLB to `arcade/art/zang-field-player.glb`. The runtime and model share an aperture of 1.44 × 0.96 centered at Y-up 0.08. Check the insertion animation and browser viewport alignment after editing the bezel.
 
 ## Art masters
 

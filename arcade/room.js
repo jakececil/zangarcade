@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.module.js';
+import { createFieldPlayerControls } from './field-player-controls.js?v=294a7615efd7';
 import { museumGeometry } from './museum-geometry.js?v=bd8b3560b9e4';
 import { arrivals, canWalkDistrict, cellAt, crossingPortal, levelAt } from './district-layout.js?v=c354d2963689';
 import { HOME, buildGuts, mazeWalls, roomProfile } from './guts.js?v=5261e0e93b27';
@@ -13,8 +14,8 @@ import { canWalkLandfill, landfillLevel, landfillProfile, serviceWindow, sortApp
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
 const SCREEN_CENTER = new THREE.Vector3(0, .08, .131);
-const FIELD_PLAYER_PATH = 'arcade/art/zang-field-player.glb?v=be8cf49f86ab';
-const CART_SCALE = 1.22;
+const FIELD_PLAYER_PATH = 'arcade/art/zang-field-player.glb?v=560f4f96a53f';
+const CART_SCALE = 1.28;
 const CART_HOME = new THREE.Vector3(-1.53, 1.12, -.2);
 const POCKET = new THREE.Vector3(0, -1.42, -.92);
 const SLOT = new THREE.Vector3(0, .744, -.008);
@@ -77,6 +78,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   let savedPose;
   let dockPromise;
   let renderedFrames = 0;
+  let worldFrames = 0;
+  let frozenWorld;
   let lastScreenRect = null;
   let inspectionReflections;
   let externalMove = { x: 0, z: 0 };
@@ -240,11 +243,21 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   camera.add(handheldLight, handheldLight.target);
   let fieldPlayer;
   let fieldPlayerLoad;
+  let fieldControls;
+  let screenEdges = [];
+  const displayLights = [-1, 1].map(side => {
+    const light = new THREE.PointLight('#ffffff', 0, .73, 2);
+    light.position.set(side * .672, .115, .236);
+    light.layers.set(1);
+    handheld.add(light);
+    return light;
+  });
 
   function preloadFieldPlayer() {
     return fieldPlayerLoad ??= loadCartridgeAsset(FIELD_PLAYER_PATH).then(asset => {
       if (disposed) return;
       fieldPlayer = asset.clone(true);
+      fieldControls = createFieldPlayerControls(fieldPlayer);
       fieldPlayer.visible = false;
       fieldPlayer.traverse(object => object.layers.set(1));
       handheld.add(fieldPlayer);
@@ -580,7 +593,9 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     });
     const left = Math.min(...points.map(point => point.x));
     const top = Math.min(...points.map(point => point.y));
-    lastScreenRect = { left, top, width: Math.max(...points.map(point => point.x)) - left, height: Math.max(...points.map(point => point.y)) - top };
+    const rect = { left, top, width: Math.max(...points.map(point => point.x)) - left, height: Math.max(...points.map(point => point.y)) - top };
+    if (lastScreenRect && Object.keys(rect).every(key => Math.abs(rect[key] - lastScreenRect[key]) < .1)) return;
+    lastScreenRect = rect;
     onScreenRect(lastScreenRect);
   }
 
@@ -598,6 +613,41 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   function requestRender() {
     if (!disposed && !document.hidden && !frameRequest) frameRequest = requestAnimationFrame(renderFrame);
+  }
+
+  function renderWorld(sortingYard) {
+    renderer.shadowMap.enabled = sortingYard;
+    if (!docked) {
+      if (frozenWorld) frozenWorld.valid = false;
+      renderer.render(scene, camera);
+      worldFrames++;
+      return;
+    }
+    // Reuse the room image while the camera is held still. Only the handheld
+    // and its local lighting need a new 3D render during gameplay.
+    if (!frozenWorld) {
+      const target = new THREE.WebGLRenderTarget(1, 1, {
+        type: renderer.extensions.has('EXT_color_buffer_float') ? THREE.HalfFloatType : THREE.UnsignedByteType
+      });
+      const geometry = new THREE.PlaneGeometry(2, 2);
+      const material = new THREE.MeshBasicMaterial({ map: target.texture, depthTest: false, depthWrite: false });
+      const stillScene = new THREE.Scene();
+      stillScene.add(new THREE.Mesh(geometry, material));
+      const stillCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, .1, 2);
+      stillCamera.position.z = 1;
+      frozenWorld = { target, geometry, material, scene: stillScene, camera: stillCamera, valid: false };
+    }
+    if (!frozenWorld.valid) {
+      const dimensions = renderer.getDrawingBufferSize(new THREE.Vector2());
+      frozenWorld.target.setSize(dimensions.x, dimensions.y);
+      renderer.setRenderTarget(frozenWorld.target);
+      renderer.clear();
+      renderer.render(scene, camera);
+      renderer.setRenderTarget(null);
+      worldFrames++;
+      frozenWorld.valid = true;
+    }
+    renderer.render(frozenWorld.scene, frozenWorld.camera);
   }
 
   function renderFrame(time) {
@@ -619,6 +669,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     for (const tween of tweens) tween.update(time);
     updateTarget();
     museum.updateFish(time);
+    const controlsMoving = handheld.visible && fieldPlayer?.visible &&
+      fieldControls.update(delta, reduceMotion.matches);
     if (!currentGame && lightSample.distanceToSquared(camera.position) > .52) {
       lightSample.copy(camera.position);
       const closest = [...museum.lights].sort((a,b) => a.position.distanceToSquared(lightSample)
@@ -633,8 +685,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (inspecting) {
       scene.background = INSPECTION_BACKGROUND;
     } else {
-      renderer.shadowMap.enabled = sortingYard;
-      renderer.render(scene, camera);
+      renderWorld(sortingYard);
       renderer.clearDepth();
       scene.background = null;
     }
@@ -653,7 +704,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     scene.background = background;
     renderedFrames++;
     if (docked) emitScreenRect();
-    if ((!docked && !inspecting) || tweens.size || drumDelay === 0 || spinning) requestRender();
+    if ((!docked && !inspecting) || tweens.size || drumDelay === 0 || spinning || controlsMoving) requestRender();
     else if (Number.isFinite(drumDelay)) inspectionShuffleTimer = window.setTimeout(requestRender, drumDelay);
   }
 
@@ -844,6 +895,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       grateLid.rotation.x = -amount * Math.PI * .47;
       grateLight.intensity = amount * 3.7;
       hatchGlow.material.emissiveIntensity = amount * .85;
+      if (frozenWorld) frozenWorld.valid = false;
     });
     updateTarget();
     requestRender();
@@ -892,6 +944,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     renderer.setSize(rect.width, rect.height, false);
     camera.aspect = rect.width / rect.height;
     camera.updateProjectionMatrix();
+    if (frozenWorld) frozenWorld.valid = false;
     if (docked) handheld.position.copy(dockPose());
     if (inspecting) inspectionPose();
     requestRender();
@@ -1022,10 +1075,33 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       requestRender();
     },
     toggleMouseLook,
-    setFishCount: museum.setFishCount,
+    setFishCount(count) {
+      museum.setFishCount(count);
+      if (frozenWorld) frozenWorld.valid = false;
+      requestRender();
+    },
     dock,
     undock,
     openGrate,
+    setHandheldControls(mask) {
+      fieldControls?.setPressed(mask);
+      requestRender();
+    },
+    setDisplayLight(edges) {
+      screenEdges = edges;
+      for (const [index, light] of displayLights.entries()) {
+        const offset = index * 3;
+        light.color.setRGB(edges[offset] / 255, edges[offset + 1] / 255, edges[offset + 2] / 255, THREE.SRGBColorSpace);
+        light.intensity = .091;
+      }
+      requestRender();
+    },
+    resetHandheldFeedback() {
+      fieldControls?.setPressed(0);
+      screenEdges = [];
+      for (const light of displayLights) light.intensity = 0;
+      requestRender();
+    },
     interact,
     resize,
     setInputEnabled(enabled) {
@@ -1047,7 +1123,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       const sortingYard = currentGame?.id === 'landfill' ? landfill : undefined;
       const lane = sortingYard?.signal(camera.position.x);
       const scenery = sortingYard?.scenery;
-      return { cartState, location: currentGame?.id || 'corridor', area, carried: carriedGame?.id, dimensions: currentGame ? [profile.width, profile.height, profile.depth] : null, docked, inputEnabled, grateOpen, transitioning, target, renderedFrames, screenRect: lastScreenRect, lane, scenery, camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw, pitch } };
+      const handheldFeedback = docked ? { controls: fieldControls?.readPose(), display: [...screenEdges] } : undefined;
+      return { cartState, location: currentGame?.id || 'corridor', area, carried: carriedGame?.id, dimensions: currentGame ? [profile.width, profile.height, profile.depth] : null, docked, inputEnabled, grateOpen, transitioning, target, renderedFrames, worldFrames, screenRect: lastScreenRect, handheldFeedback, lane, scenery, camera: { x: camera.position.x, y: camera.position.y, z: camera.position.z, yaw, pitch } };
     },
     dispose() {
       disposed = true;
@@ -1077,6 +1154,9 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       for (const loaded of textures.values()) loaded.dispose();
       inspectionKey.shadow.dispose();
       inspectionReflections?.dispose();
+      frozenWorld?.target.dispose();
+      frozenWorld?.geometry.dispose();
+      frozenWorld?.material.dispose();
       renderer.dispose();
     }
   };
