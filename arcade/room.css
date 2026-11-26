@@ -59,7 +59,7 @@ p { line-height: 1.5; }
 .reticle { position: fixed; left: 50%; top: 50%; width: 5px; height: 5px; border-radius: 50%; background: #edffcfba; box-shadow: 0 0 0 1px #10221799; pointer-events: none; }
 .walk-controls { position: fixed; inset: auto 20px max(30px, env(safe-area-inset-bottom)); display: flex; align-items: end; justify-content: center; gap: 22px; pointer-events: none; }
 .interaction { min-width: 235px; max-width: 100%; padding: 14px 22px; background: #10271dee; border-color: #c4e9a88c; box-shadow: 0 6px 26px #0006; pointer-events: auto; }
-body[data-works] .interaction { visibility: hidden; }
+body[data-district] .interaction:disabled { visibility: hidden; }
 .walk-help { position: fixed; bottom: max(8px, env(safe-area-inset-bottom)); left: 0; width: 100%; text-align: center; font-size: 13px; color: #d5e8cfbb; text-shadow: 0 2px 3px #000; pointer-events: none; }
 .move-pad { display: none; width: 112px; height: 112px; border: 1px solid #b5dfbb59; border-radius: 50%; background: #122b2194; flex: 0 0 auto; touch-action: none; pointer-events: auto; }
 .pad-guide { position: absolute; inset: 13px; border: 1px solid #adcfac3d; border-radius: 50%; }

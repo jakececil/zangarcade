@@ -12,10 +12,10 @@ export async function mountCabinet(placeholders, requestRender) {
   requestRender();
 }
 
-export function buildCabinetAlcove({ parent, texture, material, geometry, box, cylinder }) {
+export function buildCabinetAlcove({ parent, texture, material, geometry, box, cylinder, x, z, yaw = 0 }) {
   const alcove = new THREE.Group();
-  alcove.position.set(2.963, 0, -2.07);
-  alcove.rotation.y = -Math.PI / 2;
+  alcove.position.set(x, 0, z);
+  alcove.rotation.y = yaw;
   parent.add(alcove);
 
   const cast = texture('./art/cast-charcoal.webp?v=f9ec788c4039');

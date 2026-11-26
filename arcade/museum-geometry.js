@@ -1,43 +1,14 @@
 import * as THREE from './vendor/three.module.js';
-import { buildMuseumWorks, worksPlan } from './museum-works.js?v=d1bb999ea3de';
-
-export const BAY_PITCH = 4;
-export const HALL_WIDTH = 6.3;
-export const ENTRY_Z = 3;
+import { buildDistrict } from './district-architecture.js?v=4f0198d782a4';
 
 export function museumGeometry({ games, box, plane, material, texture, paper, geometry, requestRender }) {
   const hall = new THREE.Group();
   const installation = new THREE.Group();
-  const length = Math.max(12, Math.ceil(games.length / 2) * BAY_PITCH + 6);
-  const corridor = { x0:-HALL_WIDTH/2, x1:HALL_WIDTH/2, z0:ENTRY_Z+2-length, z1:ENTRY_Z+2, h:3.4 };
-  const plan = worksPlan(corridor);
-  const hallGrain = texture('./art/guts-enamel.webp', 7);
-  hallGrain.repeat.y = 1.35;
-  const wall = material('#505e54', { map: hallGrain, bumpMap: hallGrain, bumpScale: .052, roughness: .86 });
   const metal = material('#171c21', { metalness: .62, roughness: .48 });
-  const stone = material('#423738', { roughness: .9 });
   const brass = material('#9c7550', { metalness: .57, roughness: .52 });
   const lamp = material('#ffcb84', { emissive: '#ffb358', emissiveIntensity: .65 });
   const black = material('#080d12');
   const light = material('#6bdacf', { emissive: '#277e88', emissiveIntensity: .6 });
-  const center = ENTRY_Z + 2 - length / 2;
-  box(HALL_WIDTH, .18, length, stone, hall, 0, -.12, center);
-  box(HALL_WIDTH, .14, length, wall, hall, 0, 3.42, center);
-  box(HALL_WIDTH, 3.4, .15, wall, hall, 0, 1.7, ENTRY_Z + 2);
-  box(HALL_WIDTH, 3.4, .15, wall, hall, 0, 1.7, ENTRY_Z + 2 - length);
-  const walkway = material('#514949', { bumpMap: hallGrain, bumpScale: .021, roughness: .84, metalness: .08 });
-  box(HALL_WIDTH, .047, length - .2, walkway, hall, 0, -.02, center);
-  box(.52, .05, length - .2, stone, hall, 0, -.014, center);
-  for (const side of [-1, 1]) {
-    for (const { start, end, sill } of plan.outerWalls(corridor, side < 0 ? 'x0' : 'x1')) {
-      box(.17, corridor.h-sill, end-start, wall, hall, side*HALL_WIDTH/2, (corridor.h+sill)/2, (start+end)/2);
-      if (!sill) box(.07, .23, end-start, metal, hall, side*3.016, .12, (start+end)/2);
-    }
-    box(.035, .04, length - .25, brass, hall, side * .29, .006, center);
-    box(.25, .045, length - .25, stone, hall, side * 2.83, .001, center);
-    box(.04, .035, length - .25, brass, hall, side * 2.7, .014, center);
-  }
-  hall.add(new THREE.HemisphereLight('#d5edeb', '#9e7d67', .65));
 
   const plaque = document.createElement('canvas');
   plaque.width = 768;
@@ -65,39 +36,8 @@ export function museumGeometry({ games, box, plane, material, texture, paper, ge
     return panel;
   }
 
-  const doors = games.map((game, index) => {
-    const side = index % 2 ? 1 : -1;
-    const z = -Math.floor(index / 2) * BAY_PITCH;
-    const frame = new THREE.Group();
-    hall.add(frame);
-    frame.position.set(side * 3.02, 0, z);
-    frame.rotation.y = -side * Math.PI / 2;
-    const accent = game.shellColors?.top || '#a6c7ad';
-    const edge = material(accent, { emissive: accent, emissiveIntensity: .19 });
-    box(2.18, 2.83, .18, metal, frame, 0, 1.42, 0);
-    box(1.84, 2.4, .07, black, frame, 0, 1.23, .12);
-    for (const x of [-.99, .99]) box(.055, 2.35, .06, edge, frame, x, 1.24, .15);
-    box(1.76, .065, .06, edge, frame, 0, .055, .15);
-    sign(game.title, `ROOM ${String(index + 1).padStart(2, '0')}`, accent, frame, 0, 2.64, .15);
-    const poster = plane(.63, .86, paper(texture('../' + game.cover)), frame, 0, 1.53, .165);
-    poster.name = game.id;
-    return { game, side, z, point: new THREE.Vector3(side * 2.93, 1.52, z) };
-  });
-  for (let index = 0; index < Math.ceil(games.length / 2) + 1; index++) {
-    const z = 2 - index * BAY_PITCH;
-    box(HALL_WIDTH, .28, .22, metal, hall, 0, 3.25, z);
-    box(1.56, .045, .12, lamp, hall, 0, 3.09, z);
-    box(6.19, .014, .038, metal, hall, 0, .019, z);
-    for (const side of [-1, 1]) {
-      if (!plan.hasCut(side, z)) box(.26, 3.1, .28, metal, hall, side * 2.99, 1.55, z);
-    }
-  }
-  const worksLights = buildMuseumWorks({ world:hall, plan, sign, box, material, texture, geometry });
-  sign('ZANG ARCADE MUSEUM', 'GAMES COLLECTION', '#e8f8a4', hall, 0, 2.15, ENTRY_Z + 1.9, Math.PI, 3.6);
-  box(2.13, 2.5, .14, black, hall, 0, 1.25, ENTRY_Z + 1.78);
-  box(1.95, .07, .08, lamp, hall, 0, .11, ENTRY_Z + 1.68);
-  sign('Living room', 'RETURN HOME', '#f1b981', hall, 0, 2.64, ENTRY_Z + 1.67, Math.PI);
-  sign('Exhibition corridor', 'ZANG ARCADE MUSEUM', '#e8f8a4', installation, 0, 2.63, 3.69, Math.PI, 2.5);
+  const district = buildDistrict({ world:hall, games, sign, box, plane, material, texture, paper, geometry });
+  sign('Back to ZANG', 'NEIGHBORHOOD EXIT', '#e8f8a4', installation, 0, 2.63, 3.69, Math.PI, 2.5);
   box(1.98, 2.41, .11, black, installation, 0, 1.22, 3.73);
   for (const x of [-1.015, 1.015]) box(.073, 2.35, .06, light, installation, x, 1.2, 3.653);
   box(1.95, .065, .04, light, installation, 0, .054, 3.64);
@@ -200,7 +140,7 @@ export function museumGeometry({ games, box, plane, material, texture, paper, ge
   }
 
   return {
-    hall, installation, doors, plan, worksLights, setExhibit,
+    hall, installation, ...district, setExhibit,
     setFishCount(count) {
       fish.forEach(({ specimen }, index) => { specimen.visible = index < count; });
       requestRender();

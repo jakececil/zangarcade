@@ -1,4 +1,4 @@
-import { emulatorGamepads, watchGamepad } from "./arcade/gamepads.js?v=9bc07178600a";
+import { emulatorGamepads, watchGamepad } from "./arcade/gamepads.js?v=1d5b5f6c507d";
 
 const player = document.getElementById("game");
 const viewport = document.getElementById("viewport");

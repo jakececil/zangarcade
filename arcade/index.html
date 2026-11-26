@@ -8,8 +8,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; connect-src 'self' blob:; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob: data:; frame-src 'self'">
   <title>Museum | ZANG Arcade</title>
   <link rel="icon" href="../art/brand/zang-favicon.png" type="image/png">
-  <link rel="stylesheet" href="./room.css?v=5e50cab455cc">
-  <script type="module" src="./main.js?v=f7a485361cd2"></script>
+  <link rel="stylesheet" href="./room.css?v=23c1e7d1bd84">
+  <script type="module" src="./main.js?v=a226b78f8319"></script>
 </head>
 <body data-mode="loading">
   <canvas id="room" tabindex="0" aria-label="ZANG Arcade Museum. Use arrow keys or WASD to walk, drag or press M to look, and E to interact."></canvas>
@@ -22,7 +22,7 @@
     <div class="entrance-panel">
       <p class="eyebrow">ZANG Arcade</p>
       <h1 id="entrance-title">Museum</h1>
-      <p>Find cartridges in the guts of ZANG. Play anywhere, then bring them home to the shelf.</p>
+      <p>Explore ZANG, collect cartridges, and bring them back to your apartment shelf.</p>
       <p class="instructions desktop-help">Walk with WASD or arrows. Hold Shift to run. Press I for inventory or H for the handheld.</p>
       <p class="instructions touch-help">Use the walking pad. Drag the room to look. Tap to interact.</p>
       <p class="instructions gamepad-help">Press Cross / A to enter. Left stick walks, right stick looks.</p>
@@ -34,7 +34,7 @@
   <main id="room-hud" hidden>
     <div class="museum-tools">
       <label class="visually-hidden" for="exhibit-select">Exhibit directory</label>
-      <select id="exhibit-select" aria-label="Exhibit directory"><option value="">Exhibition corridor</option></select>
+      <select id="exhibit-select" aria-label="Exhibit directory"><option value="">ZANG neighborhood</option></select>
       <button id="mouse-look" class="desktop-help" type="button" aria-pressed="false" title="Toggle mouse look (M)">Mouse look</button>
       <button id="inventory-toggle" type="button">Inventory <kbd>I</kbd></button>
       <button id="raise-handheld" type="button" disabled>Handheld <kbd>H</kbd></button>
@@ -50,14 +50,14 @@
       <button id="interact" class="interaction" type="button" disabled>Walk to the cartridge</button>
     </div>
     <div class="walk-help desktop-help">WASD / arrows move · Shift runs · M toggles mouse look · E interacts</div>
-    <div class="walk-help gamepad-help">Sticks move and look · L3 runs · Cross / A interacts · Triangle / Y raises the handheld · Create / View opens inventory</div>
+    <div class="walk-help gamepad-help">Sticks move and look · L2 / LT toggles sprint · Cross / A interacts · Triangle / Y raises the handheld · Create / View opens inventory</div>
   </main>
 
   <dialog id="inventory-dialog" aria-labelledby="inventory-title">
     <div class="inventory-top"><div><h2 id="inventory-title">Cartridges</h2><p id="inventory-count"></p></div><button id="inventory-close" type="button">Close</button></div>
     <ul id="inventory-list"></ul>
     <p id="inventory-empty">Find your first cartridge on an exhibit pedestal.</p>
-    <div class="inventory-bottom"><button id="inventory-home" type="button">Living room</button><button id="inventory-play" class="primary" type="button" disabled>Raise handheld</button></div>
+    <div class="inventory-bottom"><button id="inventory-home" type="button">Apartment</button><button id="inventory-play" class="primary" type="button" disabled>Raise handheld</button></div>
   </dialog>
 
   <section id="inspect-hud" class="inspect-hud" aria-labelledby="inspect-title" hidden>

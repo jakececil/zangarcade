@@ -1,12 +1,12 @@
 import * as THREE from './vendor/three.module.js';
-import { ENTRY_Z, HALL_WIDTH, museumGeometry } from './museum-geometry.js?v=d9250d395c6f';
-import { worksArrival } from './museum-works.js?v=d1bb999ea3de';
-import { HOME, buildGuts, mazeWalls, roomProfile } from './guts.js';
+import { museumGeometry } from './museum-geometry.js?v=bd8b3560b9e4';
+import { arrivals, canWalkDistrict, cellAt, crossingPortal, levelAt } from './district-layout.js?v=c354d2963689';
+import { HOME, buildGuts, mazeWalls, roomProfile } from './guts.js?v=5261e0e93b27';
 import { loadCartridgeAsset } from './cartridge-assets.js';
 import { createCartridgeDrums } from './cartridge-drums.js';
 import { createCartridgeSlots, pickCartridgePart } from './cartridge-slots.js?v=513bd344741e';
 import { configureCartridgeKey, createCartridgeReflections, enableCartridgeShadows } from './cartridge-lighting.js';
-import { buildCabinetAlcove, mountCabinet } from './cabinet-alcove.js?v=c17ae7b4baff';
+import { buildCabinetAlcove, mountCabinet } from './cabinet-alcove.js?v=c55b6869ebf5';
 
 const SCREEN_WIDTH = 1.44;
 const SCREEN_HEIGHT = .96;
@@ -16,7 +16,6 @@ const POCKET = new THREE.Vector3(0, -1.42, -.92);
 const SLOT = new THREE.Vector3(0, .682, -.008);
 // The molded shell sits proud of the slot, with its contact tongue recessed.
 const MODEL_CART_SEAT = new THREE.Vector3(0, .804, -.008);
-const HOME_DOOR = new THREE.Vector3(0, 1.4, ENTRY_Z + 1.68);
 const GRATE_HOME = new THREE.Vector3(1.92, .015, -2.18);
 const UNDERSHELL = 'undergrowth-advance';
 const INSPECTION_BACKGROUND = new THREE.Color('#252922');
@@ -37,7 +36,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   scene.add(exhibit);
   scene.background = new THREE.Color('#131b1a');
   scene.fog = new THREE.Fog('#172322', 5, 13);
-  const camera = new THREE.PerspectiveCamera(58, 1, .025, 24);
+  const camera = new THREE.PerspectiveCamera(58, 1, .025, 93);
   camera.position.set(0, 1.62, 3.1);
   camera.rotation.order = 'YXZ';
   scene.add(camera);
@@ -64,6 +63,12 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   let previousTime = 0;
   let cabinetLoading;
   let area;
+  let gamepadMove = { x: 0, z: 0 };
+  const insideSky = new THREE.Color('#131b1a');
+  const outsideSky = new THREE.Color('#a5bbc0');
+  const insideFog = new THREE.Color('#172322');
+  const outsideFog = new THREE.Color('#a9b3a4');
+  const lightSample = new THREE.Vector3(Infinity,Infinity,Infinity);
   let savedPose;
   let dockPromise;
   let renderedFrames = 0;
@@ -349,39 +354,15 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   scene.add(museum.hall);
   exhibit.add(museum.installation);
   const hallProps = guts.props(museum.hall);
-  hallProps.vending.position.set(-2.36, 0, 2.7);
-  hallProps.vending.rotation.y = .92;
-  hallProps.cabinet.position.set(2.39, .03, -2.08);
-  hallProps.cabinet.rotation.y = -.95;
+  hallProps.vending.position.set(3.96, 0, 3.44);
+  hallProps.vending.rotation.y = -Math.PI / 2;
+  hallProps.cabinet.position.set(-4.18, .03, -6.24);
+  hallProps.cabinet.rotation.y = -.21;
   const homeProps = guts.props(guts.home);
   homeProps.vending.visible = false;
   homeProps.cabinet.position.set(3.1, 0, -2.47);
   homeProps.cabinet.rotation.y = -.18;
-  buildCabinetAlcove({ parent: museum.hall, texture, material, geometry: geometries, box, cylinder });
-  const ductMaterial = material('#913850', { map: guts.materialTile, bumpMap: guts.materialTile, bumpScale: .05, roughness: .35, metalness: .27 });
-  const ductPoints = Array.from({ length: 25 }, (_, index) => new THREE.Vector3(-1.4 + Math.sin(index * .73) * .64, 2.81 + Math.sin(index * 1.37) * .18, 4 - index * 1.88));
-  const duct = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ductPoints), 68, .16, 8, false);
-  geometries.add(duct);
-  museum.hall.add(new THREE.Mesh(duct, ductMaterial));
-  const growth = new THREE.SphereGeometry(1, 12, 8);
-  geometries.add(growth);
-  const hallLights = [];
-  for (let index = 0; index < 8; index++) {
-    const z = 2 - index * 5.2;
-    const strut = box(.33 + .15 * (index % 3), 1.2 + .2 * (index % 2), .77, ductMaterial, museum.hall, index % 2 ? 2.73 : -2.75, 2.61, z);
-    strut.rotation.z = Math.sin(index * 5) * .32;
-    for (let lobe = 0; lobe < 3; lobe++) {
-      const mass = new THREE.Mesh(growth, ductMaterial);
-      mass.scale.set(.36 + .09 * lobe, .24 + .16 * lobe, .60 + .12 * Math.cos(lobe));
-      mass.position.set(strut.position.x - Math.sign(strut.position.x) * (.15 + .34 * lobe), 3.18, z + .5 + .44 * lobe);
-      mass.rotation.z = index * .37 + lobe;
-      museum.hall.add(mass);
-    }
-    const glow = new THREE.PointLight(index % 2 ? '#c954b5' : '#68debc', 9, 9, 2);
-    glow.position.set(index % 2 ? 1.63 : -1.73, 2.74, z);
-    museum.hall.add(glow);
-    hallLights.push(glow);
-  }
+  buildCabinetAlcove({ parent: museum.hall, texture, material, geometry: geometries, box, cylinder, x:-4.18, z:-6.96 });
   box(.95, .09, .3, darkMetal, exhibit, -2.4, 2.83, -.7);
   box(.64, .025, .18, amber, exhibit, -2.4, 2.77, -.69);
   box(.95, .09, .3, darkMetal, exhibit, 2.35, 2.83, -2.45);
@@ -414,7 +395,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   function setLocation(game, arrival) {
     if (docked || transitioning) return;
-    if (currentGame) exitDoor = museum.doors.find(door => door.game === currentGame);
+    if (currentGame) exitDoor = museum.doors.find(door => currentGame === HOME ? door.id === 'home' : door.game === currentGame);
     currentGame = game || undefined;
     if ((!game || game === HOME) && !cabinetLoading) {
       // Leave the simple prop in place on a network error, then retry on return.
@@ -448,13 +429,12 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       camera.position.set(0, 1.62, profile.depth / 2 - .77);
       yaw = 0;
       pitch = -.17;
-    } else if (arrival === 'works') {
-      camera.position.set(worksArrival.x, 1.62, worksArrival.z);
-      yaw = worksArrival.yaw;
-      pitch = -.05;
     } else {
-      camera.position.set(exitDoor ? exitDoor.side * 2.25 : 0, 1.62, exitDoor?.z ?? ENTRY_Z);
-      yaw = exitDoor ? exitDoor.side * Math.PI / 2 : 0;
+      const portal = exitDoor?.arrival;
+      const [x,z,heading] = Object.hasOwn(arrivals,arrival) ? arrivals[arrival]
+        : portal ? [portal.x,portal.z,portal.yaw] : arrivals.corridor;
+      camera.position.set(x, 1.62, z);
+      yaw = heading;
       pitch = -.05;
     }
     clearInput();
@@ -469,9 +449,20 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   function updateCamera() {
+    const district = !currentGame ? cellAt(camera.position.x,camera.position.z) : null;
+    if (district) camera.position.y = levelAt(district,camera.position.z)+1.62;
+    const outdoor = district?.style === 'outside';
+    scene.background = outdoor ? outsideSky : insideSky;
+    scene.fog.color.copy(outdoor ? outsideFog : insideFog);
+    if (district) {
+      scene.fog.near = outdoor ? 22 : 7;
+      scene.fog.far = outdoor ? 77 : 29;
+      museum.sun.intensity = outdoor ? 2.05 : 0;
+      museum.ambient.intensity = outdoor ? 1.36 : .99;
+    }
     camera.rotation.set(pitch, yaw, 0, 'YXZ');
     camera.updateMatrixWorld();
-    const label = currentGame?.title ?? museum.plan.area(camera.position.x,camera.position.z);
+    const label = currentGame?.title ?? district?.name ?? 'ZANG';
     if (label !== area) {
       area = label;
       onArea(area);
@@ -486,12 +477,13 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
 
   function updateTarget() {
     if (!inputEnabled || docked || transitioning || inspecting) return emitTarget(null);
-    if (!currentGame && Math.abs(camera.position.x) > HALL_WIDTH/2) return emitTarget(null);
+    const district = !currentGame ? cellAt(camera.position.x,camera.position.z) : null;
     camera.getWorldDirection(forward);
     const candidates = currentGame ? [
-      { id: 'exit', point: new THREE.Vector3(0, 1.62, profile.depth / 2 - .12), label: 'Return to corridor' }
-    ] : museum.doors.map(door => ({ id: `door:${door.game.id}`, point: door.point, label: `Enter ${door.game.title}` }));
-    if (!currentGame) candidates.push({ id: 'home', point: HOME_DOOR, label: 'Go to the living room' });
+      { id: 'exit', point: new THREE.Vector3(0, 1.62, profile.depth / 2 - .12), label: 'Back to ZANG' }
+    ] : museum.doors.filter(door => door.cell === district).map(door => ({
+      id:door.id, point:door.point, label:door.game ? `Enter ${door.game.title}` : 'Enter apartment'
+    }));
     if (currentGame === HOME) {
       if (canStore) candidates.push({ id: 'store', point: new THREE.Vector3(0, 1.4, -3.01), label: 'Box new cartridges' });
       for (const [id, { point }] of guts.boxes) {
@@ -519,11 +511,7 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
   }
 
   function canStand(x, z) {
-    if (!currentGame) {
-      const cabinet = hallProps.cabinet.position;
-      if (Math.abs(x-cabinet.x) < .72 && Math.abs(z-cabinet.z) < .72) return false;
-      return museum.plan.canWalk(x,z);
-    }
+    if (!currentGame) return canWalkDistrict(x,z);
     if (Math.abs(x) >= profile.width / 2 - .29 || Math.abs(z) >= profile.depth / 2 - .33) return false;
     const blockers = currentGame === HOME ? homeObstacles : currentGame.id === 'zonk' ? mazeWalls : [];
     if (pedestal.visible && Math.abs(x - CART_HOME.x) < .55 && Math.abs(z - CART_HOME.z) < .49) return false;
@@ -538,19 +526,12 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     if (!length) return;
     x /= Math.max(1, length);
     z /= Math.max(1, length);
-    const sprinting = run || gamepadMove.sprint || keys.has('ShiftLeft') || keys.has('ShiftRight');
-    const distance = delta * (currentGame ? 2.15 : 4.1) * (sprinting ? 1.85 : 1);
+    const sprinting = run || keys.has('ShiftLeft') || keys.has('ShiftRight');
+    const distance = delta * (currentGame ? 3.05 : 5.25) * (sprinting ? 1.62 : 1);
     const nextX = camera.position.x + (Math.cos(yaw) * x - Math.sin(yaw) * z) * distance;
     const nextZ = camera.position.z + (-Math.sin(yaw) * x - Math.cos(yaw) * z) * distance;
-    if (!currentGame && Math.abs(nextX) > 2.84 && Math.abs(nextX) > Math.abs(camera.position.x)
-      && Math.abs(camera.position.x) < HALL_WIDTH/2 && !museum.plan.hasCut(Math.sign(nextX),nextZ)) {
-      const door = museum.doors.find(item => item.side === Math.sign(nextX) && Math.abs(item.z - nextZ) < .76);
-      if (door) { onInteract(`door:${door.game.id}`); return; }
-    }
-    if (!currentGame && nextZ > ENTRY_Z + 1.55 && nextZ > camera.position.z && Math.abs(nextX) < .8) {
-      onInteract('home');
-      return;
-    }
+    const door = !currentGame && crossingPortal(museum.doors,camera.position,nextX,nextZ);
+    if (door) { onInteract(door.id); return; }
     if (currentGame && nextZ > profile.depth / 2 - .39 && nextZ > camera.position.z && Math.abs(nextX) < .8) {
       onInteract('exit');
       return;
@@ -598,11 +579,11 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     for (const tween of tweens) tween.update(time);
     updateTarget();
     museum.updateFish(time);
-    if (!currentGame) {
-      const nearest = Math.max(0, Math.min(hallLights.length - 1, Math.round((2 - camera.position.z) / 5.2)));
-      const inCorridor = camera.position.x > -4.25;
-      hallLights.forEach((light, index) => { light.visible = inCorridor && Math.abs(index - nearest) <= 1; });
-      for (const light of museum.worksLights) light.visible = light.position.distanceToSquared(camera.position) < 70;
+    if (!currentGame && lightSample.distanceToSquared(camera.position) > .52) {
+      lightSample.copy(camera.position);
+      const closest = [...museum.lights].sort((a,b) => a.position.distanceToSquared(lightSample)
+        - b.position.distanceToSquared(lightSample)).slice(0,5);
+      for (const light of museum.lights) light.visible = closest.includes(light);
     }
     const background = scene.background;
     window.clearTimeout(inspectionShuffleTimer);
@@ -681,11 +662,10 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
     requestRender();
   }
 
-  let gamepadMove = { x: 0, z: 0, sprint: false };
   function clearInput() {
     keys.clear();
     externalMove = { x: 0, z: 0 };
-    gamepadMove = { x: 0, z: 0, sprint: false };
+    gamepadMove = { x: 0, z: 0 };
     run = false;
   }
 
@@ -1005,8 +985,8 @@ export async function createRoom({ canvas, games, onInteract = () => {}, onTarge
       externalMove = { x: THREE.MathUtils.clamp(Number(x) || 0, -1, 1), z: THREE.MathUtils.clamp(Number(z) || 0, -1, 1) };
       requestRender();
     },
-    moveGamepad(x, z, sprint) {
-      gamepadMove = { x, z, sprint };
+    moveGamepad(x, z) {
+      gamepadMove = { x, z };
     },
     look,
     getState() {

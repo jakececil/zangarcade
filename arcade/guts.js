@@ -1,6 +1,6 @@
 import * as THREE from './vendor/three.module.js';
 
-export const HOME = Object.freeze({ id: 'home', title: 'Living room' });
+export const HOME = Object.freeze({ id: 'home', title: 'Apartment' });
 
 const profiles = {
   tall: { width: 7.1, depth: 8.3, height: 6.8, cart: [-1.65, -.9] },

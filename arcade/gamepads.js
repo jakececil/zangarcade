@@ -12,6 +12,10 @@ function normalize(pad) {
   const hat = pad.axes[9];
   const dpad = hat >= -1 && hat <= 1 ? hatDirections[Math.round((hat+1)*3.5)] : [];
   const buttons = [1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(index => pad.buttons[index]);
+  for (let i = 0; i < 2; i++) {
+    const value = Math.max(0,Math.min(1,(pad.axes[3+i]+1)/2));
+    buttons[6+i] = { pressed:value >= .55, value };
+  }
   for (let i = 0; i < 4; i++) buttons.push(dpad.includes(i) ? pressed : released);
   buttons.push(pad.buttons[12], pad.buttons[13]);
   return {

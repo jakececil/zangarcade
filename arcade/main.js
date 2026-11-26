@@ -1,6 +1,6 @@
-import { createRoom } from './room.js?v=47240b2de4cb';
-import { HOME } from './guts.js';
-import { stick, watchGamepad } from './gamepads.js?v=9bc07178600a';
+import { createRoom } from './room.js?v=ea79eaae7e43';
+import { HOME } from './guts.js?v=5261e0e93b27';
+import { stick, watchGamepad } from './gamepads.js?v=1d5b5f6c507d';
 
 const canvas = document.getElementById('room');
 const entrance = document.getElementById('entrance');
@@ -83,8 +83,7 @@ function setMode(next) {
 
 function updateProgress() {
   const carried = cartridge ? `${cartridge.title} ${cartState === 'inserted' ? 'seated' : 'in hand'}. ` : '';
-  if (!exhibit) progressLabel.textContent = document.body.hasAttribute('data-works') ? carried.trimEnd()
-    : carried + 'Walk up to a doorway or choose an exhibit from the directory.';
+  if (!exhibit) progressLabel.textContent = carried.trimEnd();
   else if (exhibit === HOME) progressLabel.textContent = discovered.size > shelved.size ? 'Approach the shelf to box your new cartridges.' : 'Bring found cartridges here to fill the shelf.';
   else if (exhibit.id === 'kingfisher') {
     progressLabel.textContent = carried + (progress.open ? 'The floor grate is open.' : `${progress.catches} / 10 fish saved. Catch ten to open the floor grate.`);
@@ -452,7 +451,7 @@ watchGamepad((pad, down, edge, delta) => {
   const body = document.body;
   if (body.hasAttribute('data-gamepad') !== connected) body.toggleAttribute('data-gamepad', connected);
   if (!room) return;
-  if (!pad) { room.moveGamepad(0, 0, false); return; }
+  if (!pad) { room.moveGamepad(0, 0); return; }
   if (mode === 'intro' && (edge(0) || edge(9))) { enterButton.click(); return; }
   if (mode === 'play') {
     if (down(10) && down(11) && (edge(10) || edge(11))) lowerHandheld();
@@ -479,7 +478,8 @@ watchGamepad((pad, down, edge, delta) => {
   }
   if (mode !== 'room') return;
   const [x, y] = stick(pad.axes[0],pad.axes[1]);
-  room.moveGamepad(x || Number(down(15))-Number(down(14)), -y || Number(down(12))-Number(down(13)), down(10));
+  if (edge(6)) setRun(!running);
+  room.moveGamepad(x || Number(down(15))-Number(down(14)), -y || Number(down(12))-Number(down(13)));
   if (lookX || lookY) room.look(lookX*680*delta, lookY*540*delta);
   if (edge(0)) room.interact();
   else if (edge(3)) raiseHandheld();
@@ -555,7 +555,7 @@ try {
   room = await createRoom({
     onArea(name) {
       locationName.textContent = name;
-      document.body.toggleAttribute('data-works', !exhibit && name !== 'Exhibition Corridor');
+      document.body.toggleAttribute('data-district', !exhibit);
       updateProgress();
     },
     onInspectionDrums(available, hasSlots) {
